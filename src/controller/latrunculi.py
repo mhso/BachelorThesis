@@ -15,19 +15,22 @@ class Latrunculi(Game):
         board = np.zeros((self.size, self.size), 'b')
         num_pieces = int((self.size * self.size) / 2)
         if seed is not None:
-            np.random.seed(seed)
             # Generate random positions for pieces
-            rands = np.random.uniform(high=self.size * self.size, size=num_pieces)
-            # Populate board with equal amount of white and black pieces
-            for count, num in enumerate(rands):
-                y = int(num / self.size)
-                x = int(num % self.size)
-                piece = 1 if count < num_pieces/2 else -1
+            np.random.seed(seed)
+            squares = np.arange(0, self.size * self.size)
+            np.random.shuffle(squares)
 
-                board[x][y] = piece
+            # Populate board with equal amount of white and black pieces
+            for i in range(num_pieces):
+                num = squares[i]
+                X = int(num / self.size)
+                Y = int(num % self.size)
+                piece = 1 if i < num_pieces/2 else -1
+
+                board[X][Y] = piece
         else:
-            board[:][0] = -1
-            board[:][-1] = 1
+            board[:][0:2] = -1
+            board[:][-3:-1] = 1
         self.init_state = State(board, True)
 
     def __init__(self, size, start_seed=None):

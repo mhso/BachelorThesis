@@ -14,6 +14,7 @@ class Latrunculi(Game):
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')
         num_pieces = int((self.size * self.size) / 2)
+
         if seed is not None:
             # Generate random positions for pieces
             np.random.seed(seed)
@@ -30,7 +31,8 @@ class Latrunculi(Game):
                 board[X][Y] = piece
         else:
             board[:][0:2] = -1
-            board[:][-3:-1] = 1
+            board[:][-2:] = 1
+
         self.init_state = State(board, True)
 
     def __init__(self, size, start_seed=None):
@@ -42,7 +44,7 @@ class Latrunculi(Game):
         return self.init_state
 
     def player(self, state):
-        pass
+        return state.player
 
     def actions(self, state):
         pass
@@ -51,7 +53,7 @@ class Latrunculi(Game):
         pass
 
     def terminal_test(self, state):
-        pass
+        return (state.board == 1).sum() == 1 or (state.board == -1).sum() == 1
 
     def utility(self, state, player):
         pass

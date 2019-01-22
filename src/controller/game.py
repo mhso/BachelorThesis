@@ -13,24 +13,42 @@ class Game(ABC):
 
     @abstractmethod
     def start_state(self):
+        """
+        Returns starting state for the game.
+        """
         pass
 
     @abstractmethod
     def player(self, state):
+        """
+        Returns who’s turn it is given a state. True for white, False for black.
+        """
         pass
 
     @abstractmethod
     def actions(self, state):
+        """
+        Return list of legal moves for the given state.
+        """
         pass
 
     @abstractmethod
     def result(self, state, action):
+        """
+        Returns the state that results from doing action 'a' in state 's'.
+        """
         pass
 
     @abstractmethod
     def terminal_test(self, state):
+        """
+        Return True if the given state is a terminal state, meaning that the game is over, False otherwise.
+        """
         pass
 
     @abstractmethod
     def utility(self, state, player):
+        """
+        If the given player has lost, return 0, else return 1
+        """
         pass

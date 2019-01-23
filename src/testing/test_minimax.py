@@ -8,7 +8,7 @@ def run_tests():
     game = Latrunculi(8)
     minimax = Minimax(game)
     state = game.start_state()
-    
+
     state.board[0][:2] = 0 # Simulate black losing 2 pieces.
     eval_w = minimax.evaluate_board(state)
     state.player = not state.player # Simulate black having the turn.

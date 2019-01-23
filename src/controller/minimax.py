@@ -17,8 +17,29 @@ class Minimax(GameAI):
         other_piece = -1 if state.player else 1
         return (state.board == player_piece).sum() - (state.board == other_piece).sum()
 
-    def minimax(self, node, depth, maxing_player, alpha, beta):
-        return depth + maxing_player
+    def minimax(self, state, depth, maxing_player, alpha, beta):
+        """
+        Minimax algorithm with alpha-beta pruning.
+        """
+        if depth == 0 or self.game.terminal_test(state):
+            return self.evaluate_board(state)
+
+        actions = self.game.actions(state)
+
+        worth = 10000 if maxing_player else -10000
+        for action in actions:
+            result = self.game.result(state, action)
+            next_depth = self.minimax(result, depth-1, not maxing_player, alpha, beta)
+            worth = min(next_depth, worth) if maxing_player else max(next_depth, worth)
+            if maxing_player:
+                alpha = max(alpha, worth)
+            else:
+                beta = min(beta, worth)
+
+            if beta <= alpha:
+                return worth
+
+        return worth
 
     def execute_action(self, state):
         super.__doc__
@@ -29,7 +50,7 @@ class Minimax(GameAI):
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:
             result = self.game.result(state, action)
-            value = self.minimax(state, 3, True, -10000, 10000)
+            value = self.minimax(result, 3, True, -10000, 10000)
             if value > highest_value:
                 highest_value = value
                 best_action = action

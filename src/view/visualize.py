@@ -13,8 +13,10 @@ click_x_last    = -1
 click_y_last    = -1
 clickCount      = -1
 
-# Tempory board
+# Tempory variables for testing
 board = np.array([[0,0,-1,-1,0,0,0,0],[-1,0,0,0,0,0,0,0],[1,0,-1,0,1,0,0,0],[1,0,0,0,0,0,-1,1],[0,1,0,0,0,0,0,-2],[0,0,0,0,-1,0,0,1],[0,0,0,0,0,0,0,1],[0,-1,0,-1,2,-1,0,0]])
+player = 1
+
 
 def clicksaver(x, y) :
     global click_x, click_y, click_x_last, click_y_last, clickCount
@@ -30,10 +32,6 @@ def clicksaver(x, y) :
         click_x = x
         click_y = y
         clickCount = 0
-    # print(x,y)
-    # print(click_x, click_y)
-    # print(click_x_last, click_y_last)
-
 
 # Return coordinat for mouse click
 def getorigin(eventorigin):
@@ -42,13 +40,14 @@ def getorigin(eventorigin):
     y = eventorigin.y
     clicksaver(x, y)
     coords = field_clicked(x, y, board, left_space, top_space, fieldsize)
-    board = unmark_board(board)
-    board = mark_piece(board, coords)
-    print(board)
-    canvas.update
+    if not is_player1_piece(player, board[coords]) :
+        coords = (-1,-1)
+    board = unmark_board(board, coords)
+    board = mark_unmark_piece(board, coords)
+    bx, by = coords
+    draw_status_text(canvas, 'Selected: (%(x)s,%(y)s)'%{'x':bx, 'y':by})
     draw_board(board)
-    #print(x,y)
-    
+
 # Creating main window
 root = tk.Tk()
 root.bind("<Button 1>",getorigin)
@@ -59,7 +58,7 @@ def field(x, y, canvas, img_filename) :
     canvas.create_image(x, y, image=img_filename, anchor=tk.NW) 
 
 # Creating main canvas
-canvas = tk.Canvas(root,width=540,height=700,background='lightgray')
+canvas = tk.Canvas(root,width=540,height=680,background='lightgray')
 canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
 
@@ -84,6 +83,13 @@ def draw_axis_numbers(left_space, top_space, fieldsize, board) :
     for col in range(0, noOfCols) :
         canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col)
         ct=ct+fieldsize
+
+
+def draw_status_text(canvas, msg) :
+    canvas.create_rectangle(50, 510, 490, 650, fill='white')
+    canvas.create_text(60,515, fill="black", font="Courier 10", text="Player1 is white, Player2 is black", anchor=tk.NW)
+    canvas.create_text(60,530, fill="black", font="Courier 10", text=msg, anchor=tk.NW)
+
 
 # load the .gif image file
 pblt    = tk.PhotoImage(file='pcs_bl_t.png')
@@ -146,7 +152,8 @@ def draw_board(board) :
     # Draw last vertical lines (column)
     canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
 
-def mark_piece(board, coords) :
+# Flips a 
+def mark_unmark_piece(board, coords) :
     val = board[coords]
     if (val == -1) :
         board[coords] = -3
@@ -158,14 +165,23 @@ def mark_piece(board, coords) :
         board[coords] = 1
     return board
 
-def unmark_board(board) :
+def unmark_board(board, exclude_coords=(-1,-1)) :
     for y in range(0, board.shape[1]) :
         for x in range(0, board.shape[1]) :
+            if ((x,y) == exclude_coords) :
+                continue
             if (board[x,y] == -3) :
                 board[x,y] = -1
             if (board[x,y] == 3) :
                 board[x,y] = 1
     return board
+
+# Check wheather (white) piece is owned by player one
+def is_player1_piece(player, value) :
+        if (player == 1 and value > 0) :
+            return True
+        else :
+            return False
 
 def field_clicked(x,y, board, left_space, top_space, fieldsize) :
     #print("field_clicked")
@@ -192,5 +208,6 @@ def field_clicked(x,y, board, left_space, top_space, fieldsize) :
 draw_board(board)
 
 draw_axis_numbers(left_space, top_space, fieldsize, board)
+draw_status_text(canvas, 'Waiting for Player1, please move a piece...')
 
 root.mainloop()

@@ -13,3 +13,7 @@ class State:
 class Action:
     source = 0, 0
     dest = 0, 0
+
+    def __init__(self, source, dest):
+        self.source = source
+        self.dest = dest

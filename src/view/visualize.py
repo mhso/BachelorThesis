@@ -30,9 +30,9 @@ def clicksaver(x, y) :
         click_x = x
         click_y = y
         clickCount = 0
-    print(x,y)
-    print(click_x, click_y)
-    print(click_x_last, click_y_last)
+    # print(x,y)
+    # print(click_x, click_y)
+    # print(click_x_last, click_y_last)
 
 
 # Return coordinat for mouse click
@@ -85,8 +85,10 @@ def draw_axis_numbers(left_space, top_space, fieldsize, board) :
 # load the .gif image file
 pblt    = tk.PhotoImage(file='pcs_bl_t.png')
 pbl     = tk.PhotoImage(file='pcs_bl.png')
+pblc    = tk.PhotoImage(file='pcs_bl_c.png')
 pwh     = tk.PhotoImage(file='pcs_wh.png')
 pwht    = tk.PhotoImage(file='pcs_wh_t.png')
+pwhc    = tk.PhotoImage(file='pcs_wh_c.png')
 pbla    = tk.PhotoImage(file='pcs_blank.png')
 
 # Returns image variable
@@ -143,31 +145,25 @@ def draw_board(board) :
     return (board_upper_left, board_lower_right)
 
 
-def field_clicked(x,y,board) :
-    # ux, uy = board_upper_left
-    # lx, ly = board_lower_right
-    # hlen = ux+55*8
-    # vlen = uy+55*8
-    fieldsize = 55
-
-    print("field_clicked\n")
+def field_clicked(x,y,board, left_space, top_space, fieldsize) :
+    print("field_clicked")
     print(x, y)
-    ymin = 50
-    xmin = 50
+    
+    ymin = top_space
     for row in range(0, board.shape[0]) :
-        
-        ymax = ymin+55
+        xmin = left_space
+        ymax = ymin+fieldsize
         for col in range(0, board.shape[1]) :
             xmax = xmin+fieldsize
-            print(col, row)
-            print(xmin, xmin, ymin, ymax)
+            # print(col, row)
+            # print(xmin, xmax, ymin, ymax)
             if (x >= xmin and x < xmax and y >= ymin and y < ymax) :
-                print("found\n")
+                print("found")
                 print(col, row)
-                print("\n")
+                # print("\n")
                 return (col,row)
-        xmin = xmin+fieldsize
-    ymin = ymin+fieldsize
+            xmin = xmax
+        ymin = ymin+fieldsize
     return (-1,-1)
 
 

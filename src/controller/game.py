@@ -6,11 +6,6 @@ game: Super class for game. Implements actions, evaluations, terminal tests, etc
 from abc import ABC, abstractmethod
 
 class Game(ABC):
-    # Constructor
-    def __init__(self):
-        # Do stuff.
-        pass
-
     @abstractmethod
     def start_state(self):
         """

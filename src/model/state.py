@@ -8,7 +8,7 @@ class State:
 
     def __str__(self):
         player = "White" if self.player else "Black"
-        return "[State: \nTurn = " + player + "\nBoard =\n" + str(self.board) + "\n]"
+        return "[State: \nPlayer turn = " + player + "\nBoard =\n" + str(self.board) + "\n]"
 
 class Action:
     source = 0, 0

@@ -7,6 +7,9 @@ visualize: Draw board state and other stuff.
 import numpy as np
 import tkinter as tk
 
+from tkinter import ttk
+from tkinter.messagebox import showinfo
+
 click_x         = -1
 click_y         = -1
 click_x_last    = -1
@@ -16,7 +19,6 @@ clickCount      = -1
 # Tempory variables for testing
 board = np.array([[0,0,-1,-1,0,0,0,0],[-1,0,0,0,0,0,0,0],[1,0,-1,0,1,0,0,0],[1,0,0,0,0,0,-1,1],[0,1,0,0,0,0,0,-2],[0,0,0,0,-1,0,0,1],[0,0,0,0,0,0,0,1],[0,-1,0,-1,2,-1,0,0]])
 player = 1
-
 
 def clicksaver(x, y) :
     global click_x, click_y, click_x_last, click_y_last, clickCount
@@ -52,6 +54,41 @@ def getorigin(eventorigin):
 root = tk.Tk()
 root.bind("<Button 1>",getorigin)
 root.title("Latrunculi - The Game")
+root.iconbitmap('favicon.ico')
+
+def hello():
+    print ("hello!")
+
+def menubar_help_about_popup() :
+    showinfo("About", "This great game of Latrunculi is made as addition to our bachelor project at IT-University of Copenhagen, please enjoy.\n\n ITU 2019 Denmark\n\n Alexander M. Hansen <alhm@itu.dk>\n Mikkel H. Sørensen <mhso@itu.dk>\n Frank Andersen <fand@itu.dk>\n ")
+
+# Menubar
+def widget_menubar(root) :
+    # create a toplevel menu
+    menubar = tk.Menu(root)
+
+    # create a pulldown menu, and add it to the menu bar
+    filemenu = tk.Menu(menubar, tearoff=0)
+    filemenu.add_command(label="Open replay", command=hello)
+    filemenu.add_command(label="Save replay", command=hello)
+    filemenu.add_separator()
+    filemenu.add_command(label="Exit", command=root.quit)
+    menubar.add_cascade(label="File", menu=filemenu)
+
+    # create more pulldown menus
+    optionmenu = tk.Menu(menubar, tearoff=0)
+    optionmenu.add_command(label="Human vs. AI", command=hello)
+    optionmenu.add_command(label="AI vs. AI", command=hello)
+    menubar.add_cascade(label="Options", menu=optionmenu)
+
+    helpmenu = tk.Menu(menubar, tearoff=0)
+    helpmenu.add_command(label="About", command=menubar_help_about_popup)
+    menubar.add_cascade(label="Help", menu=helpmenu)
+
+    # display the menu
+    root.config(menu=menubar)
+
+widget_menubar(root)
 
 # Places images on canvas at position
 def field(x, y, canvas, img_filename) :

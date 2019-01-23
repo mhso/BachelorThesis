@@ -30,6 +30,7 @@ class Latrunculi(Game):
 
                 board[X][Y] = piece
         else:
+            # Position pieces as a 'Chess formation'.
             board[:][0:2] = -1
             board[:][-2:] = 1
 
@@ -41,19 +42,26 @@ class Latrunculi(Game):
         self.populate_board(start_seed)
 
     def start_state(self):
+        super.__doc__
         return self.init_state
 
     def player(self, state):
+        super.__doc__
         return state.player
 
     def actions(self, state):
-        pass
+        super.__doc__
 
     def result(self, state, action):
-        pass
+        super.__doc__
 
     def terminal_test(self, state):
+        super.__doc__
         return (state.board == 1).sum() == 1 or (state.board == -1).sum() == 1
 
     def utility(self, state, player):
-        pass
+        super.__doc__
+        if player: # Player plays as white.
+            return 0 if (state.board == 1).sum() == 1 else 1
+        # Player plays as black.
+        return 0 if (state.board == -1).sum() == 1 else 1

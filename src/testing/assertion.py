@@ -8,7 +8,7 @@ def print_passed(name):
 
 def print_failed(name, err):
     global FAILED
-    print("Test FAILED! '{}', {}".format(name, err))
+    print("\033[1;31;40mTest FAILED! '{}', {}\033[0;37;40m".format(name, err))
     FAILED += 1
 
 def assert_true(val, name):

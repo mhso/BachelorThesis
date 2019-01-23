@@ -37,4 +37,17 @@ def run_tests():
     assertion.assert_true(GAME.player(state), "initial player turn")
 
     # =================================
-    # Test terminal state.
+    # Test terminal state methods.
+    # Test terminal_test.
+    GAME = Latrunculi(8)
+    state = GAME.start_state()
+    state.board[-3:][:] = 0 # Set white's pieces, except 1, to empty squares.
+    state.board[-1][0] = 1
+
+    assertion.assert_true(GAME.terminal_test(state), "terminal state true")
+
+    # =================================
+    # Test utility function.
+
+    assertion.assert_equal(0, GAME.utility(state, False), "utility white")
+    assertion.assert_equal(1, GAME.utility(state, False), "utility black")

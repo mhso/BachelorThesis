@@ -10,15 +10,32 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
 
+# from controller.game import Game
+# from model.state import State, Action
+
 click_x         = -1
 click_y         = -1
 click_x_last    = -1
 click_y_last    = -1
 clickCount      = -1
 
+####################################################################
 # Tempory variables for testing
 board = np.array([[0,0,-1,-1,0,0,0,0],[-1,0,0,0,0,0,0,0],[1,0,-1,0,1,0,0,0],[1,0,0,0,0,0,-1,1],[0,1,0,0,0,0,0,-2],[0,0,0,0,-1,0,0,1],[0,0,0,0,0,0,0,1],[0,-1,0,-1,2,-1,0,0]])
-player = 1
+currentPlayer = 1
+
+class Action:
+    source = 0, 0
+    dest = 0, 0
+
+    def __init__(self, source, dest):
+        self.source = source
+        self.dest = dest
+
+actionlist = [  Action((2,0),(2,1)),
+                Action((3,0),(3,1)), Action((3,0),(4,0))
+                ]   
+####################################################################
 
 def clicksaver(x, y) :
     global click_x, click_y, click_x_last, click_y_last, clickCount
@@ -42,13 +59,27 @@ def getorigin(eventorigin):
     y = eventorigin.y
     clicksaver(x, y)
     coords = field_clicked(x, y, board, left_space, top_space, fieldsize)
-    if not is_player1_piece(player, board[coords]) :
+    if not is_currentPlayer1_piece(currentPlayer, board[coords]) :
         coords = (-1,-1)
     board = unmark_board(board, coords)
     board = mark_unmark_piece(board, coords)
     bx, by = coords
     draw_status_text(canvas, 'Selected: (%(x)s,%(y)s)'%{'x':bx, 'y':by})
+
+    if is_currentPlayer1_piece(currentPlayer, board[coords]) and not (click_x_last == -1 or click_y_last == -1 ) :
+        print("hej")
+        (x2, y2) = field_clicked(x, y, board, left_space, top_space, fieldsize)
+        draw_status_text(canvas, 'Move from: (%(x)s,%(y)s) to (%(x2)s,%(y2)s)'%{'x':bx, 'y':by, 'x2':x2, 'y2':y2})
+
     draw_board(board)
+
+# Confirms if a move i legal
+def isLegalMove(actionlist, source_coords, dest_coords) :
+    for action in actionlist :
+        if action.source == source_coords and action.dest == dest_coords :
+            return True
+    return False
+
 
 # Creating main window
 root = tk.Tk()
@@ -124,7 +155,7 @@ def draw_axis_numbers(left_space, top_space, fieldsize, board) :
 
 def draw_status_text(canvas, msg) :
     canvas.create_rectangle(50, 510, 490, 650, fill='white')
-    canvas.create_text(60,515, fill="black", font="Courier 10", text="Player1 is white, Player2 is black", anchor=tk.NW)
+    canvas.create_text(60,515, fill="black", font="Courier 10", text="currentPlayer1 is white, currentPlayer2 is black", anchor=tk.NW)
     canvas.create_text(60,530, fill="black", font="Courier 10", text=msg, anchor=tk.NW)
 
 
@@ -136,6 +167,7 @@ pwh     = tk.PhotoImage(file='pcs_wh.png')
 pwht    = tk.PhotoImage(file='pcs_wh_t.png')
 pwhc    = tk.PhotoImage(file='pcs_wh_c.png')
 pbla    = tk.PhotoImage(file='pcs_blank.png')
+pmar    = tk.PhotoImage(file='pcs_mark.png')
 
 # Returns image variable
 def select_piece_type(value) :
@@ -160,28 +192,40 @@ def draw_board(board) :
     px2     = left_space
     hlen    = noOfRows*fieldsize+left_space
     vlen    = noOfCols*fieldsize+top_space
+    markedCoords = (-1,-1)
+
     for y in range(0, noOfRows) :
-            px = left_space
+        for x in range(0, noOfCols) :               
+            if board[x,y] == -3 or board[x,y] == 3 :
+                markedCoords = (x,y)
+                
+
+    for y in range(0, noOfRows) :
+        px = left_space
+        
+        # Draw vertical lines (column)
+        canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
+        
+        for x in range(0, noOfCols) :
+            val = board[x,y]
             
-            # Draw vertical lines (column)
-            canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
+            # If piece on field, place piece image
+            if val != 0 :
+                field(px, py, canvas, select_piece_type(val))
             
-            for x in range(0, noOfCols) :
-                val = board[x,y]
-                
-                # If piece on field, place piece image
-                if val != 0 :
-                    field(px, py, canvas, select_piece_type(val))
-                
-                #mystr = '(%(x)s,%(y)s)'% {'x':x, 'y':y}
-                # if debug :
-                #   canvas.create_text(px+25,py+30,fill="white",font="Courier 9 bold",text=mystr)
-                px = px+fieldsize
-                
-                # Draw horizontal lines (row)
-                canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
-            py  = py+fieldsize
-            px2 = px2+fieldsize
+            # Mark lega moves
+            if not markedCoords == (-1,-1) and val == 0  and isLegalMove(actionlist, markedCoords, (x,y)) :
+                field(px, py, canvas, pmar)
+             
+            #mystr = '(%(x)s,%(y)s)'% {'x':x, 'y':y}
+            # if debug :
+            #   canvas.create_text(px+25,py+30,fill="white",font="Courier 9 bold",text=mystr)
+            px = px+fieldsize
+            
+            # Draw horizontal lines (row)
+            canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
+        py  = py+fieldsize
+        px2 = px2+fieldsize
 
     # Draw last horizontal lines (row)
     canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
@@ -213,9 +257,9 @@ def unmark_board(board, exclude_coords=(-1,-1)) :
                 board[x,y] = 1
     return board
 
-# Check wheather (white) piece is owned by player one
-def is_player1_piece(player, value) :
-        if (player == 1 and value > 0) :
+# Check wheather (white) piece is owned by currentPlayer one
+def is_currentPlayer1_piece(currentPlayer, value) :
+        if (currentPlayer == 1 and value > 0) :
             return True
         else :
             return False
@@ -245,6 +289,6 @@ def field_clicked(x,y, board, left_space, top_space, fieldsize) :
 draw_board(board)
 
 draw_axis_numbers(left_space, top_space, fieldsize, board)
-draw_status_text(canvas, 'Waiting for Player1, please move a piece...')
+draw_status_text(canvas, 'Waiting for currentPlayer1, please move a piece...')
 
 root.mainloop()

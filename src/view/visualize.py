@@ -33,7 +33,12 @@ class Action:
         self.dest = dest
 
 actionlist = [  Action((2,0),(2,1)),
-                Action((3,0),(3,1)), Action((3,0),(4,0))
+                Action((2,4),(1,4)), Action((2,4),(2,3)), Action((2,4),(2,5)), Action((2,4),(3,4)),
+                Action((3,0),(3,1)), Action((3,0),(4,0)),
+                Action((3,7),(2,7)),
+                Action((4,1),(3,1)), Action((4,1),(4,0)), Action((4,1),(4,2)), Action((4,1),(5,1)),
+                Action((5,7),(5,6)),
+                Action((6,7),(6,6)), Action((6,7),(7,7))
                 ]   
 ####################################################################
 
@@ -67,10 +72,8 @@ def getorigin(eventorigin):
     draw_status_text(canvas, 'Selected: (%(x)s,%(y)s)'%{'x':bx, 'y':by})
 
     if is_currentPlayer1_piece(currentPlayer, board[coords]) and not (click_x_last == -1 or click_y_last == -1 ) :
-        print("hej")
         (x2, y2) = field_clicked(x, y, board, left_space, top_space, fieldsize)
         draw_status_text(canvas, 'Move from: (%(x)s,%(y)s) to (%(x2)s,%(y2)s)'%{'x':bx, 'y':by, 'x2':x2, 'y2':y2})
-
     draw_board(board)
 
 # Confirms if a move i legal
@@ -86,6 +89,9 @@ root = tk.Tk()
 root.bind("<Button 1>",getorigin)
 root.title("Latrunculi - The Game")
 root.iconbitmap('favicon.ico')
+
+canvas = tk.Canvas(root,width=540,height=680,background='lightgray')
+canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
 def hello():
     print ("hello!")
@@ -125,9 +131,7 @@ widget_menubar(root)
 def field(x, y, canvas, img_filename) :
     canvas.create_image(x, y, image=img_filename, anchor=tk.NW) 
 
-# Creating main canvas
-canvas = tk.Canvas(root,width=540,height=680,background='lightgray')
-canvas.pack(expand=tk.YES, fill=tk.BOTH)
+
 
 
 # Setting up variables for board grid placement and design
@@ -184,15 +188,18 @@ def select_piece_type(value) :
 
 # Draw board and place pieces
 def draw_board(board) :
+
     gridcolor   = "black"
     noOfRows    = board.shape[0]
     noOfCols    = board.shape[1]
-
     py      = top_space
     px2     = left_space
     hlen    = noOfRows*fieldsize+left_space
     vlen    = noOfCols*fieldsize+top_space
     markedCoords = (-1,-1)
+
+    #Hack, clear canvas
+    canvas.create_rectangle(50, 50, hlen, vlen, fill='lightgray')
 
     for y in range(0, noOfRows) :
         for x in range(0, noOfCols) :               
@@ -216,7 +223,7 @@ def draw_board(board) :
             # Mark lega moves
             if not markedCoords == (-1,-1) and val == 0  and isLegalMove(actionlist, markedCoords, (x,y)) :
                 field(px, py, canvas, pmar)
-             
+
             #mystr = '(%(x)s,%(y)s)'% {'x':x, 'y':y}
             # if debug :
             #   canvas.create_text(px+25,py+30,fill="white",font="Courier 9 bold",text=mystr)
@@ -278,7 +285,7 @@ def field_clicked(x,y, board, left_space, top_space, fieldsize) :
             # print(xmin, xmax, ymin, ymax)
             if (x >= xmin and x < xmax and y >= ymin and y < ymax) :
                 #print("found")
-                print(col, row)
+                #print(col, row)
                 # print("\n")
                 return (col, row)
             xmin = xmax

@@ -37,23 +37,26 @@ def clicksaver(x, y) :
 
 # Return coordinat for mouse click
 def getorigin(eventorigin):
+    global board
     x = eventorigin.x
     y = eventorigin.y
     clicksaver(x, y)
-    field_clicked(x, y, board)
+    coords = field_clicked(x, y, board, left_space, top_space, fieldsize)
+    board = unmark_board(board)
+    board = mark_piece(board, coords)
+    print(board)
+    canvas.update
+    draw_board(board)
     #print(x,y)
     
-
-
-# Places images on canvas at position
-def field(x, y, canvas, img) :
-    canvas.create_image(x, y, image=img, anchor=tk.NW)
-    return 
-
 # Creating main window
 root = tk.Tk()
 root.bind("<Button 1>",getorigin)
 root.title("Latrunculi - The Game")
+
+# Places images on canvas at position
+def field(x, y, canvas, img_filename) :
+    canvas.create_image(x, y, image=img_filename, anchor=tk.NW) 
 
 # Creating main canvas
 canvas = tk.Canvas(root,width=540,height=700,background='lightgray')
@@ -94,16 +97,18 @@ pbla    = tk.PhotoImage(file='pcs_blank.png')
 # Returns image variable
 def select_piece_type(value) :
     switcher = {
+    -3: pblc,
     -2: pblt,
     -1: pbl,
     0: pbla,
     1: pwh,
-    2: pwht
+    2: pwht,
+    3: pwhc
     }
     return switcher.get(value,"Invalid value option for select_piece_type")
 
+# Draw board and place pieces
 def draw_board(board) :
-    # Draw board and place pieces
     gridcolor   = "black"
     noOfRows    = board.shape[0]
     noOfCols    = board.shape[1]
@@ -140,14 +145,31 @@ def draw_board(board) :
 
     # Draw last vertical lines (column)
     canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
-    board_upper_left = (left_space, top_space)
-    board_lower_right =  (vlen, hlen)
-    return (board_upper_left, board_lower_right)
 
+def mark_piece(board, coords) :
+    val = board[coords]
+    if (val == -1) :
+        board[coords] = -3
+    elif (val == -3) :
+        board[coords] = -1
+    if val == 1 :
+        board[coords] = 3
+    elif (val == 3) :
+        board[coords] = 1
+    return board
 
-def field_clicked(x,y,board, left_space, top_space, fieldsize) :
-    print("field_clicked")
-    print(x, y)
+def unmark_board(board) :
+    for y in range(0, board.shape[1]) :
+        for x in range(0, board.shape[1]) :
+            if (board[x,y] == -3) :
+                board[x,y] = -1
+            if (board[x,y] == 3) :
+                board[x,y] = 1
+    return board
+
+def field_clicked(x,y, board, left_space, top_space, fieldsize) :
+    #print("field_clicked")
+    #print(x, y)
     
     ymin = top_space
     for row in range(0, board.shape[0]) :
@@ -158,18 +180,16 @@ def field_clicked(x,y,board, left_space, top_space, fieldsize) :
             # print(col, row)
             # print(xmin, xmax, ymin, ymax)
             if (x >= xmin and x < xmax and y >= ymin and y < ymax) :
-                print("found")
+                #print("found")
                 print(col, row)
                 # print("\n")
-                return (col,row)
+                return (col, row)
             xmin = xmax
         ymin = ymin+fieldsize
     return (-1,-1)
 
 
-
-
-(board_upper_left, board_lower_right) = draw_board(board)
+draw_board(board)
 
 draw_axis_numbers(left_space, top_space, fieldsize, board)
 

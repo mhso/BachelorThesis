@@ -13,6 +13,7 @@ def play_game(game, player1, player2):
     """
     state = game.start_state()
     while not game.terminal_test(state):
+        print("Game move")
         if game.player(state):
             state = player1.execute_action(state)
         else:
@@ -63,4 +64,4 @@ p1 = get_ai_algorithm(player1, game)
 p2 = get_ai_algorithm(player2, game)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
-#play_game(game, p1, p2)
+play_game(game, p1, p2)

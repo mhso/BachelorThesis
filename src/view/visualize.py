@@ -88,7 +88,7 @@ def isLegalMove(actionlist, source_coords, dest_coords) :
 root = tk.Tk()
 root.bind("<Button 1>",getorigin)
 root.title("Latrunculi - The Game")
-root.iconbitmap('favicon.ico')
+root.iconbitmap('gfx/favicon.ico')
 
 canvas = tk.Canvas(root,width=540,height=680,background='lightgray')
 canvas.pack(expand=tk.YES, fill=tk.BOTH)
@@ -164,14 +164,14 @@ def draw_status_text(canvas, msg) :
 
 
 # load the .gif image file
-pblt    = tk.PhotoImage(file='pcs_bl_t.png')
-pbl     = tk.PhotoImage(file='pcs_bl.png')
-pblc    = tk.PhotoImage(file='pcs_bl_c.png')
-pwh     = tk.PhotoImage(file='pcs_wh.png')
-pwht    = tk.PhotoImage(file='pcs_wh_t.png')
-pwhc    = tk.PhotoImage(file='pcs_wh_c.png')
-pbla    = tk.PhotoImage(file='pcs_blank.png')
-pmar    = tk.PhotoImage(file='pcs_mark.png')
+pblt    = tk.PhotoImage(file='gfx/pcs_bl_t.png')
+pbl     = tk.PhotoImage(file='gfx/pcs_bl.png')
+pblc    = tk.PhotoImage(file='gfx/pcs_bl_c.png')
+pwh     = tk.PhotoImage(file='gfx/pcs_wh.png')
+pwht    = tk.PhotoImage(file='gfx/pcs_wh_t.png')
+pwhc    = tk.PhotoImage(file='gfx/pcs_wh_c.png')
+pbla    = tk.PhotoImage(file='gfx/pcs_blank.png')
+pmar    = tk.PhotoImage(file='gfx/pcs_mark.png')
 
 # Returns image variable
 def select_piece_type(value) :

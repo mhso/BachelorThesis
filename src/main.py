@@ -7,7 +7,7 @@ from sys import argv
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
 
-def play_game(game, player1, player2):
+def play_game(game, player_white, player_black):
     """
     Play a game to the end, and return the reward for each player.
     """
@@ -15,9 +15,9 @@ def play_game(game, player1, player2):
     while not game.terminal_test(state):
         print("Game move")
         if game.player(state):
-            state = player1.execute_action(state)
+            state = player_white.execute_action(state)
         else:
-            state = player2.execute_action(state)
+            state = player_black.execute_action(state)
 
     # Return reward/punishment for player1 and player2.
     return game.utility(player1), game.utility(player2)
@@ -60,8 +60,8 @@ if argc > 1:
                     rand_seed = int(argv[5])
 
 game = get_game(game_name, board_size, rand_seed)
-p1 = get_ai_algorithm(player1, game)
-p2 = get_ai_algorithm(player2, game)
+p_white = get_ai_algorithm(player1, game)
+p_black = get_ai_algorithm(player2, game)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
-play_game(game, p1, p2)
+play_game(game, p_white, p_black)

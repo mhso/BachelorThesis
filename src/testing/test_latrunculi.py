@@ -1,5 +1,6 @@
 from testing import assertion
 from controller.latrunculi import Latrunculi
+from model.state import Action
 
 def run_tests():
     print("-=-=-=- LATRUNCULI GAME TESTS -=-=-=-")
@@ -51,3 +52,16 @@ def run_tests():
 
     assertion.assert_equal(0, GAME.utility(state, True), "utility white")
     assertion.assert_equal(1, GAME.utility(state, False), "utility black")
+
+    # =================================
+    # Test action/move functions.
+    # Test available actions.
+    GAME = Latrunculi(5)
+    state = GAME.start_state()
+    legal_moves = [
+        Action((0, 3), (0, 2)), Action((1, 3), (1, 2)), Action((2, 3), (2, 2)),
+        Action((3, 3), (3, 2)), Action((4, 3), (4, 2)), 
+        Action((0, 4), (0, 2)), Action((1, 4), (1, 2)), Action((2, 4), (2, 2)),
+        Action((3, 4), (3, 2)), Action((4, 4), (4, 2))
+    ]
+    assertion.assert_all_equal(legal_moves, GAME.actions(state), "actions white")

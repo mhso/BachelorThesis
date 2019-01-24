@@ -46,7 +46,7 @@ class Minimax(GameAI):
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:
             result = self.game.result(state, action)
-            value = self.minimax(result, 3, True, -10000, 10000)
+            value = self.minimax(result, 3, result.player, -10000, 10000)
             if value > highest_value:
                 highest_value = value
                 best_action = action

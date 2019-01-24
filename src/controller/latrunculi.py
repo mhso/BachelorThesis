@@ -65,32 +65,32 @@ class Latrunculi(Game):
                         actionsList.extend(self.checkWestOrEastFromPlayerPiece(i, j, -1, currentPlayer, state.board)) #check for actions moving west
                         actionsList.extend(self.checkWestOrEastFromPlayerPiece(i, j, -1, currentPlayer, state.board)) #check for actions moving east
                 elif state.board[i][j] == (-2*currentPlayer): # if the current piece, is the opponents captured piece
-                    actionsList.append(Action((i,j), (i,j))) # action to remove an opponents captured piece
+                    actionsList.append(Action((i, j), (i, j))) # action to remove an opponents captured piece
         return actionsList
 
     # checks the squares north or south of a players piece, and acts accordingly
-    def checkNorthOrSouthFromPlayerPiece(self, i, j, dir, player, board): #perhaps just pass along the board????
+    def checkNorthOrSouthFromPlayerPiece(self, i, j, direction, player, board): #perhaps just pass along the board????
         actionsList = []
-        if (i + dir) >= 0 and (i + dir) < self.size : # check for whether 1 square NORTH/SOUTH is within the board
-            if board[i + dir][j] == 0: #check for NORTH/SOUTH square being empty
+        if (i + direction) >= 0 and (i + direction) < self.size : # check for whether 1 square NORTH/SOUTH is within the board
+            if board[i + direction][j] == 0: #check for NORTH/SOUTH square being empty
                 if (j - 1) >= 0 and (j + 1) < self.size: #check for whether insta-capture is possible or if we are too close to edge of the board
-                    if board[i + dir][j - 1] == (-1*player) and board[i + dir][j + 1] == (-1*player): #check for insta capture
+                    if board[i + direction][j - 1] == (-1*player) and board[i + direction][j + 1] == (-1*player): #check for insta capture
                         if (j - 2) >= 0: #check whether there is room for possible suicide move to the west
-                            if board[i + dir][j - 2] == player: #check for possible suicide action to the west
-                                actionsList.append(Action((i,j), (i+dir,j)))
+                            if board[i + direction][j - 2] == player: #check for possible suicide action to the west
+                                actionsList.append(Action((i,j), (i+direction,j)))
                         elif (j + 2) < self.size: #check whether there is room for possible suicide move to the east
-                            if board[i + dir][j + 2] == player: #check for possible suicide action to the west
-                                actionsList.append(Action((i,j), (i+dir,j)))
+                            if board[i + direction][j + 2] == player: #check for possible suicide action to the west
+                                actionsList.append(Action((i,j), (i+direction,j)))
                     else : #if there is no insta capture on this square, create action
-                        actionsList.append(Action((i,j), (i+dir,j)))
+                        actionsList.append(Action((i,j), (i+direction,j)))
                 else :  #if there is no chance for insta capture, create action to empty square
-                    actionsList.append(Action((i,j), (i+dir,j)))
+                    actionsList.append(Action((i,j), (i+direction,j)))
             else : # if the north/south square contains a piece (either 1, 2, -1, -2), check for jumps
-                for x in range((2*dir), (self.size*dir), (2*dir)):
+                for x in range((2*direction), (self.size*direction), (2*direction)):
                     if (i + x) >= 0 and (i + x) < self.size: #check that x squares north/south is within the bounds of the board
-                        if board[i + (x + (-1*dir))][j] != 0: #check if there is a piece on the odd number square north/south... #this is a double check for the first jump, might want to optimize it...
+                        if board[i + (x + (-1*direction))][j] != 0: #check if there is a piece on the odd number square north/south... #this is a double check for the first jump, might want to optimize it...
                             if board[i + x][j] == 0: #checks for the even number square north/south being empty, if the square before was occupied
-                                actionsList.append(Action((i,j), (i+x,j))) #generate a jump action to the empty square
+                                actionsList.append(Action((i, j), (i+x, j))) #generate a jump action to the empty square
                             else:
                                 break #jump chain is broken
                         else:
@@ -100,28 +100,28 @@ class Latrunculi(Game):
         return actionsList
 
     # checks the squares west or east of a players piece, and acts accordingly
-    def checkWestOrEastFromPlayerPiece(self, i, j, dir, player, board):
+    def checkWestOrEastFromPlayerPiece(self, i, j, direction, player, board):
         actionsList = []
-        if (j + dir) >= 0 and (j + dir) < self.size : # check for whether 1 square WEST/EAST is within the board
-            if board[i][j + dir] == 0: #check for WEST/EAST square being empty
+        if (j + direction) >= 0 and (j + direction) < self.size: # check for whether 1 square WEST/EAST is within the board
+            if board[i][j + direction] == 0: #check for WEST/EAST square being empty
                 if (i - 1) >= 0 and (i + 1) < self.size: #check for whether insta-capture is possible or if we are too close to edge of the board
-                    if board[i - 1][j + dir] == (-1*player) and board[i + 1][j + dir] == (-1*player): #check for insta capture
+                    if board[i - 1][j + direction] == (-1*player) and board[i + 1][j + direction] == (-1*player): #check for insta capture
                         if (i - 2) >= 0: #check whether there is room for possible suicide move to the north
-                            if board[i - 2][j + dir] == player: #check for possible suicide action to the north
-                                actionsList.append(Action((i,j), (i,j+dir)))
+                            if board[i - 2][j + direction] == player: #check for possible suicide action to the north
+                                actionsList.append(Action((i, j), (i, j+direction)))
                         elif (i + 2) < self.size: #check whether there is room for possible suicide move to the south
-                            if board[i + 2][j + dir] == player: #check for possible suicide action to the south
-                                actionsList.append(Action((i,j), (i,j+dir)))
-                    else : #if there is no insta capture on this square, create action
-                        actionsList.append(Action((i,j), (i,j+dir)))
-                else :  #if there is no chance for insta capture, create action to empty square
-                    actionsList.append(Action((i,j), (i,j+dir)))
-            else : # if the WEST/EAST square contains a piece (either 1, 2, -1, -2), check for jumps
-                for x in range((2*dir), (self.size*dir), (2*dir)):
+                            if board[i + 2][j + direction] == player: #check for possible suicide action to the south
+                                actionsList.append(Action((i, j), (i, j+direction)))
+                    else: #if there is no insta capture on this square, create action
+                        actionsList.append(Action((i, j), (i, j+direction)))
+                else:  #if there is no chance for insta capture, create action to empty square
+                    actionsList.append(Action((i, j), (i, j+direction)))
+            else: # if the WEST/EAST square contains a piece (either 1, 2, -1, -2), check for jumps
+                for x in range((2*direction), (self.size*direction), (2*direction)):
                     if (j + x) >= 0 and (j + x) < self.size: #check that x squares WEST/EAST is within the bounds of the board
-                        if board[i][j + (x + (-1*dir))] != 0: #check if there is a piece on the odd number square WEST/EAST... #this is a double check for the first jump, might want to optimize it...
+                        if board[i][j + (x + (-1*direction))] != 0: #check if there is a piece on the odd number square WEST/EAST... #this is a double check for the first jump, might want to optimize it...
                             if board[i][j + x] == 0: #checks for the even number square WEST/EAST being empty, if the square before was occupied
-                                actionsList.append(Action((i,j), (i,j+x))) #generate a jump action to the empty square
+                                actionsList.append(Action((i, j), (i, j+x))) #generate a jump action to the empty square
                             else:
                                 break #jump chain is broken
                         else:
@@ -132,10 +132,10 @@ class Latrunculi(Game):
 
     def result(self, state, action):
         super.__doc__
-        source = state.source
-        dest = state.dest
+        source = action.source
+        dest = action.dest
         currentPlayer = 0
-        if state.player: 
+        if state.player:
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
@@ -176,16 +176,16 @@ class Latrunculi(Game):
                 if (j+2) < self.size: #check if possible regular capture is within board bounds EAST
                     if state.board[i][j+1] == (currentPlayer*-1) and state.board[i][j+2] == currentPlayer: #check for regular capture EAST
                         newBoard[i][j+1] = (currentPlayer*-2) #capture the opponents piece EAST
-            else :
+            else:
                 raise Exception("you attempted to move your piece, to the square where the piece started")
         elif state.board[source[0]][source[1]] == (-2*currentPlayer): #if source is an opponents captured piece
             if source[0] == dest[0] and source[1] == dest[1]: #if source and dest is equal, remove opponents captured piece
                 newBoard[source[0]][source[1]] = 0 #removed captured piece
-            else :
+            else:
                 raise Exception("you have attempted to move an opponents captured piece...")
-        else : #If none of the above, illegal move...
+        else: #If none of the above, illegal move...
             raise Exception("you have attempted to move a piece that you do not own...")
-        return State(newBoard,(not state.player))
+        return State(newBoard, (not state.player))
 
     def terminal_test(self, state):
         super.__doc__

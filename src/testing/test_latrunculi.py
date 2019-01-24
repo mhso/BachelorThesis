@@ -64,4 +64,5 @@ def run_tests():
         Action((0, 4), (0, 2)), Action((1, 4), (1, 2)), Action((2, 4), (2, 2)),
         Action((3, 4), (3, 2)), Action((4, 4), (4, 2))
     ]
-    assertion.assert_all_equal(legal_moves, GAME.actions(state), "actions white")
+    
+    assertion.assert_all_equal(legal_moves, GAME.actions(state), "legal moves white")

@@ -139,7 +139,7 @@ class Latrunculi(Game):
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
-        newBoard = state.board
+        newBoard = np.copy(state.board)
         if state.board[source[0]][source[1]] == currentPlayer: #if source is a piece owned by the current player
             if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different
                 i = dest[0]

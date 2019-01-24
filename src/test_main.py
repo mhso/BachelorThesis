@@ -2,10 +2,12 @@ from testing import assertion
 from testing import test_latrunculi
 from testing import test_minimax
 from testing import test_mcts
+from testing import test_misc
 
 test_latrunculi.run_tests()
 test_minimax.run_tests()
-#test_mcts.run_tests()
+test_mcts.run_tests()
+test_misc.run_tests()
 
 print("===============================================")
 print("Tests Run: {}".format(assertion.PASSED + assertion.FAILED))

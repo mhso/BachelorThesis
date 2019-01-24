@@ -7,7 +7,8 @@ def run_tests():
     game = Latrunculi(8)
     mcts = MCTS(game)
     state = game.start_state()
-    
-    mcts.select(state)
+
+    selected = mcts.select(state)
+    print(selected)
 
     # =================================

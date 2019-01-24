@@ -3,6 +3,7 @@
 mcts: Monte Carlo Tree Search.
 ------------------------------------
 """
+from math import inf
 from controller.game_ai import GameAI
 import numpy as np
 
@@ -23,8 +24,13 @@ class MCTS(GameAI):
     Implementation of MCTS. This is implemented in terms
     of the four stages of the algorithm: Selection, Expansion,
     Simulation and Backpropagation.
+    To do:
+    - Make method for matching action with a state.
+    - Model the tree structure.
+    - Expansion adds all possible moves, simulation choosen one.
+    - Handle teams.
     """
-    root = None
+    current = None
     EXPLORE_PARAM = 1.42 # Used when choosing which node to explore or exploit.
 
     def find(self, node, state):
@@ -33,15 +39,20 @@ class MCTS(GameAI):
         return None
 
     def choose(self, node, sim_acc):
+        if node.children == []:
+            return node
         sim_acc += node.visits
-        if not np.size(node.children):
-            return node.state
         best_node = None
         best_value = 0
         for child in node.children:
-            eq1 = node.wins / node.visits
-            eq2 = eq1 + self.EXPLORE_PARAM
-            val = eq2 * np.sqrt(np.log(sim_acc)) / node.visits
+            if node.visits == 0:
+                # Node has not been visited. It's value is set to infinity.
+                val = inf
+            else:
+                eq1 = node.wins / node.visits
+                eq2 = eq1 + self.EXPLORE_PARAM
+                val = eq2 * np.sqrt(np.log(sim_acc)) / node.visits
+
             if val > best_value:
                 best_value = val
                 best_node = child
@@ -49,22 +60,29 @@ class MCTS(GameAI):
         self.choose(best_node, sim_acc)
 
     def select(self, state):
-        leaf = state
-        if self.root is not None:
-            curr_node = np.extract(lambda node: node.state == state, self.root)[0]
+        if self.current is None:
+            self.current = Node(state, [])
 
-            leaf = self.choose(curr_node, 0)
-            leaf_state = leaf.state
+        node = self.current
 
-        actions = self.game.actions(leaf_state)
-        new_state = self.simulate(leaf, actions)
-        self.expand(new_state)
+        actions = self.game.actions(node.state)
+        next_node = self.choose(node, 0)
 
-        return new_state
+        if next_node.visits == 0:
+            # Do not expand tree. Do not update current node.
+            return self.simulate(next_node.state, actions)
 
-    def expand(self, new_state):
-        node = Node(new_state, np.array([]))
-        np.append(self.root, node)
+        # Expand tree from available actions. Select first expanded node
+        # as new current and simulate an action from this node's possible actions.
+        self.expand(node, actions)
+        self.current = node.children[0]
+        new_actions = self.game.actions(self.current.state)
+
+        return self.simulate(self.current.state, new_actions)
+
+    def expand(self, node, actions):
+        children = [Node(action, [], node) for action in actions]
+        node.children = children
 
     def simulate(self, state, actions):
         chosen_action = actions[int(np.random.uniform(0, len(actions)))] # Chose random action.

@@ -47,7 +47,7 @@ argc = len(argv)
 if argc > 1:
     if argv[1] in ("-help", "-h"):
         print("Usage: {} [white_player] [black_player] [game] [board_size] [rand_seed].".format(argv[0]))
-        print("Write {} in place of any argument to use default value.".format(wildcard))
+        print("Write '{}' in place of any argument to use default value.".format(wildcard))
         print("Fx. 'python {} minimax . latrunculi 8 42'".format(argv[0]))
         exit(0)
     player1 = argv[1] # Algorithm playing as player 1.

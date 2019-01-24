@@ -1,13 +1,9 @@
-from controller.game import Game
+"""
+minimax: Implements Minimax with Alpha-Beta pruning for playing a game.
+"""
 from controller.game_ai import GameAI
 
 class Minimax(GameAI):
-    game = None
-
-    def __init__(self, game):
-        GameAI.__init__(self)
-        self.game = game
-
     def evaluate_board(self, state):
         """
         Very simple heurstic for evaluating worth of board.

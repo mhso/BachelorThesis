@@ -49,5 +49,5 @@ def run_tests():
     # =================================
     # Test utility function.
 
-    assertion.assert_equal(0, GAME.utility(state, False), "utility white")
+    assertion.assert_equal(0, GAME.utility(state, True), "utility white")
     assertion.assert_equal(1, GAME.utility(state, False), "utility black")

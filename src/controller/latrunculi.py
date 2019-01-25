@@ -134,6 +134,8 @@ class Latrunculi(Game):
 
     def result(self, state, action):
         super.__doc__
+        if action is None:
+            return State(state.board, (not state.player))
         source = action.source
         dest = action.dest
         currentPlayer = 0
@@ -141,8 +143,6 @@ class Latrunculi(Game):
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
-        if actionsList == [None]:
-            return State(state.board, (not state.player))
         newBoard = np.copy(state.board) #newBoard is the one that will be returned
         if state.board[source[0]][source[1]] == currentPlayer: #if source is a piece owned by the current player
             if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different
@@ -194,8 +194,7 @@ class Latrunculi(Game):
 
     def terminal_test(self, state):
         super.__doc__
-        return (((state.board == 1).sum() == 1 and (state.board == 2).sum() == 0) or 
-                    (state.board == -1).sum() == 1 and (state.board == -2).sum() == 0)
+        return (state.board == 1).sum() == 1 or (state.board == -1).sum() == 1
 
     def utility(self, state, player):
         super.__doc__

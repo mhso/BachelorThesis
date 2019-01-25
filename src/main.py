@@ -4,6 +4,7 @@ main: Run game iterations and do things.
 ----------------------------------------
 """
 import pickle
+from glob import glob
 from sys import argv
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
@@ -21,21 +22,56 @@ def play_game(game, player_white, player_black):
         print(state, flush=True)
         if game.player(state):
             state = player_white.execute_action(state)
-            print(player_white, flush=True)
+            #print(player_white, flush=True)
         else:
             state = player_black.execute_action(state)
-            print(player_black, flush=True)
+            #print(player_black, flush=True)
 
     winner = "Black" if state.player else "White"
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))
     # Return reward/punishment for player1 and player2.
     return game.utility(state, player1), game.utility(state, player2)
 
+def leading_zeros(num):
+    result = str(num)
+    if num < 1000:
+        result = "0" + result
+    if num < 100:
+        result = "0" + result
+    if num < 10:
+        result = "0" + result
+    return result
+
+def train(game, p1, p2, type1, type2, iterations, load=False):
+    """
+    Run a given number of game iterations with a given AI.
+    After each game iteration, if the model is MCTS,
+    we save the model for later use. If 'load' is true,
+    we load these MCTS models.
+    """
+    MCTS_PATH = "../resources/mcts"
+    models_w = glob(MCTS_PATH+"_w*")
+    models_b = glob(MCTS_PATH+"_b*")
+    if load:
+        if type1 == "mcts":
+            p1.state_map = load_model(models_w[-1])
+        if type2 == "mcts":
+            p2.state_map = load_model(models_b[-1])
+    print(len(models_w))
+    for i in range(iterations):
+        try:
+            play_game(game, p1, p2)
+        except KeyboardInterrupt:
+            if type1 == "mcts":
+                save_model(p1, MCTS_PATH+"_w_{}".format(leading_zeros(len(models_w) + i + 1)))
+            if type2 == "mcts":
+                save_model(p2, MCTS_PATH+"_b_{}".format(leading_zeros(len(models_b) + i + 1)))
+
 def save_model(model, path):
-    pickle.dump(model, open(path, "wb"))
+    pickle.dump(model.state_map, open(path, "wb"))
 
 def load_model(path):
-    return pickle.load(open(path), "rb")
+    return pickle.load(open(path, "rb"))
 
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
@@ -92,8 +128,4 @@ p_white, player1 = get_ai_algorithm(player1, game, wildcard)
 p_black, player2 = get_ai_algorithm(player2, game, wildcard)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
-play_game(game, p_white, p_black)
-#if player1 == "MCTS":
-#    save_model(p_white, "somewhere")
-#if player2 == "MCTS":
-#    save_model(p_black, "somewhere")
+train(game, p_white, p_black, player1.lower(), player2.lower(), 1)

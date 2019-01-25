@@ -6,7 +6,9 @@ main: Run game iterations and do things.
 from sys import argv
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
+from controller.mcts import MCTS
 from controller.random import Random
+#from view.visualize import Gui
 
 def play_game(game, player_white, player_black):
     """
@@ -17,10 +19,13 @@ def play_game(game, player_white, player_black):
         print(state, flush=True)
         if game.player(state):
             state = player_white.execute_action(state)
+            #print(player_white, flush=True)
         else:
             state = player_black.execute_action(state)
+            #print(player_black, flush=True)
 
-    print(state)
+    winner = "Black" if state.player else "White"
+    print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))
     # Return reward/punishment for player1 and player2.
     return game.utility(state, player1), game.utility(state, player2)
 
@@ -34,6 +39,8 @@ def get_ai_algorithm(algorithm, game, wildcard):
     lower = algorithm.lower()
     if lower in ("minimax", wildcard):
         return Minimax(game), "Minimax"
+    elif lower == "mcts":
+        return MCTS(game), "MCTS"
     elif lower == "random":
         return Random(game), "Random"
     return None, "unknown"

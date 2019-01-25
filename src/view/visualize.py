@@ -58,7 +58,7 @@ class Gui:
         self.root = tk.Tk()
         self.root.bind("<Button 1>",self.getorigin)
         self.root.title("Latrunculi - The Game")
-        self.root.iconbitmap('gfx/favicon.ico')
+        self.root.iconbitmap('./view/gfx/favicon.ico')
         self.canvas = tk.Canvas(self.root,width=540,height=680,background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
@@ -71,14 +71,14 @@ class Gui:
 
     def load_graphics(self) :
         # load the .gif image file
-        self.pblt    = tk.PhotoImage(file='gfx/pcs_bl_t.png')
-        self.pbl     = tk.PhotoImage(file='gfx/pcs_bl.png')
-        self.pblc    = tk.PhotoImage(file='gfx/pcs_bl_c.png')
-        self.pwh     = tk.PhotoImage(file='gfx/pcs_wh.png')
-        self.pwht    = tk.PhotoImage(file='gfx/pcs_wh_t.png')
-        self.pwhc    = tk.PhotoImage(file='gfx/pcs_wh_c.png')
-        self.pbla    = tk.PhotoImage(file='gfx/pcs_blank.png')
-        self.pmar    = tk.PhotoImage(file='gfx/pcs_mark.png')
+        self.pblt    = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
+        self.pbl     = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
+        self.pblc    = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
+        self.pwh     = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
+        self.pwht    = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
+        self.pwhc    = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
+        self.pbla    = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
+        self.pmar    = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
 
     def clicksaver(self, x, y) :
         global click_x, click_y, click_x_last, click_y_last, clickCount

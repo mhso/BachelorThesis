@@ -10,8 +10,8 @@ class State:
         player = "White" if self.player else "Black"
         return "[State: \nPlayer turn = " + player + "\nBoard =\n" + str(self.board) + "\n]"
 
-    def numeric(self):
-        return hash(str(self.board))
+    def stringify(self):
+        return "".join([str(p) for p in self.board.ravel()])
 
 class Action:
     source = 0, 0

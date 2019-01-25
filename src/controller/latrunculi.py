@@ -139,42 +139,43 @@ class Latrunculi(Game):
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
-        newBoard = np.copy(state.board)
+        newBoard = np.copy(state.board) #newBoard is the one that will be returned
         if state.board[source[0]][source[1]] == currentPlayer: #if source is a piece owned by the current player
             if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different
                 i = dest[0]
                 j = dest[1]
                 newBoard[i][j] = currentPlayer #moves piece to destination (dest)
                 newBoard[source[0]][source[1]] = 0 #removes piece from source
+                workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
                 #check for suicide moves
                 if (i-1) >= 0 and (i+1) < self.size: #check if possible suicide move is within board bounds NORTH/SOUTH
-                    if state.board[i-1][j] == (currentPlayer*-1) and state.board[i+1][j] == (currentPlayer*-1): #check for suicide move NORTH/SOUTH
+                    if workBoard[i-1][j] == (currentPlayer*-1) and workBoard[i+1][j] == (currentPlayer*-1): #check for suicide move NORTH/SOUTH
                         if (i-2) >= 0: #check if suicide move capture, is within board bounds NORTH
-                            if state.board[i-2][j] == currentPlayer: #check for suicide move capture NORTH
+                            if workBoard[i-2][j] == currentPlayer: #check for suicide move capture NORTH
                                 newBoard[i-1][j] = (currentPlayer*-2) #captures the oppenents piece NORTH
                         if (i+2) < self.size: #check if suicide move capture, is within board bounds SOUTH
-                            if state.board[i+2][j] == currentPlayer: #check for suicide move capture SOUTH
+                            if workBoard[i+2][j] == currentPlayer: #check for suicide move capture SOUTH
                                 newBoard[i+1][j] = (currentPlayer*-2) #captures the oppenents piece SOUTH
                 if (j-1) >= 0 and (j+1) < self.size: #check if possible suicide move is within board bounds WEST/EAST
-                    if state.board[i][j-1] == (currentPlayer*-1) and state.board[i][j+1] == (currentPlayer*-1): #check for suicide move WEST/EAST
+                    if workBoard[i][j-1] == (currentPlayer*-1) and workBoard[i][j+1] == (currentPlayer*-1): #check for suicide move WEST/EAST
                         if (j-2) >= 0: #check if suicide move capture, is within board bounds WEST
-                            if state.board[i][j-2] == currentPlayer: #check for suicide move capture WEST
+                            if workBoard[i][j-2] == currentPlayer: #check for suicide move capture WEST
                                 newBoard[i][j-1] = (currentPlayer*-2) #captures the oppenents piece WEST
                         if (j+2) < self.size: #check if suicide move capture, is within board bounds EAST
-                            if state.board[i][j+2] == currentPlayer: #check for suicide move capture EAST
+                            if workBoard[i][j+2] == currentPlayer: #check for suicide move capture EAST
                                 newBoard[i][j+1] = (currentPlayer*-2) #captures the oppenents piece EAST
                 #check for regular capture of enemies
                 if (i-2) >= 0: #check if possible regular capture is within board bounds NORTH
-                    if state.board[i-1][j] == (currentPlayer*-1) and state.board[i-2][j] == currentPlayer: #check for regular capture NORTH
+                    if workBoard[i-1][j] == (currentPlayer*-1) and workBoard[i-2][j] == currentPlayer: #check for regular capture NORTH
                         newBoard[i-1][j] = (currentPlayer*-2) #capture the opponents piece NORTH
                 if (i+2) < self.size: #check if possible regular capture is within board bounds SOUTH
-                    if state.board[i+1][j] == (currentPlayer*-1) and state.board[i+2][j] == currentPlayer: #check for regular capture SOUTH
+                    if workBoard[i+1][j] == (currentPlayer*-1) and workBoard[i+2][j] == currentPlayer: #check for regular capture SOUTH
                         newBoard[i+1][j] = (currentPlayer*-2) #capture the opponents piece SOUTH
                 if (j-2) >= 0: #check if possible regular capture is within board bounds WEST
-                    if state.board[i][j-1] == (currentPlayer*-1) and state.board[i][j-2] == currentPlayer: #check for regular capture WEST
+                    if workBoard[i][j-1] == (currentPlayer*-1) and workBoard[i][j-2] == currentPlayer: #check for regular capture WEST
                         newBoard[i][j-1] = (currentPlayer*-2) #capture the opponents piece WEST
                 if (j+2) < self.size: #check if possible regular capture is within board bounds EAST
-                    if state.board[i][j+1] == (currentPlayer*-1) and state.board[i][j+2] == currentPlayer: #check for regular capture EAST
+                    if workBoard[i][j+1] == (currentPlayer*-1) and workBoard[i][j+2] == currentPlayer: #check for regular capture EAST
                         newBoard[i][j+1] = (currentPlayer*-2) #capture the opponents piece EAST
             else:
                 raise Exception("you attempted to move your piece, to the square where the piece started")

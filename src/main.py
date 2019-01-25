@@ -6,6 +6,7 @@ main: Run game iterations and do things.
 from sys import argv
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
+from controller.random import Random
 
 def play_game(game, player_white, player_black):
     """
@@ -19,8 +20,9 @@ def play_game(game, player_white, player_black):
         else:
             state = player_black.execute_action(state)
 
+    print(state)
     # Return reward/punishment for player1 and player2.
-    return game.utility(player1), game.utility(player2)
+    return game.utility(state, player1), game.utility(state, player2)
 
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
@@ -32,6 +34,8 @@ def get_ai_algorithm(algorithm, game, wildcard):
     lower = algorithm.lower()
     if lower in ("minimax", wildcard):
         return Minimax(game), "Minimax"
+    elif lower == "random":
+        return Random(game), "Random"
     return None, "unknown"
 
 # Load arguments for running the program.

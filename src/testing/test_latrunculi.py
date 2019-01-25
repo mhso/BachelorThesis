@@ -59,10 +59,10 @@ def run_tests():
     GAME = Latrunculi(5)
     state = GAME.start_state()
     legal_moves = [
-        Action((0, 3), (0, 2)), Action((1, 3), (1, 2)), Action((2, 3), (2, 2)),
-        Action((3, 3), (3, 2)), Action((4, 3), (4, 2)), 
-        Action((0, 4), (0, 2)), Action((1, 4), (1, 2)), Action((2, 4), (2, 2)),
-        Action((3, 4), (3, 2)), Action((4, 4), (4, 2))
+        Action((3, 0), (2, 0)), Action((3, 1), (2, 1)), Action((3, 2), (2, 2)),
+        Action((3, 3), (2, 3)), Action((3, 4), (2, 4)), 
+        Action((4, 0), (2, 0)), Action((4, 1), (2, 1)), Action((4, 2), (2, 2)),
+        Action((4, 3), (2, 3)), Action((4, 4), (2, 4))
     ]
-    
+
     assertion.assert_all_equal(legal_moves, GAME.actions(state), "legal moves white")

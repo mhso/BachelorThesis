@@ -43,7 +43,7 @@ class Minimax(GameAI):
         actions = self.game.actions(state)
         best_action = None
         highest_value = -10000
-
+    
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:
             result = self.game.result(state, action)
@@ -52,7 +52,8 @@ class Minimax(GameAI):
                 highest_value = value
                 best_action = action
 
+        print("Action taken: {}".format(best_action))
         return self.game.result(state, best_action)
-
+    
     def __str__(self):
         return "Minimax Algorithm"

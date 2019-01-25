@@ -19,10 +19,10 @@ def play_game(game, player_white, player_black):
         print(state, flush=True)
         if game.player(state):
             state = player_white.execute_action(state)
-            #print(player_white, flush=True)
+            print(player_white, flush=True)
         else:
             state = player_black.execute_action(state)
-            #print(player_black, flush=True)
+            print(player_black, flush=True)
 
     winner = "Black" if state.player else "White"
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))

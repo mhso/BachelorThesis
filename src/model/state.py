@@ -8,7 +8,10 @@ class State:
 
     def __str__(self):
         player = "White" if self.player else "Black"
-        return "[State: \nPlayer turn = " + player + "\nBoard =\n" + str(self.board) + "\n]"
+        white_pieces = (self.board == 1).sum()
+        black_pieces = (self.board == -1).sum()
+        return "[State: \nPlayer turn = {}\nWhite pieces = {}\nBlack pieces = {}\nBoard =\n{}\n]".format(
+            player, white_pieces, black_pieces, self.board)
 
     def stringify(self):
         return "".join([str(p) for p in self.board.ravel()])

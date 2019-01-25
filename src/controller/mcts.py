@@ -22,7 +22,7 @@ class Node():
     def __str__(self):
         children = ", ".join([str(c) for c in self.children])
         return ("[Node: turn={}, visits={}, wins={},\nchildren=\n    [{}]]").format(
-            self.state.player, children.replace("\n", "\n    "), self.visits, self.wins)
+            self.state.player, self.visits, self.wins, children.replace("\n", "\n    "))
 
 class MCTS(GameAI):
     """

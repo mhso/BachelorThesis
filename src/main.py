@@ -3,11 +3,13 @@
 main: Run game iterations and do things.
 ----------------------------------------
 """
+import pickle
 from sys import argv
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
 from controller.mcts import MCTS
 from controller.random import Random
+
 #from view.visualize import Gui
 
 def play_game(game, player_white, player_black):
@@ -28,6 +30,12 @@ def play_game(game, player_white, player_black):
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))
     # Return reward/punishment for player1 and player2.
     return game.utility(state, player1), game.utility(state, player2)
+
+def save_model(model, path):
+    pickle.dump(model, open(path, "wb"))
+
+def load_model(path):
+    return pickle.load(open(path), "rb")
 
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
@@ -85,3 +93,7 @@ p_black, player2 = get_ai_algorithm(player2, game, wildcard)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
 play_game(game, p_white, p_black)
+#if player1 == "MCTS":
+#    save_model(p_white, "somewhere")
+#if player2 == "MCTS":
+#    save_model(p_black, "somewhere")

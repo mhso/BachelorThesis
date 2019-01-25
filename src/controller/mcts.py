@@ -32,14 +32,14 @@ class MCTS(GameAI):
     """
     state_map = dict()
 
-    EXPLORE_PARAM = 1.42 # Used when choosing which node to explore or exploit.
+    EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 10
 
     def select(self, node, sim_acc):
         """
         Select a node to run simulations from.
         Nodes are chosen according to the node which maximizes
-        the UCB1 formula = w(i) / n(i) + c * sqrt (ln N(i) / n(i))).
+        the UCB1 formula = w(i) + c * sqrt (ln N(i) / n(i))).
         Where
             - w(i) = wins of current node.
             - n(i) = times current node was visited.
@@ -59,9 +59,8 @@ class MCTS(GameAI):
                 val = inf
             else:
                 # UCB1 formula (split up, for readability).
-                p1 = child.wins / child.visits
-                p2 = p1 + self.EXPLORE_PARAM
-                val = p2 * np.sqrt(np.log(sim_acc)) / child.visits
+                p1 = child.wins + self.EXPLORE_PARAM
+                val = p1 * np.sqrt(np.log(sim_acc)) / child.visits
 
             if val > best_value:
                 best_value = val
@@ -86,6 +85,9 @@ class MCTS(GameAI):
         return self.game.result(state, chosen_action)
 
     def back_propogate(self, node, value):
+        """
+        After a full simulation, propogate result up the tree.
+        """
         node.visits += 1
         node.wins += value
         if node.parent is None:

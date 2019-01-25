@@ -6,7 +6,7 @@ from testing import test_misc
 
 test_latrunculi.run_tests()
 test_minimax.run_tests()
-#test_mcts.run_tests()
+test_mcts.run_tests()
 test_misc.run_tests()
 
 print("===============================================")

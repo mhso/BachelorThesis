@@ -66,6 +66,8 @@ class Latrunculi(Game):
                         actionsList.extend(self.checkWestOrEastFromPlayerPiece(i, j, 1, currentPlayer, state.board)) #check for actions moving east
                 elif state.board[i][j] == (-2*currentPlayer): # if the current piece, is the opponents captured piece
                     actionsList.append(Action((i, j), (i, j))) # action to remove an opponents captured piece
+        if actionsList == []:
+            actionsList.append(None)
         return actionsList
 
     # checks the squares north or south of a players piece, and acts accordingly
@@ -139,6 +141,8 @@ class Latrunculi(Game):
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
+        if actionsList == [None]:
+            return State(state.board, (not state.player))
         newBoard = np.copy(state.board) #newBoard is the one that will be returned
         if state.board[source[0]][source[1]] == currentPlayer: #if source is a piece owned by the current player
             if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different

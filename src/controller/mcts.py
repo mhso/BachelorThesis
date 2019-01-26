@@ -5,6 +5,8 @@ mcts: Monte Carlo Tree Search.
 """
 from math import inf
 from controller.game_ai import GameAI
+from time import time
+from view.log import log
 import numpy as np
 
 class Node():
@@ -33,23 +35,24 @@ class MCTS(GameAI):
     state_map = dict()
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 10
+    ITERATIONS = 5
 
     def select(self, node, sim_acc):
         """
         Select a node to run simulations from.
-        Nodes are chosen according to the node which maximizes
+        Nodes are chosen according to how they maximize
         the UCB1 formula = w(i) + c * sqrt (ln N(i) / n(i))).
         Where
             - w(i) = wins of current node.
             - n(i) = times current node was visited.
-            - c = exploration constant, ~2.
+            - c = exploration constant, 2 usually.
             - N(i) = accummulated visits of all parents.
-        This assures a balance between exploring
-        new nodes, and exploiting nodes that are known to be good moves.
+        This assures a balance between exploring new nodes,
+        and exploiting nodes that are known to result in good outcomes.
         """
-        if node.children == []:
+        if node.children == []: # Node is a leaf.
             return node
+
         sim_acc += node.visits
         best_node = node
         best_value = 0
@@ -59,8 +62,8 @@ class MCTS(GameAI):
                 val = inf
             else:
                 # UCB1 formula (split up, for readability).
-                p1 = child.wins + self.EXPLORE_PARAM
-                val = p1 * np.sqrt(np.log(sim_acc)) / child.visits
+                exploit = child.wins + self.EXPLORE_PARAM
+                val = exploit * np.sqrt(np.log(sim_acc)) / child.visits
 
             if val > best_value:
                 best_value = val
@@ -95,24 +98,37 @@ class MCTS(GameAI):
         self.back_propogate(node.parent, value)
 
     def rollout(self, og_state, node):
+        """
+        Make random simulations until a terminal state
+        is reached. Then the utility value of this state,
+        for the current player, is returned.
+        """
         state = node.state
+        time_b = time()
         while not self.game.terminal_test(state):
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
+        log("Rollout duration: {} s".format(time() - time_b))
         return self.game.utility(state, og_state.player)
 
     def execute_action(self, state):
         super.__doc__
-        original_node = None
+        # Get state ID and look the corresponding node up, in the state map.
         state_id = state.stringify()
+        original_node = None
         try:
+            # Node exists, we have run MCTS on this state before.
             original_node = self.state_map[state_id]
         except KeyError:
+            # Node does not exist, we create a new one, and add it to our state map.
             actions = self.game.actions(state)
             original_node = Node(state, [])
             self.expand(original_node, actions)
             self.state_map[state_id] = original_node
 
+        # Perform iterations of selection, simulation, expansion, and back propogation.
+        # After the iteration are done, the child of the original node with the highest
+        # wins are chosen as the best action.
         for _ in range(self.ITERATIONS):
             node = self.select(original_node, 0)
             if node.visits > 0:
@@ -124,12 +140,12 @@ class MCTS(GameAI):
                 node.state.player = not node.state.player
 
             # Perform rollout, simulate till end of game and return outcome.
-            value = self.rollout(node.state, node) 
+            value = self.rollout(node.state, node)
             self.back_propogate(node, value)
 
             node = original_node
-        
-        best_node = max(original_node.children, key=lambda n : n.wins)
+
+        best_node = max(original_node.children, key=lambda n: n.wins)
         return best_node.state
 
     def __str__(self):

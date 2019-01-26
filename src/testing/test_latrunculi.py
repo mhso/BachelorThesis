@@ -1,17 +1,18 @@
 from testing import assertion
 from controller.latrunculi import Latrunculi
 from model.state import Action
+from numpy import array
 
 def run_tests():
     print("-=-=-=- LATRUNCULI GAME TESTS -=-=-=-")
     # Test initial board setup.
 
     # Test correct board size.
-    TEST_SIZE = 8
-    GAME = Latrunculi(TEST_SIZE)
-    state = GAME.start_state()
-    assertion.assert_equal(TEST_SIZE, state.board.shape[1], "correct board width")
-    assertion.assert_equal(TEST_SIZE, state.board.shape[0], "correct board height")
+    test_size = 8
+    game = Latrunculi(test_size)
+    state = game.start_state()
+    assertion.assert_equal(test_size, state.board.shape[1], "correct board width")
+    assertion.assert_equal(test_size, state.board.shape[0], "correct board height")
 
     # =================================
     # "Chess" distribution.
@@ -25,8 +26,8 @@ def run_tests():
     # =================================
     # Random distribution.
     # Test number of white and black pieces are equal, and is the correct amount.
-    GAME = Latrunculi(8, 432)
-    state = GAME.start_state()
+    game = Latrunculi(8, 432)
+    state = game.start_state()
     num_white = (state.board == 1).sum()
     num_black = (state.board == -1).sum()
 
@@ -35,34 +36,57 @@ def run_tests():
 
     # =================================
     # Test initial player turn is white.
-    assertion.assert_true(GAME.player(state), "initial player turn")
+    assertion.assert_true(game.player(state), "initial player turn")
 
     # =================================
     # Test terminal state methods.
     # Test terminal_test.
-    GAME = Latrunculi(8)
-    state = GAME.start_state()
+    game = Latrunculi(8)
+    state = game.start_state()
     state.board[-3:][:] = 0 # Set white's pieces, except 1, to empty squares.
     state.board[-1][0] = 1
 
-    assertion.assert_true(GAME.terminal_test(state), "terminal state true")
+    assertion.assert_true(game.terminal_test(state), "terminal state true")
 
     # =================================
     # Test utility function.
 
-    assertion.assert_equal(0, GAME.utility(state, True), "utility white")
-    assertion.assert_equal(1, GAME.utility(state, False), "utility black")
+    assertion.assert_equal(0, game.utility(state, True), "utility white")
+    assertion.assert_equal(1, game.utility(state, False), "utility black")
 
     # =================================
-    # Test action/move functions.
     # Test available actions.
-    GAME = Latrunculi(5)
-    state = GAME.start_state()
+    game = Latrunculi(5)
+    state = game.start_state()
     legal_moves = [
         Action((3, 0), (2, 0)), Action((3, 1), (2, 1)), Action((3, 2), (2, 2)),
-        Action((3, 3), (2, 3)), Action((3, 4), (2, 4)), 
+        Action((3, 3), (2, 3)), Action((3, 4), (2, 4)),
         Action((4, 0), (2, 0)), Action((4, 1), (2, 1)), Action((4, 2), (2, 2)),
         Action((4, 3), (2, 3)), Action((4, 4), (2, 4))
     ]
 
-    assertion.assert_all_equal(legal_moves, GAME.actions(state), "legal moves white")
+    assertion.assert_all_equal(legal_moves, game.actions(state), "legal moves white")
+
+    # =================================
+    # Test result of action.
+    # Test simple move.
+
+    result = game.result(state, Action((3, 0), (2, 0)))
+    old_piece = state.board[3][0]
+    old_vacant = state.board[2][0]
+    new_vacant = result.board[3][0]
+    new_piece = result.board[2][0]
+
+    assertion.assert_true(old_piece == new_piece, "regular move piece moved")
+    assertion.assert_true(old_vacant == new_vacant, "regular move piece absent")
+
+    # =================================
+    # Test jump.
+    result = game.result(state, Action((4, 1), (2, 1)))
+    old_piece = state.board[4][1]
+    old_vacant = state.board[2][1]
+    new_vacant = result.board[4][1]
+    new_piece = result.board[2][1]
+
+    assertion.assert_true(old_piece == new_piece, "jump move piece moved")
+    assertion.assert_true(old_vacant == new_vacant, "jump move piece absent")

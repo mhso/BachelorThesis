@@ -18,6 +18,3 @@ def run_tests():
     dictionary = dict()
     dictionary[state.stringify()] = "wow"
     assertion.assert_equal("wow", dictionary[state.stringify()], "state hashing")
-
-    s = "123\n123\n123".replace("\n", "\n    ")
-    print(s)

@@ -17,4 +17,5 @@ def run_tests():
     state = game.start_state()
     dictionary = dict()
     dictionary[state.stringify()] = "wow"
+
     assertion.assert_equal("wow", dictionary[state.stringify()], "state hashing")

@@ -50,13 +50,12 @@ def train(game, p1, p2, type1, type2, iterations, load=False, save=False):
     we load these MCTS models.
     """
     MCTS_PATH = "../resources/mcts"
-    models_w = glob(MCTS_PATH+"_w*")
-    models_b = glob(MCTS_PATH+"_b*")
+    models = glob(MCTS_PATH+"*")
     if load:
         if type1 == "mcts":
-            p1.state_map = load_model(models_w[-1])
+            p1.state_map = load_model(models[-1])
         if type2 == "mcts":
-            p2.state_map = load_model(models_b[-1])
+            p2.state_map = load_model(models[-1])
 
     for i in range(iterations):
         try:
@@ -65,12 +64,17 @@ def train(game, p1, p2, type1, type2, iterations, load=False, save=False):
             pass
         finally:
             if save:
-                if type1 == "mcts":
-                    save_model(p1, MCTS_PATH+"_w_{}".format(leading_zeros(len(models_w) + i + 1)))
-                if type2 == "mcts":
-                    save_model(p2, MCTS_PATH+"_b_{}".format(leading_zeros(len(models_b) + i + 1)))
+                if type1 == "mcts" or type2 == "mcts":
+                    state_map = None
+                    if type1 == "mcts":
+                        state_map = p1.state_map
+                        if type2 == "mcts":
+                            state_map = state_map.update(p2.state_map)
+                    else:
+                        state_map = p2.state_map
+                    save_models(p1, MCTS_PATH+"_{}".format(leading_zeros(len(models) + i + 1)))
 
-def save_model(model, path):
+def save_models(model, path):
     print("Saving model to file: {}".format(path))
     pickle.dump(model.state_map, open(path, "wb"))
 

@@ -4,8 +4,8 @@ mcts: Monte Carlo Tree Search.
 ------------------------------------
 """
 from math import inf
-from controller.game_ai import GameAI
 from time import time
+from controller.game_ai import GameAI
 from view.log import log
 import numpy as np
 

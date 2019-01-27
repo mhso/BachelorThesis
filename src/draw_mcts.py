@@ -64,7 +64,10 @@ def show_node_view(node):
     node_window.bind("<Button 1>", on_click);
 
 def draw_node(node, x, y, size, canvas):
-    canvas.create_oval(x, y, x+size, y+size, fill='lightblue')
+    fill_color = "black"
+    if node.state.player:
+        fill_color = "white"
+    canvas.create_oval(x, y, x+size, y+size, fill=fill_color)
 
 root.bind("<Button 1>", on_click);
 newest = glob("../resources/mcts*")[-1]

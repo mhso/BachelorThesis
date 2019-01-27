@@ -165,36 +165,60 @@ class Latrunculi(Game):
                 newBoard[i][j] = currentPlayer #moves piece to destination (dest)
                 newBoard[source[0]][source[1]] = 0 #removes piece from source
                 workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
+
+                #check the move frees an opponents captured piece
+                self.checkForFreeingDueToMove(source[0], source[1], newBoard, currentPlayer)
+
                 #check for suicide moves
                 if (i-1) >= 0 and (i+1) < self.size: #check if possible suicide move is within board bounds NORTH/SOUTH
                     if workBoard[i-1][j] == (currentPlayer*-1) and workBoard[i+1][j] == (currentPlayer*-1): #check for suicide move NORTH/SOUTH
+                        #NORTH
                         if (i-2) >= 0: #check if suicide move capture, is within board bounds NORTH
                             if workBoard[i-2][j] == currentPlayer: #check for suicide move capture NORTH
                                 newBoard[i-1][j] = (currentPlayer*-2) #captures the oppenents piece NORTH
+                                self.freedCheckWestEastofPiece((i-1), j, newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+                        #SOUTH
                         if (i+2) < self.size: #check if suicide move capture, is within board bounds SOUTH
                             if workBoard[i+2][j] == currentPlayer: #check for suicide move capture SOUTH
                                 newBoard[i+1][j] = (currentPlayer*-2) #captures the oppenents piece SOUTH
+                                #check for freeing of another piece
+                                self.freedCheckWestEastofPiece((i+1), j, newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+
                 if (j-1) >= 0 and (j+1) < self.size: #check if possible suicide move is within board bounds WEST/EAST
                     if workBoard[i][j-1] == (currentPlayer*-1) and workBoard[i][j+1] == (currentPlayer*-1): #check for suicide move WEST/EAST
+                        #WEST
                         if (j-2) >= 0: #check if suicide move capture, is within board bounds WEST
                             if workBoard[i][j-2] == currentPlayer: #check for suicide move capture WEST
                                 newBoard[i][j-1] = (currentPlayer*-2) #captures the oppenents piece WEST
+                                self.freedCheckNorthSouthofPiece(i, (j-1), newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+                        #EAST
                         if (j+2) < self.size: #check if suicide move capture, is within board bounds EAST
                             if workBoard[i][j+2] == currentPlayer: #check for suicide move capture EAST
                                 newBoard[i][j+1] = (currentPlayer*-2) #captures the oppenents piece EAST
+                                self.freedCheckNorthSouthofPiece(i, (j+1), newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+
+
                 #check for regular capture of enemies
+                #NORTH
                 if (i-2) >= 0: #check if possible regular capture is within board bounds NORTH
                     if workBoard[i-1][j] == (currentPlayer*-1) and workBoard[i-2][j] == currentPlayer: #check for regular capture NORTH
                         newBoard[i-1][j] = (currentPlayer*-2) #capture the opponents piece NORTH
+                        self.freedCheckWestEastofPiece((i-1), j, newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+                #SOUTH
                 if (i+2) < self.size: #check if possible regular capture is within board bounds SOUTH
                     if workBoard[i+1][j] == (currentPlayer*-1) and workBoard[i+2][j] == currentPlayer: #check for regular capture SOUTH
                         newBoard[i+1][j] = (currentPlayer*-2) #capture the opponents piece SOUTH
+                        self.freedCheckWestEastofPiece((i+1), j, newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+                #WEST
                 if (j-2) >= 0: #check if possible regular capture is within board bounds WEST
                     if workBoard[i][j-1] == (currentPlayer*-1) and workBoard[i][j-2] == currentPlayer: #check for regular capture WEST
                         newBoard[i][j-1] = (currentPlayer*-2) #capture the opponents piece WEST
+                        self.freedCheckNorthSouthofPiece(i, (j-1), newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
+                #EAST
                 if (j+2) < self.size: #check if possible regular capture is within board bounds EAST
                     if workBoard[i][j+1] == (currentPlayer*-1) and workBoard[i][j+2] == currentPlayer: #check for regular capture EAST
                         newBoard[i][j+1] = (currentPlayer*-2) #capture the opponents piece EAST
+                        self.freedCheckNorthSouthofPiece(i, (j+1), newBoard, currentPlayer) #check for freeing of another piece, due to capture of enemy piece
             else:
                 raise Exception("you attempted to move your piece, to the square where the piece started")
         elif state.board[source[0]][source[1]] == (-2*currentPlayer): #if source is an opponents captured piece
@@ -205,6 +229,51 @@ class Latrunculi(Game):
         else: #If none of the above, illegal move...
             raise Exception("you have attempted to move a piece that you do not own...")
         return State(newBoard, (not state.player))
+
+    #checks whether moving a piece from its source, causes an enemys piece to be freed
+    def checkForFreeingDueToMove(self, i, j, board, player):
+        if self.checkForFreeing((i-1), j, board): #checks piece NORTH of source
+            board[i-1][j] = (player*-1) #frees piece
+        if self.checkForFreeing((i+1), j, board): #checks piece SOUTH of source
+            board[i+1][j] = (player*-1) #frees piece
+        if self.checkForFreeing(i, (j-1), board): #checks piece WEST of source
+            board[i][j-1] = (player*-1) #frees piece
+        if self.checkForFreeing(i, (j+1), board): #checks piece EAST of source
+            board[i][j+1] = (player*-1) #frees piece
+
+    #check for freed pieces to the WEST/EAST of the given piece
+    def freedCheckWestEastofPiece(self, i, j, board, currentPlayer):
+        if i >= 0 and i < self.size: #check if the given i is within the board bounds
+            if (j-1) >= 0: #check if its within the board bounds WEST
+                if self.checkForFreeing((i), (j-1), board): #check for freed piece to the WEST of the captured NORTH/SOUTH piece
+                    board[i][j-1] = currentPlayer #frees currentPlayers Alligatus
+            if (j+1) < self.size: #check if its within the board bounds EAST
+                if self.checkForFreeing((i), (j+1), board): #check for freed piece to the EAST of the captured NORTH/SOUTH piece
+                    board[i][j+1] = currentPlayer #frees currentPlayers Alligatus
+    
+    #check for freed pieces to the NORTH/SOUTH of the given piece
+    def freedCheckNorthSouthofPiece(self, i, j, board, currentPlayer):
+        if j >= 0 and j < self.size: #check if the given i is within the board bounds
+            if (i-1) >= 0: #check if its within the board bounds NORTH
+                if self.checkForFreeing((i-1), (j), board): #check for freed piece to the NORTH of the captured WEST/EAST piece
+                    board[i-1][j] = currentPlayer #frees currentPlayers Alligatus
+            if (i+1) < self.size: #check if its within the board bounds SOUTH
+                if self.checkForFreeing((i+1), (j), board): #check for freed piece to the SOUTH of the captured WEST/EAST piece
+                    board[i+1][j] = currentPlayer #frees currentPlayers Alligatus
+
+    #check if piece on the given position has possibly been freed, returns true, if the piece has been freed, false if not (or there is no captured piece)
+    def checkForFreeing(self, i, j, board):
+        if board[i][j] == 2 or board[i][j] == -2: #check if the given piece is captured
+            playerValue = (board[i][j]*0,5)
+            if board[i][j-1] != (playerValue*-1) and board[i][j+1] != (playerValue*-1): #check if WEST/EAST pieces does not capture the given piece
+                if board[i-1][j] != (playerValue*-1) and board[i+1][j] != (playerValue*-1): #check if NORTH/SOUTH pieces does not capture the given piece
+                    return True #this Alligatus has been freed
+                else: #NORTH/SOUTH pieces are holding the given piece captured
+                    return False
+            else: #WEST/EAST pieces are holding the given piece captured
+                return False
+        else: #if the given piece is not captured, nothing is freed, return false
+            return False
 
     def terminal_test(self, state):
         super.__doc__

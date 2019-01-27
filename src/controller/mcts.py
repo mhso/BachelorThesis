@@ -54,20 +54,20 @@ class MCTS(GameAI):
             return node
 
         sim_acc += node.visits
-        best_node = node
+        best_node = node.children[0]
         best_value = 0
         for child in node.children:
             if child.visits == 0:
-                # Node has not been visited. It's value is set to infinity.
-                val = inf
+                # Node has not been visited. It is chosen immediately.
+                best_node = child
+                break
             else:
                 # UCB1 formula (split up, for readability).
                 exploit = child.wins + self.EXPLORE_PARAM
-                val = exploit * np.sqrt(np.log(sim_acc)) / child.visits
-
-            if val > best_value:
-                best_value = val
-                best_node = child
+                val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
+                if val > best_value:
+                    best_value = val
+                    best_node = child
 
         return self.select(best_node, sim_acc)
 

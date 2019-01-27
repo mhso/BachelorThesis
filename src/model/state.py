@@ -14,7 +14,7 @@ class State:
             player, white_pieces, black_pieces, self.board)
 
     def stringify(self):
-        return "".join([str(p) for p in self.board.ravel()])
+        return ("1" if self.player else "0") + ("".join([str(p) for p in self.board.ravel()]))
 
 class Action:
     source = 0, 0

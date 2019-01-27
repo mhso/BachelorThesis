@@ -264,7 +264,7 @@ class Latrunculi(Game):
     #check if piece on the given position has possibly been freed, returns true, if the piece has been freed, false if not (or there is no captured piece)
     def checkForFreeing(self, i, j, board):
         if board[i][j] == 2 or board[i][j] == -2: #check if the given piece is captured
-            playerValue = (board[i][j]*0,5)
+            playerValue = (board[i][j]*0.5)
             if board[i][j-1] != (playerValue*-1) and board[i][j+1] != (playerValue*-1): #check if WEST/EAST pieces does not capture the given piece
                 if board[i-1][j] != (playerValue*-1) and board[i+1][j] != (playerValue*-1): #check if NORTH/SOUTH pieces does not capture the given piece
                     return True #this Alligatus has been freed

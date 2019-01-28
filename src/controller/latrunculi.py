@@ -270,25 +270,13 @@ class Latrunculi(Game):
         if board[i][j] == 2 or board[i][j] == -2: #check if the given piece is captured
             playerValue = (board[i][j]*0.5)
             if (j-1) >= 0 and (j+1) < self.size: #check for board bounds
-                if board[i][j-1] != (playerValue*-1) and board[i][j+1] != (playerValue*-1): #check if WEST/EAST pieces does not capture the given piece
-                    if (i-1) >= 0 and (i+1) < self.size: #check for board bounds
-                        if board[i-1][j] != (playerValue*-1) and board[i+1][j] != (playerValue*-1): #check if NORTH/SOUTH pieces does not capture the given piece
-                            return True #this Alligatus has been freed
-                        else: #NORTH/SOUTH pieces are holding the given piece captured
-                            return False
-                    else: #if there is no room for this piece to be captured, return true
-                        return True 
-                else: #WEST/EAST pieces are holding the given piece captured
+                if board[i][j-1] == (playerValue*-1) and board[i][j+1] == (playerValue*-1): #check if WEST/EAST pieces does capture the given piece
                     return False
-            elif (i-1) >= 0 and (i+1) < self.size: #if WEST/EAST is outside board bounds, check NORTH/SOUTH
-                if board[i-1][j] != (playerValue*-1) and board[i+1][j] != (playerValue*-1): #check if NORTH/SOUTH pieces does not capture the given piece
-                    return True #this Alligatus has been freed
-                else: #NORTH/SOUTH pieces are holding the given piece captured
+            elif (i-1) >= 0 and (i+1) < self.size: #check for board bounds
+                if board[i-1][j] == (playerValue*-1) and board[i+1][j] == (playerValue*-1): #check if NORTH/SOUTH pieces does capture the given piece
                     return False
-            else: #if there is no room for this piece to be captured, return true
-                return True
-        else: #if the given piece is not captured, nothing is freed, return false
-            return False
+            else: #if there is not a capturing pair of enemy pieces, return true and free the captured piece
+                return True 
 
     def terminal_test(self, state):
         super.__doc__

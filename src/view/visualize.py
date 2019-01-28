@@ -42,8 +42,10 @@ class Gui:
     pmar = None
 
     def __init__(self, game):
-        state = game.start_state() 
-        (self.board, self.player) = state
+        self.game = game
+        state = game.start_state()
+        self.board = state.board
+        self.player = state.player
         self.init()
 
     def init(self):
@@ -57,7 +59,7 @@ class Gui:
         self.root = tk.Tk()
         self.root.bind("<Button 1>",self.getorigin)
         self.root.title("Latrunculi - The Game")
-        self.root.iconbitmap('./view/gfx/favicon.ico')
+        self.root.iconbitmap('gfx/favicon.ico')
         self.canvas = tk.Canvas(self.root,width=540,height=680,background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
@@ -70,14 +72,14 @@ class Gui:
 
     def load_graphics(self):
         # load the .gif image file
-        self.pblt    = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
-        self.pbl     = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
-        self.pblc    = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
-        self.pwh     = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
-        self.pwht    = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
-        self.pwhc    = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
-        self.pbla    = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
-        self.pmar    = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
+        self.pblt    = tk.PhotoImage(file='gfx/pcs_bl_t.png')
+        self.pbl     = tk.PhotoImage(file='gfx/pcs_bl.png')
+        self.pblc    = tk.PhotoImage(file='gfx/pcs_bl_c.png')
+        self.pwh     = tk.PhotoImage(file='gfx/pcs_wh.png')
+        self.pwht    = tk.PhotoImage(file='gfx/pcs_wh_t.png')
+        self.pwhc    = tk.PhotoImage(file='gfx/pcs_wh_c.png')
+        self.pbla    = tk.PhotoImage(file='gfx/pcs_blank.png')
+        self.pmar    = tk.PhotoImage(file='gfx/pcs_mark.png')
 
     def clicksaver(self, x, y):
         global click_x, click_y, click_x_last, click_y_last, clickCount
@@ -117,7 +119,8 @@ class Gui:
 
     # Confirms if a move i legal
     def is_legal_move(self, source_coords, dest_coords):
-        for action in self.game.actions((self.board, self.player)):
+        state = State(self.board, self.player)
+        for action in self.game.actions(state):
             if action.source == source_coords and action.dest == dest_coords:
                 return True
         return False
@@ -339,18 +342,7 @@ class State:
     def numeric(self):
         return hash(str(self.board))
 
-# actionsList2 = [  Action((2,0),(2,1)),
-#                 Action((2,4),(1,4)), Action((2,4),(2,3)), Action((2,4),(2,5)), Action((2,4),(3,4)),
-#                 Action((4,0),(3,0)), Action((4,0),(5,0)),
-#                 Action((3,7),(2,7)),
-#                 Action((4,1),(3,1)), Action((4,1),(4,0)), Action((4,1),(4,2)), Action((4,1),(5,1)),
-#                 Action((5,7),(5,6)),
-#                 Action((6,7),(6,6)), Action((6,7),(7,7))
-#                 ] 
-
-
-
-class Game:
+class TestGame:
 
     actionslist = []
 
@@ -419,7 +411,7 @@ class Game:
 
 ####################################################################
 
-game = Game()
+game = TestGame()
 
 # Create new threads
 thread1 = myThread(1, "Thread-1", 1, game)

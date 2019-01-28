@@ -6,6 +6,8 @@ main: Run game iterations and do things.
 import pickle
 from glob import glob
 from sys import argv
+from os import mkdir
+from os.path import exists
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
 from controller.mcts import MCTS
@@ -49,9 +51,9 @@ def train(game, p1, p2, type1, type2, iterations, load=False, save=False):
     we save the model for later use. If 'load' is true,
     we load these MCTS models.
     """
-    MCTS_PATH = "../resources/mcts"
-    models = glob(MCTS_PATH+"*")
-    if load:
+    MCTS_PATH = "../resources/"
+    models = glob(MCTS_PATH+"/mcts*")
+    if load and len(models) > 0:
         if type1 == "mcts":
             p1.state_map = load_model(models[-1])
         if type2 == "mcts":
@@ -72,7 +74,10 @@ def train(game, p1, p2, type1, type2, iterations, load=False, save=False):
                             state_map = state_map.update(p2.state_map)
                     else:
                         state_map = p2.state_map
-                    save_models(p1, MCTS_PATH+"_{}".format(leading_zeros(len(models) + i + 1)))
+                    
+                    if not exists(MCTS_PATH):
+                        mkdir(MCTS_PATH)
+                    save_models(p1, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + i + 1)))
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path))
@@ -100,9 +105,9 @@ def get_ai_algorithm(algorithm, game, wildcard):
 
 # Load arguments for running the program.
 # The args, in order, correspond to the variables below.
-player1 = "minimax"
-player2 = "minimax"
-game_name = "latrunculi"
+player1 = "."
+player2 = "."
+game_name = "."
 board_size = 8
 rand_seed = None
 

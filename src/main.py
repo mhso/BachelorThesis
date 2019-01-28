@@ -13,13 +13,15 @@ from controller.minimax import Minimax
 from controller.mcts import MCTS
 from controller.random import Random
 
-#from view.visualize import Gui
+from view.visualize import Gui
 
-def play_game(game, player_white, player_black):
+def play_game(game, player_white, player_black, show_gui=False):
     """
     Play a game to the end, and return the reward for each player.
     """
     state = game.start_state()
+    if show_gui:
+        gui = Gui(game)
     while not game.terminal_test(state):
         print(state, flush=True)
         if game.player(state):
@@ -28,6 +30,12 @@ def play_game(game, player_white, player_black):
         else:
             state = player_black.execute_action(state)
             #print(player_black, flush=True)
+        # if show_gui:
+        #     if player == "human":
+        #         action = gui.wait_for_action()
+        #     else:
+        #         gui.show_state(state)
+
 
     winner = "Black" if state.player else "White"
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))
@@ -44,7 +52,7 @@ def leading_zeros(num):
         result = "0" + result
     return result
 
-def train(game, p1, p2, type1, type2, iterations, load=False, save=False):
+def train(game, p1, p2, type1, type2, iterations, load=False, save=False, gui=False):
     """
     Run a given number of game iterations with a given AI.
     After each game iteration, if the model is MCTS,
@@ -61,7 +69,7 @@ def train(game, p1, p2, type1, type2, iterations, load=False, save=False):
 
     for i in range(iterations):
         try:
-            play_game(game, p1, p2)
+            play_game(game, p1, p2, gui)
         except KeyboardInterrupt:
             pass
         finally:
@@ -112,7 +120,7 @@ board_size = 8
 rand_seed = None
 
 wildcard = "."
-option_list = ["-s", "-l", "-d"]
+option_list = ["-s", "-l", "-d", "-g"]
 options = []
 args = []
 # Seperate arguments from options.
@@ -153,4 +161,4 @@ p_white, player1 = get_ai_algorithm(player1, game, wildcard)
 p_black, player2 = get_ai_algorithm(player2, game, wildcard)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
-train(game, p_white, p_black, player1.lower(), player2.lower(), 1, "-l" in options, "-s" in options)
+train(game, p_white, p_black, player1.lower(), player2.lower(), 1, "-l" in options, "-s" in options, "-g" in options)

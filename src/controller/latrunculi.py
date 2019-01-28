@@ -166,7 +166,7 @@ class Latrunculi(Game):
                 newBoard[source[0]][source[1]] = 0 #removes piece from source
                 workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
 
-                #check the move frees an opponents captured piece
+                #check if the move frees an opponents captured piece
                 self.checkForFreeingDueToMove(source[0], source[1], newBoard, currentPlayer)
 
                 #check for suicide moves
@@ -232,14 +232,18 @@ class Latrunculi(Game):
 
     #checks whether moving a piece from its source, causes an enemys piece to be freed
     def checkForFreeingDueToMove(self, i, j, board, player):
-        if self.checkForFreeing((i-1), j, board): #checks piece NORTH of source
-            board[i-1][j] = (player*-1) #frees piece
-        if self.checkForFreeing((i+1), j, board): #checks piece SOUTH of source
-            board[i+1][j] = (player*-1) #frees piece
-        if self.checkForFreeing(i, (j-1), board): #checks piece WEST of source
-            board[i][j-1] = (player*-1) #frees piece
-        if self.checkForFreeing(i, (j+1), board): #checks piece EAST of source
-            board[i][j+1] = (player*-1) #frees piece
+        if (i-1) >= 0: #check that we are within board bounds
+            if self.checkForFreeing((i-1), j, board): #checks piece NORTH of source
+                board[i-1][j] = (player*-1) #frees piece
+        if (i+1) < self.size: #check that we are within board bounds
+            if self.checkForFreeing((i+1), j, board): #checks piece SOUTH of source
+                board[i+1][j] = (player*-1) #frees piece
+        if (j-1) >= 0: #check that we are within board bounds
+            if self.checkForFreeing(i, (j-1), board): #checks piece WEST of source
+                board[i][j-1] = (player*-1) #frees piece
+        if (j+1) < self.size: #check that we are within board bounds
+            if self.checkForFreeing(i, (j+1), board): #checks piece EAST of source
+                board[i][j+1] = (player*-1) #frees piece
 
     #check for freed pieces to the WEST/EAST of the given piece
     def freedCheckWestEastofPiece(self, i, j, board, currentPlayer):

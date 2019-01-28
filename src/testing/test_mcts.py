@@ -58,7 +58,6 @@ def run_tests():
         parent_is_root = child.parent == root and parent_is_root
 
     assertion.assert_true(parent_is_root, "expansion correct parent")
-    
+
     # =================================
     # Test simulation/rollout
-    # Test random move.    

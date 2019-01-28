@@ -143,9 +143,7 @@ class MCTS(GameAI):
 
             #time_b = time()
             # Perform rollout, simulate till end of game and return outcome.
-            print("Before rollout", flush=True)
             value = self.rollout(node.state, node)
-            print("After rollout", flush=True)
             #log("Rollout duration: {} s".format(time() - time_b))
             self.back_propogate(node, value)
 

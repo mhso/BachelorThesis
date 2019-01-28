@@ -1,33 +1,53 @@
 from tkinter import *
 
-import tkinter as tk
-def getorigin(eventorigin):
-      global x,y
-      x = eventorigin.x
-      y = eventorigin.y
-      print(x,y)
+import threading import Thread # should use the threading module instead!
+import queue as qu
 
-root = tk.Tk()
-root.bind("<Button 1>",getorigin)
+import os
 
-# create the canvas, size in pixels
-canvas = Canvas(width=500, height=500, bg='white')
+class ThreadSafeConsole(Text):
+    def __init__(self, master, **options):
+        Text.__init__(self, master, **options)
+        self.queue = qu.Queue()
+        self.update_me()
+    def write(self, line):
+        self.queue.put(line)
+    def clear(self):
+        self.queue.put(None)
+    def update_me(self):
+        try:
+            while 1:
+                line = self.queue.get_nowait()
+                if line is None:
+                    self.delete(1.0, END)
+                else:
+                    self.insert(END, str(line))
+                self.see(END)
+                self.update_idletasks()
+        except qu.Empty:
+            pass
+        self.after(100, self.update_me)
 
-# pack the canvas into a frame/form
-canvas.pack(expand=YES, fill=BOTH)
+# this function pipes input to an widget
+def pipeToWidget(input, widget):
+    widget.clear()
+    while 1:
+        line = input.readline()
+        if not line:
+            break
+        widget.write(line)
 
-# load the .gif image file
-a1 = PhotoImage(file='pcs_bl.png')
-# a2 = PhotoImage(file='pcs_bl_t.png')
-# b1 = PhotoImage(file='pcs_wh.png')
-# b2 = PhotoImage(file='pcs_wh_t.png')
+def funcThread(widget):
+    input = os.popen('dir', 'r')
+    pipeToWidget(input, widget)
 
-def field(x, y, canvas, img) :
-    canvas.create_image(x, y, image=img, anchor=NW)
-
-field(10, 10, canvas, a1)
-
-
-
-# run it ...
-mainloop()
+# uber-main
+root = Tk()
+widget = ThreadSafeConsole(root)
+widget.pack(side=TOP, expand=YES, fill=BOTH)
+threading.Thread.start_new(funcThread, (widget,))
+threading.start_new(funcThread, (widget,))
+threading.start_new(funcThread, (widget,))
+threading.start_new(funcThread, (widget,))
+threading.start_new(funcThread, (widget,))
+root.mainloop()

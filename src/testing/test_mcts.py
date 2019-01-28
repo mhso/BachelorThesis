@@ -50,3 +50,15 @@ def run_tests():
     mcts.expand(root, actions)
 
     assertion.assert_equal(16, len(root.children), "expansion correct num of children")
+
+    # =================================
+    # Test correct parent
+    parent_is_root = True
+    for child in root.children:
+        parent_is_root = child.parent == root and parent_is_root
+
+    assertion.assert_true(parent_is_root, "expansion correct parent")
+    
+    # =================================
+    # Test simulation/rollout
+    # Test random move.    

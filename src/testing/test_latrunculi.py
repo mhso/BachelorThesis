@@ -90,3 +90,31 @@ def run_tests():
 
     assertion.assert_true(old_piece == new_piece, "jump move piece moved")
     assertion.assert_true(old_vacant == new_vacant, "jump move piece absent")
+
+    # =================================
+    # Test move causing piece to be captured.
+    game = Latrunculi(5, 42)
+    state = game.start_state()
+
+    result_cb = game.result(state, Action((4, 3), (3, 3)))
+    state.player = not state.player
+    result_cw = game.result(state, Action((1, 0), (2, 0)))
+
+    assertion.assert_equal(2, result_cw.board[2][1], "capture white piece")
+    assertion.assert_equal(-2, result_cb.board[2][3], "capture black piece")    
+
+    # =================================
+    # Test move causing piece to be freed.
+    result_cw.player = not result_cw.player
+    result_cb.player = not result_cb.player
+
+    # Move both pieces that are capturing another.
+    result1 = game.result(result_cw, Action((2, 0), (1, 0)))
+    result2 = game.result(result_cw, Action((2, 2), (3, 2)))
+    result3 = game.result(result_cb, Action((1, 3), (0, 3)))
+    result4 = game.result(result_cb, Action((3, 3), (4, 3)))
+
+    assertion.assert_equal(1, result1.board[2][1], "move west frees captured piece")
+    assertion.assert_equal(1, result2.board[2][1], "move east frees captured piece")
+    assertion.assert_equal(-1, result3.board[2][3], "move north frees captured piece")
+    assertion.assert_equal(-1, result4.board[2][3], "move south frees captured piece")

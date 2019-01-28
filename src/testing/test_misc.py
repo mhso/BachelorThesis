@@ -12,3 +12,10 @@ def run_tests():
     assertion.assert_equal(34, action2.numeric(), "action numeric id 34")
 
     # =================================
+
+    game = Latrunculi(8)
+    state = game.start_state()
+    dictionary = dict()
+    dictionary[state.stringify()] = "wow"
+
+    assertion.assert_equal("wow", dictionary[state.stringify()], "state hashing")

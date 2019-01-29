@@ -18,12 +18,15 @@ from time import sleep
 
 class Gui():
     game        = None
-    board       = None
-    player      = None
-    # state       = None
+    # board       = None
+    # # player      = None
+    state       = None
     root        = None
     canvas      = None
     listener    = None
+
+    mouseclick_move_list = None
+
     # Variables for mouse click handling
     click_x         = -1
     click_y         = -1
@@ -46,33 +49,25 @@ class Gui():
     pmar = None
 
     def __init__(self, game):
-        
         game.register_observer(self)
+        self.mouseclick_move_list = []
         self.game = game
-        state = game.start_state()
-        self.board = state.board
-        self.player = state.player
+        self.state = game.start_state()
         self.init()
     
     def notify(self, observable, *args, **kwargs):
         print('Got', args, kwargs, 'From', observable)
-        state = State(self.board, self.player)
-        state = observable.actions(state)
-        self.update(state)
+        self.state = observable.actions(self.state)
+        self.update(self.state)
 
-    
     def run(self):
-        print("Observer run")
         self.root.mainloop()
-        
 
     def init(self):
         self.init_window()
         self.load_graphics()
         self.init_board()
         
-        
-    
      # Creating main window
     def init_window(self):
         self.root = tk.Tk()
@@ -85,9 +80,9 @@ class Gui():
     # Initialize the board
     def init_board(self):
         self.widget_menubar(self.root)
-        self.draw_board(self.board)
-        self.draw_axis_numbers(self.left_space, self.top_space, self.field_size, self.board)
-        self.draw_status_text(canvas=self.canvas, msg='Waiting for currentPlayer1, please move a piece...')
+        self.draw_board(self.state.board)
+        self.draw_axis_numbers(self.left_space, self.top_space, self.field_size, self.state.board)
+        self.draw_status_text(canvas=self.canvas, msg="")
 
     def load_graphics(self):
         # load the .gif image file
@@ -123,24 +118,47 @@ class Gui():
         x = eventorigin.x
         y = eventorigin.y
         self.clicksaver(x, y)
-        coords = self.field_clicked(x, y, self.board, left_space, top_space, field_size)
-        if not self.is_currentPlayer1_piece(self.player, self.board[coords]):
+        coords = self.field_clicked(x, y, self.state.board, left_space, top_space, field_size)
+        if not self.is_currentPlayer1_piece(self.state.player, self.state.board[coords]):
             coords = (-1,-1)
-        board = self.unmark_board(self.board, coords)
-        board = self.mark_unmark_piece(board, coords)
-        bx, by = coords
-        self.draw_status_text(self.canvas, 'Selected: (%(x)s,%(y)s)'%{'x':bx, 'y':by})
+            self.mouseclick_move_list.clear()
+        elif len(self.mouseclick_move_list) == 1 and self.mouseclick_move_list[0] == coords:
+            self.mouseclick_move_list.clear()
+        else:
+            if self.has_legal_move(coords):
+                self.mouseclick_move_list.append(coords)
 
-        if self.is_currentPlayer1_piece(self.player, board[coords]) and not (click_x_last == -1 or click_y_last == -1 ):
-            (x2, y2) = self.field_clicked(x, y, board, left_space, top_space, field_size)
-            self.draw_status_text(self.canvas, 'Move from: (%(x)s,%(y)s) to (%(x2)s,%(y2)s)'%{'x':bx, 'y':by, 'x2':x2, 'y2':y2})
-        self.draw_board(board)
+        if len(self.mouseclick_move_list) == 1:
+            self.draw_status_text(self.canvas, "Selected source coords: ({})".format(coords))
+        if len(self.mouseclick_move_list) == 2 and self.is_legal_move(self.mouseclick_move_list[0], self.mouseclick_move_list[0]):
+            self.draw_status_text(self.canvas, "Selected destination coords: ({})".format(coords))
+        else:
+            self.mouseclick_move_list.pop()
+            
+
+        board = self.unmark_board(self.state.board, coords)
+        board = self.mark_unmark_piece(board, coords)
+        print("mouseclick_move_list\n{}".format(self.mouseclick_move_list))
+        # self.draw_status_text(self.canvas, "Selected: ({})".format(coords))
+
+        if self.is_currentPlayer1_piece(self.state.player, self.state.board[coords]) and not (click_x_last == -1 or click_y_last == -1 ):
+            dest_coords = self.field_clicked(x, y, self.state.board, left_space, top_space, field_size)
+            # self.draw_status_text(self.canvas, "Move from: ({}) to ({})".format(coords, dest_coords))
+        self.update(self.state)
 
     # Confirms if a move i legal
     def is_legal_move(self, source_coords, dest_coords):
-        state = State(self.board, self.player)
-        for action in self.game.actions(state):
+        print("Len of actionslist: {}".format(self.game.actions(self.state)))
+        for action in self.game.actions(self.state):
+            self.draw_status_text(self.canvas, "Check if legal move from: ({}) to ({})".format(source_coords, dest_coords))
             if action.source == source_coords and action.dest == dest_coords:
+                self.draw_status_text(self.canvas, "Legal move from: ({}) to ({})".format(source_coords, dest_coords))
+                return True
+        return False
+
+    def has_legal_move(self, source_coords):
+        for action in self.game.actions(self.state):
+            if action.source == source_coords:
                 return True
         return False
 
@@ -185,22 +203,35 @@ class Gui():
         textcolor   = "darkblue"
         no_of_rows    = board.shape[0]
         no_of_cols    = board.shape[1]
+        
         # Draw row numbers on canvas
         rt = 10+top_space
         for row in range(0, no_of_rows):
             self.canvas.create_text(left_space-10, rt+20, fill=textcolor, font="Courier 20", text=row)
-            rt=rt+field_size
+            rt = rt + field_size
 
         # Draw column numbers on canvas
         ct = 10+left_space
         for col in range(0, no_of_cols):
             self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col)
-            ct=ct+field_size
+            ct = ct + field_size
 
     def draw_status_text(self, canvas, msg):
         canvas.create_rectangle(50, 510, 490, 650, fill='white')
-        canvas.create_text(60,515, fill="black", font="Courier 10", text="currentPlayer1 is white, currentPlayer2 is black", anchor=tk.NW)
-        canvas.create_text(60,530, fill="black", font="Courier 10", text=msg, anchor=tk.NW)
+        text_player_info = "Player1 is white, Player2 is black"
+        # text_current_player = "Currentplayer is: {}".format(self.player_color(self.player))
+        text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
+        text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
+        canvas.create_text(60,515, fill="black", font="Courier 10", text=text, anchor=tk.NW)
+        
+        # canvas.create_text(60,530, fill="black", font="Courier 10", text=text, anchor=tk.NW)
+        # canvas.create_text(60,545, fill="black", font="Courier 10", text=msg, anchor=tk.NW)
+
+    def player_color(self, player):
+        if player:
+            return "White"
+        else:
+            return "Black"
 
     # Returns image variable
     def select_piece_type(self, value):
@@ -217,7 +248,6 @@ class Gui():
 
     # Draw board and place pieces
     def draw_board(self, board):
-        self.board = board
         canvas      = self.canvas
         field_size   = self.field_size
         left_space  = self.left_space
@@ -236,8 +266,8 @@ class Gui():
 
         for y in range(no_of_rows):
             for x in range(no_of_cols):               
-                if board[x, y] == -3 or board[x, y] == 3:
-                    marked_coords = (x, y)
+                if board[y, x] == -3 or board[y, x] == 3:
+                    marked_coords = (y, x)
 
         for y in range(no_of_rows):
             px = left_space
@@ -246,20 +276,20 @@ class Gui():
             canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
             
             for x in range(0, no_of_cols):
-                val = board[x,y]
+                val = board[y, x]
                 
                 # If piece on field, place piece image
                 if val != 0:
                     self.field(px, py, canvas, self.select_piece_type(val))
                 
                 # Mark legal moves
-                if not marked_coords == (-1,-1) and val == 0  and self.is_legal_move(marked_coords, (x,y)):
+                if not marked_coords == (-1,-1) and val == 0  and self.is_legal_move(marked_coords, (y, x)):
                     self.field(px, py, canvas, self.pmar)
 
                 #mystr = '(%(x)s,%(y)s)'% {'x':x, 'y':y}
                 # if debug:
                 #   canvas.create_text(px+25,py+30,fill="white",font="Courier 9 bold",text=mystr)
-                px = px+field_size
+                px = px + field_size
                 
                 # Draw horizontal lines (row)
                 canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
@@ -286,14 +316,14 @@ class Gui():
         return board
 
     def unmark_board(self, board, exclude_coords=(-1, -1)):
-        for y in range(0, board.shape[1]):
-            for x in range(0, board.shape[1]):
-                if (x, y) == exclude_coords:
+        for y in range(board.shape[1]):
+            for x in range(board.shape[1]):
+                if (y, x) == exclude_coords:
                     continue
-                if board[x, y] == -3:
-                    board[x, y] = -1
-                if board[x, y] == 3:
-                    board[x, y] = 1
+                if board[y, x] == -3:
+                    board[y, x] = -1
+                if board[y, x] == 3:
+                    board[y, x] = 1
         return board
 
     # Check wheather (white) piece is owned by currentPlayer one
@@ -303,12 +333,12 @@ class Gui():
             else:
                 return False
 
-    def field_clicked(self, x, y, board, left_space, top_space, field_size):
+    def field_clicked(self, y, x, board, left_space, top_space, field_size):
         ymin = top_space
-        for row in range(0, board.shape[0]):
+        for row in range(board.shape[0]):
             xmin = left_space
-            ymax = ymin+field_size
-            for col in range(0, board.shape[1]):
+            ymax = ymin + field_size
+            for col in range(board.shape[1]):
                 xmax = xmin+field_size
                 if x >= xmin and x < xmax and y >= ymin and y < ymax:
                     return col, row
@@ -317,9 +347,10 @@ class Gui():
         return (-1, -1)
 
     def update(self, state):
-        self.board = state.board
-        self.player = State.player
-        self.draw_board(self.board)
+        # self.board = state.board
+        # self.player = State.player
+        self.state = state
+        self.draw_board(state.board)
         print("Updated")
 
     def make_move(self, state, source, dest):
@@ -329,7 +360,7 @@ class Gui():
         the new state.
         """
         result = self.game.result(state, Action(source, dest))
-        self.draw_board(result.board)
+        self.update(result.board)
 
         if self.listener is not None:
             self.listener.action_made(result)
@@ -340,40 +371,3 @@ class Gui():
         Called by main while the game loop is running.
         """
         self.listener = listener
-
-# class GuiThread (threading.Thread):
-#     game = None
-#     view = None
-
-#     def __init__(self, threadID, name, counter, game):
-#         threading.Thread.__init__(self)
-#         self.threadID = threadID
-#         self.name = name
-#         self.counter = counter
-#         self.game = game
-
-#     def run(self):
-#         self.view = View(game=self.game)
-
-#     def update(self, state):
-#         self.view.update(state)
-        
-
-# class Gui():
-#     guiThread = None
-
-#     def __init__(self,  game):
-#         threading.Thread.__init__(self)
-#         # Create new threads
-#         self.guiThread = GuiThread(1, "Thread-1", 1, game)
-        
-#         # Start new Threads
-#         self.guiThread.start()
-
-#     def update(self, state):
-#         self.guiThread.update(state)
-
-
-# from controller.game import Game
-# from model.state import State, Action
-

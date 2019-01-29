@@ -10,7 +10,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
 from model.state import State, Action
-from contoller.observer_pattern import Observer
 
 import threading
 from time import sleep
@@ -64,7 +63,7 @@ class View:
         self.root.bind("<Button 1>",self.getorigin)
         self.root.title("Latrunculi - The Game")
         self.root.iconbitmap('./view/gfx/favicon.ico')
-        self.canvas = tk.Canvas(self.root,width=540,height=680,background='lightgray')
+        self.canvas = tk.Canvas(self.root,width=540,height=680, background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
     # Initialize the board
@@ -76,18 +75,18 @@ class View:
 
     def load_graphics(self):
         # load the .gif image file
-        self.pblt    = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
-        self.pbl     = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
-        self.pblc    = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
-        self.pwh     = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
-        self.pwht    = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
-        self.pwhc    = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
-        self.pbla    = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
-        self.pmar    = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
+        self.pblt = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
+        self.pbl = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
+        self.pblc = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
+        self.pwh = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
+        self.pwht = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
+        self.pwhc = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
+        self.pbla = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
+        self.pmar = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
 
     def clicksaver(self, x, y):
         global click_x, click_y, click_x_last, click_y_last, clickCount
-        if (self.clickCount == 0):
+        if self.clickCount == 0:
             click_x_last = self.click_x
             click_y_last = self.click_y
             click_x = x
@@ -102,9 +101,9 @@ class View:
     
     # Return coordinat for mouse click
     def getorigin(self, eventorigin):
-        left_space  = self.left_space
-        top_space   = self.top_space
-        fieldsize   = self.fieldsize
+        left_space = self.left_space
+        top_space = self.top_space
+        fieldsize = self.fieldsize
         x = eventorigin.x
         y = eventorigin.y
         self.clicksaver(x, y)
@@ -130,7 +129,7 @@ class View:
         return False
 
     def hello(self):
-        print ("hello!")
+        print("hello!")
 
     def menubar_help_about_popup(self):
         showinfo("About", "This great game of Latrunculi is made as addition to our bachelor project at IT-University of Copenhagen, please enjoy.\n\n ITU 2019 Denmark\n\n Alexander M. Hansen <alhm@itu.dk>\n Mikkel H. Sørensen <mhso@itu.dk>\n Frank Andersen <fand@itu.dk>\n ")
@@ -221,8 +220,8 @@ class View:
 
         for y in range(0, noOfRows):
             for x in range(0, noOfCols):               
-                if board[x,y] == -3 or board[x,y] == 3:
-                    markedCoords = (x,y)
+                if board[x,y] == -3 or board[x, y] == 3:
+                    markedCoords = (x, y)
 
         for y in range(0, noOfRows):
             px = left_space
@@ -260,25 +259,25 @@ class View:
     # Flips a piece marked/unmarked or unmarked/marked
     def mark_unmark_piece(self, board, coords):
         val = board[coords]
-        if (val == -1):
+        if val == -1:
             board[coords] = -3
-        elif (val == -3):
+        elif val == -3:
             board[coords] = -1
         if val == 1:
             board[coords] = 3
-        elif (val == 3):
+        elif val == 3:
             board[coords] = 1
         return board
 
-    def unmark_board(self, board, exclude_coords=(-1,-1)):
+    def unmark_board(self, board, exclude_coords=(-1, -1)):
         for y in range(0, board.shape[1]):
             for x in range(0, board.shape[1]):
-                if ((x,y) == exclude_coords):
+                if (x, y) == exclude_coords:
                     continue
-                if (board[x,y] == -3):
-                    board[x,y] = -1
-                if (board[x,y] == 3):
-                    board[x,y] = 1
+                if board[x, y] == -3:
+                    board[x, y] = -1
+                if board[x, y] == 3:
+                    board[x, y] = 1
         return board
 
     # Check wheather (white) piece is owned by currentPlayer one
@@ -288,18 +287,18 @@ class View:
             else:
                 return False
 
-    def field_clicked(self, x,y, board, left_space, top_space, fieldsize):  
+    def field_clicked(self, x, y, board, left_space, top_space, fieldsize):
         ymin = top_space
         for row in range(0, board.shape[0]):
             xmin = left_space
             ymax = ymin+fieldsize
             for col in range(0, board.shape[1]):
                 xmax = xmin+fieldsize
-                if (x >= xmin and x < xmax and y >= ymin and y < ymax):
-                    return (col, row)
+                if x >= xmin and x < xmax and y >= ymin and y < ymax:
+                    return col, row
                 xmin = xmax
             ymin = ymin+fieldsize
-        return (-1,-1)
+        return (-1, -1)
 
     def update(self, state):
         self.board = state.board

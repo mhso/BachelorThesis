@@ -15,8 +15,3 @@ class Observer:
     
     def notify(self, observable, *args, **kwargs):
         print('Got', args, kwargs, 'From', observable)
-
-
-subject = Observable()
-observer = Observer(subject)
-subject.notify_observers('test')

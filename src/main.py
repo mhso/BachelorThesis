@@ -20,6 +20,7 @@ def play_game(game, player_white, player_black, show_gui=False):
     Play a game to the end, and return the reward for each player.
     """
     state = game.start_state()
+    gui = None
     if show_gui:
         gui = Gui(game)
     while not game.terminal_test(state):
@@ -29,6 +30,9 @@ def play_game(game, player_white, player_black, show_gui=False):
             #print(player_white, flush=True)
         else:
             state = player_black.execute_action(state)
+        
+        # if show_gui:
+        #     gui.update(state)
             #print(player_black, flush=True)
         # if show_gui:
         #     if player == "human":

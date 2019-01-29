@@ -10,13 +10,14 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
 from model.state import State, Action
+from contoller.observer_pattern import Observer
 
 import threading
 from time import sleep
 
 # from FakeTestClasses import *
 
-class MainWindow:
+class View:
     game        = None
     board       = None
     player      = None
@@ -62,7 +63,7 @@ class MainWindow:
         self.root = tk.Tk()
         self.root.bind("<Button 1>",self.getorigin)
         self.root.title("Latrunculi - The Game")
-        self.root.iconbitmap('gfx/favicon.ico')
+        self.root.iconbitmap('./view/gfx/favicon.ico')
         self.canvas = tk.Canvas(self.root,width=540,height=680,background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
@@ -75,14 +76,14 @@ class MainWindow:
 
     def load_graphics(self):
         # load the .gif image file
-        self.pblt    = tk.PhotoImage(file='gfx/pcs_bl_t.png')
-        self.pbl     = tk.PhotoImage(file='gfx/pcs_bl.png')
-        self.pblc    = tk.PhotoImage(file='gfx/pcs_bl_c.png')
-        self.pwh     = tk.PhotoImage(file='gfx/pcs_wh.png')
-        self.pwht    = tk.PhotoImage(file='gfx/pcs_wh_t.png')
-        self.pwhc    = tk.PhotoImage(file='gfx/pcs_wh_c.png')
-        self.pbla    = tk.PhotoImage(file='gfx/pcs_blank.png')
-        self.pmar    = tk.PhotoImage(file='gfx/pcs_mark.png')
+        self.pblt    = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
+        self.pbl     = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
+        self.pblc    = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
+        self.pwh     = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
+        self.pwht    = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
+        self.pwhc    = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
+        self.pbla    = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
+        self.pmar    = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
 
     def clicksaver(self, x, y):
         global click_x, click_y, click_x_last, click_y_last, clickCount
@@ -303,9 +304,11 @@ class MainWindow:
     def update(self, state):
         self.board = state.board
         self.player = State.player
+        self.draw_board(self.board)
 
 class GuiThread (threading.Thread):
     game = None
+    view = None
 
     def __init__(self, threadID, name, counter, game):
         threading.Thread.__init__(self)
@@ -315,18 +318,25 @@ class GuiThread (threading.Thread):
         self.game = game
 
     def run(self):
-        MainWindow(game=self.game)
+        self.view = View(game=self.game)
+
+    def update(self, state):
+        self.view.update(state)
+        
 
 class Gui():
+    guiThread = None
+
     def __init__(self,  game):
         threading.Thread.__init__(self)
         # Create new threads
-        thread1 = GuiThread(1, "Thread-1", 1, game)
-
+        self.guiThread = GuiThread(1, "Thread-1", 1, game)
+        
         # Start new Threads
-        thread1.start()
+        self.guiThread.start()
 
-
+    def update(self, state):
+        self.guiThread.update(state)
 
 
 # from controller.game import Game

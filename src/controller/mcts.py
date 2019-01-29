@@ -110,7 +110,7 @@ class MCTS(GameAI):
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
             counter += 1
-        
+
         log("Iterations spent on rollout: {}".format(counter))
         return self.game.utility(state, og_state.player)
 

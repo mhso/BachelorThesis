@@ -156,17 +156,25 @@ def run_tests():
 
     assertion.assert_true(cant_move, "suicide can't move")
 
+    """
     # TEST STUFF
     game = Latrunculi(8, 42)
     state = game.start_state()
 
     time_b = time()
+
     counter = 0
     while not game.terminal_test(state):
         actions = game.actions(state)
         action = actions[int(uniform(0, len(actions)))]
         state = game.result(state, action)
         counter += 1
+    #action = Action((2, 0), (3, 0))
+    # 6855 iterations of:
+    # terminal = game.terminal_test(state)  = 0.06 seconds.
+    # actions = game.actions(state)         = ~3 seconds.
+    # result = game.result(state, action)   = 0.16 seconds.
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
+    """

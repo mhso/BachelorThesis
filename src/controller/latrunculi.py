@@ -52,7 +52,7 @@ class Latrunculi(Game):
     def actions(self, state):
         super.__doc__
         currentPlayer = 0
-        if state.player: 
+        if state.player:
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
@@ -258,22 +258,22 @@ class Latrunculi(Game):
                     board[i][j+1] = current_player #frees currentPlayers Alligatus
     
     #check for freed pieces to the NORTH/SOUTH of the given piece
-    def freedCheckNorthSouthofPiece(self, i, j, board, currentPlayer):
+    def freedCheckNorthSouthofPiece(self, i, j, board, current_player):
         if j >= 0 and j < self.size: #check if the given i is within the board bounds
             if (i-1) >= 0: #check if its within the board bounds NORTH
                 if self.checkForFreeing((i-1), (j), board): #check for freed piece to the NORTH of the captured WEST/EAST piece
-                    board[i-1][j] = currentPlayer #frees currentPlayers Alligatus
+                    board[i-1][j] = current_player #frees currentPlayers Alligatus
             if (i+1) < self.size: #check if its within the board bounds SOUTH
                 if self.checkForFreeing((i+1), (j), board): #check for freed piece to the SOUTH of the captured WEST/EAST piece
-                    board[i+1][j] = currentPlayer #frees currentPlayers Alligatus
+                    board[i+1][j] = current_player #frees currentPlayers Alligatus
 
     #check if piece on the given position has possibly been freed, returns true, if the piece has been freed, false if not (or there is no captured piece)
     def checkForFreeing(self, i, j, board):
         if board[i][j] == 2 or board[i][j] == -2: #check if the given piece is captured
-            enemy_value = int(board[i][j]*0.5) * -1
+            enemy_value = int(board[i][j]*-0.5)
             if (j-1 >= 0 and j+1 < self.size and board[i][j-1] == enemy_value
                   and board[i][j+1] == enemy_value): #check if WEST/EAST pieces does capture the given piece
-                    return False
+                return False
             elif (i-1 >= 0 and i+1 < self.size and board[i-1][j] == enemy_value
                   and board[i+1][j] == enemy_value): #check if NORTH/SOUTH pieces does capture the given piece
                 return False

@@ -12,6 +12,7 @@ from os.path import exists
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
 from controller.mcts import MCTS
+from controller.human import Human
 from controller.random import Random
 
 from view.visualize import Gui
@@ -26,10 +27,9 @@ def play_game(game, player_white, player_black, gui=None):
         print(state, flush=True)
         if game.player(state):
             state = player_white.execute_action(state)
-            #print(player_white, flush=True)
         else:
             state = player_black.execute_action(state)
-        
+
         if gui is not None:
             gui.update(state)
 
@@ -68,14 +68,16 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
         return
     try:
         if gui is not None:
-            t = SupportThread((game, p1, p2, type1, type2, iteration, save, gui))
-            t.start()
-            gui.run()
+            # If GUI is used, (and if a non-human is playing),
+            # create seperate thread to run the AI game logic in.
+            game_thread = SupportThread((game, p1, p2, type1, type2, iteration, save, gui))
+            game_thread.start() # Start game logic thread.
+            gui.run() # Start GUI on main thread.
         else:
             play_game(game, p1, p2)
             train(game, p1, p2, type1, type2, iteration-1, save, gui)
     except KeyboardInterrupt:
-        pass
+        print("Exiting by KeyboardInterrupt...")
     finally:
         if save:
             if type1 == "mcts" or type2 == "mcts":
@@ -86,7 +88,7 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
                         state_map = state_map.update(p2.state_map)
                 else:
                     state_map = p2.state_map
-                
+
                 if not exists(MCTS_PATH):
                     mkdir(MCTS_PATH)
                 save_models(p1, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + iteration + 1)))
@@ -105,14 +107,14 @@ def get_game(game_name, size, rand_seed, wildcard):
         return Latrunculi(size, rand_seed), "Latrunculi"
     return None, "unknown"
 
-def get_ai_algorithm(algorithm, game, wildcard):
+def get_ai_algorithm(algorithm, game, wildcard, gui=None):
     lower = algorithm.lower()
     if lower in ("mcts", wildcard):
         return MCTS(game), "MCTS"
     elif lower == "minimax":
         return Minimax(game), "Minimax"
     elif lower == "human":
-        return None, "Human"
+        return Human(game), "Human"
     elif lower == "random":
         return Random(game), "Random"
     return None, "unknown"
@@ -178,8 +180,12 @@ if "-l" in options:
             p_black.state_map = load_model(models[-1])
 
 gui = None
-if "-g" in options or player1.lower() == "human" or player2.lower() == "human":
+if "-g" in options or player1 == "Human" or player2 == "Human":
     gui = Gui(game)
     game.register_observer(gui)
+    if player1 == "Human":
+        p_white.gui = gui
+    if player2 == "Human":
+        p_black.gui = gui
 
 train(game, p_white, p_black, player1.lower(), player2.lower(), 1, "-s" in options, gui)

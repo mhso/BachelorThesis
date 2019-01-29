@@ -23,6 +23,7 @@ class Gui():
     # state       = None
     root        = None
     canvas      = None
+    listener    = None
     # Variables for mouse click handling
     click_x         = -1
     click_y         = -1
@@ -33,7 +34,7 @@ class Gui():
     # Variables for board grid placement and design
     left_space  = 50
     top_space   = 50
-    field_size   = 55
+    field_size  = 55
 
     pblt = None
     pbl = None
@@ -113,7 +114,7 @@ class Gui():
             click_x = x
             click_y = y
             clickCount = 0
-    
+
     # Return coordinat for mouse click
     def getorigin(self, eventorigin):
         left_space = self.left_space
@@ -320,6 +321,25 @@ class Gui():
         self.player = State.player
         self.draw_board(self.board)
         print("Updated")
+
+    def make_move(self, state, source, dest):
+        """
+        Move a piece from source to dest on the board.
+        Get the new state, and notify any listener about
+        the new state.
+        """
+        result = self.game.result(state, Action(source, dest))
+        self.draw_board(result.board)
+
+        if self.listener is not None:
+            self.listener.action_made(result)
+            self.listener = None
+
+    def listen_for_action(self, listener):
+        """
+        Called by main while the game loop is running.
+        """
+        self.listener = listener
 
 # class GuiThread (threading.Thread):
 #     game = None

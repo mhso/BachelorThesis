@@ -94,6 +94,20 @@ def run_tests():
     assertion.assert_true(old_vacant == new_vacant, "jump move piece absent")
 
     # =================================
+    # Test double jump.
+    game = Latrunculi(6, 489)
+    state = game.start_state()
+
+    result = game.result(state, Action((4, 1), (4, 5)))
+    old_piece = state.board[4][1]
+    old_vacant = state.board[4][5]
+    new_vacant = result.board[4][1]
+    new_piece = result.board[4][5]
+
+    assertion.assert_true(old_piece == new_piece, "double jump move piece moved")
+    assertion.assert_true(old_vacant == new_vacant, "double jump move piece absent")
+
+    # =================================
     # Test move causing piece to be captured.
     game = Latrunculi(5, 42)
     state = game.start_state()
@@ -155,6 +169,11 @@ def run_tests():
         cant_move = action.dest != (3, 2) and cant_move
 
     assertion.assert_true(cant_move, "suicide can't move")
+
+    # =================================
+    # Test chump jain being broken, by potential capture.
+
+    
 
     """
     # TEST STUFF

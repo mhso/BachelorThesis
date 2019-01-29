@@ -65,9 +65,6 @@ class Observer(threading.Thread):
         self.root.mainloop()
 
 
-    
-
-
 game = Observable()
 
 gui = Observer(game)

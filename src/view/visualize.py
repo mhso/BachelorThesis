@@ -16,7 +16,7 @@ from time import sleep
 
 # from FakeTestClasses import *
 
-class Gui(threading.Thread):
+class Gui():
     game        = None
     board       = None
     player      = None
@@ -52,7 +52,6 @@ class Gui(threading.Thread):
         self.board = state.board
         self.player = state.player
         self.init()
-        threading.Thread.__init__(self)
     
     def notify(self, observable, *args, **kwargs):
         print('Got', args, kwargs, 'From', observable)
@@ -320,7 +319,7 @@ class Gui(threading.Thread):
         self.board = state.board
         self.player = State.player
         self.draw_board(self.board)
-        self.canvas.update()
+        print("Updated")
 
 # class GuiThread (threading.Thread):
 #     game = None

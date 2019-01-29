@@ -40,10 +40,6 @@ class Latrunculi(Game):
         Game.__init__(self)
         self.size = size
         self.populate_board(start_seed)
-        self.__observers = []
-    
-    def register_observer(self, observer):
-        self.__observers.append(observer)
     
     def notify_observers(self, *args, **kwargs):
         for observer in self.__observers:

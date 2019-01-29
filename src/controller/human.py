@@ -13,6 +13,7 @@ class Human(GameAI):
         super.__doc__
         
         log("Waiting for player input...")
+        self.state = None
         self.gui.listen_for_action(self)
         while self.state is None:
             sleep(0.1)

@@ -33,7 +33,7 @@ class View:
     # Variables for board grid placement and design
     left_space  = 50
     top_space   = 50
-    fieldsize   = 55
+    field_size   = 55
 
     pblt = None
     pbl = None
@@ -70,7 +70,7 @@ class View:
     def init_board(self):
         self.widget_menubar(self.root)
         self.draw_board(self.board)
-        self.draw_axis_numbers(self.left_space, self.top_space, self.fieldsize, self.board)
+        self.draw_axis_numbers(self.left_space, self.top_space, self.field_size, self.board)
         self.draw_status_text(canvas=self.canvas, msg='Waiting for currentPlayer1, please move a piece...')
 
     def load_graphics(self):
@@ -103,11 +103,11 @@ class View:
     def getorigin(self, eventorigin):
         left_space = self.left_space
         top_space = self.top_space
-        fieldsize = self.fieldsize
+        field_size = self.field_size
         x = eventorigin.x
         y = eventorigin.y
         self.clicksaver(x, y)
-        coords = self.field_clicked(x, y, self.board, left_space, top_space, fieldsize)
+        coords = self.field_clicked(x, y, self.board, left_space, top_space, field_size)
         if not self.is_currentPlayer1_piece(self.player, self.board[coords]):
             coords = (-1,-1)
         board = self.unmark_board(self.board, coords)
@@ -116,7 +116,7 @@ class View:
         self.draw_status_text(self.canvas, 'Selected: (%(x)s,%(y)s)'%{'x':bx, 'y':by})
 
         if self.is_currentPlayer1_piece(self.player, board[coords]) and not (click_x_last == -1 or click_y_last == -1 ):
-            (x2, y2) = self.field_clicked(x, y, board, left_space, top_space, fieldsize)
+            (x2, y2) = self.field_clicked(x, y, board, left_space, top_space, field_size)
             self.draw_status_text(self.canvas, 'Move from: (%(x)s,%(y)s) to (%(x2)s,%(y2)s)'%{'x':bx, 'y':by, 'x2':x2, 'y2':y2})
         self.draw_board(board)
 
@@ -165,21 +165,21 @@ class View:
         canvas.create_image(x, y, image=img_filename, anchor=tk.NW) 
 
     # Draw axis fields nuumbers
-    def draw_axis_numbers(self, left_space, top_space, fieldsize, board):
+    def draw_axis_numbers(self, left_space, top_space, field_size, board):
         textcolor   = "darkblue"
-        noOfRows    = board.shape[0]
-        noOfCols    = board.shape[1]
+        no_of_rows    = board.shape[0]
+        no_of_cols    = board.shape[1]
         # Draw row numbers on canvas
         rt = 10+top_space
-        for row in range(0, noOfRows):
+        for row in range(0, no_of_rows):
             self.canvas.create_text(left_space-10, rt+20, fill=textcolor, font="Courier 20", text=row)
-            rt=rt+fieldsize
+            rt=rt+field_size
 
         # Draw column numbers on canvas
         ct = 10+left_space
-        for col in range(0, noOfCols):
+        for col in range(0, no_of_cols):
             self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col)
-            ct=ct+fieldsize
+            ct=ct+field_size
 
     def draw_status_text(self, canvas, msg):
         canvas.create_rectangle(50, 510, 490, 650, fill='white')
@@ -203,52 +203,52 @@ class View:
     def draw_board(self, board):
         self.board = board
         canvas      = self.canvas
-        fieldsize   = self.fieldsize
+        field_size   = self.field_size
         left_space  = self.left_space
         top_space   = self.top_space
         gridcolor   = "black"
-        noOfRows    = board.shape[0]
-        noOfCols    = board.shape[1]
+        no_of_rows    = board.shape[0]
+        no_of_cols    = board.shape[1]
         py          = self.top_space
         px2         = self.left_space
-        hlen        = noOfRows*fieldsize+left_space
-        vlen        = noOfCols*fieldsize+top_space
-        markedCoords = (-1,-1)
+        hlen        = no_of_rows*field_size+left_space
+        vlen        = no_of_cols*field_size+top_space
+        marked_coords = (-1,-1)
         
         #Hack, clear canvas
         canvas.create_rectangle(50, 50, hlen, vlen, fill='lightgray')
 
-        for y in range(0, noOfRows):
-            for x in range(0, noOfCols):               
-                if board[x,y] == -3 or board[x, y] == 3:
-                    markedCoords = (x, y)
+        for y in range(no_of_rows):
+            for x in range(no_of_cols):               
+                if board[x, y] == -3 or board[x, y] == 3:
+                    marked_coords = (x, y)
 
-        for y in range(0, noOfRows):
+        for y in range(no_of_rows):
             px = left_space
             
             # Draw vertical lines (column)
             canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
             
-            for x in range(0, noOfCols):
+            for x in range(0, no_of_cols):
                 val = board[x,y]
                 
                 # If piece on field, place piece image
                 if val != 0:
                     self.field(px, py, canvas, self.select_piece_type(val))
                 
-                # Mark lega moves
-                if not markedCoords == (-1,-1) and val == 0  and self.is_legal_move(markedCoords, (x,y)):
+                # Mark legal moves
+                if not marked_coords == (-1,-1) and val == 0  and self.is_legal_move(marked_coords, (x,y)):
                     self.field(px, py, canvas, self.pmar)
 
                 #mystr = '(%(x)s,%(y)s)'% {'x':x, 'y':y}
                 # if debug:
                 #   canvas.create_text(px+25,py+30,fill="white",font="Courier 9 bold",text=mystr)
-                px = px+fieldsize
+                px = px+field_size
                 
                 # Draw horizontal lines (row)
                 canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
-            py  = py+fieldsize
-            px2 = px2+fieldsize
+            py  = py + field_size
+            px2 = px2 + field_size
 
         # Draw last horizontal lines (row)
         canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
@@ -287,17 +287,17 @@ class View:
             else:
                 return False
 
-    def field_clicked(self, x, y, board, left_space, top_space, fieldsize):
+    def field_clicked(self, x, y, board, left_space, top_space, field_size):
         ymin = top_space
         for row in range(0, board.shape[0]):
             xmin = left_space
-            ymax = ymin+fieldsize
+            ymax = ymin+field_size
             for col in range(0, board.shape[1]):
-                xmax = xmin+fieldsize
+                xmax = xmin+field_size
                 if x >= xmin and x < xmax and y >= ymin and y < ymax:
                     return col, row
                 xmin = xmax
-            ymin = ymin+fieldsize
+            ymin = ymin + field_size
         return (-1, -1)
 
     def update(self, state):

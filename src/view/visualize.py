@@ -13,6 +13,7 @@ from model.state import State, Action
 
 import threading
 from time import sleep
+from view.log import log
 
 # from FakeTestClasses import *
 
@@ -22,6 +23,7 @@ class Gui():
     root        = None
     canvas      = None
     listener    = None
+    active      = True
 
     # List for keeping track of active valid mouse clicks
     mouseclick_move_list = None
@@ -46,9 +48,9 @@ class Gui():
         self.game = game
         self.state = game.start_state()
         self.init()
-    
+
     def notify(self, observable, *args, **kwargs):
-        print('Got', args, kwargs, 'From', observable)
+        log("Got {}, {} {}".format(args, kwargs, observable))
         self.state = observable.actions(self.state)
         self.update(self.state)
 
@@ -59,14 +61,15 @@ class Gui():
         self.init_window()
         self.load_graphics()
         self.init_board()
-        
+
      # Creating main window
     def init_window(self):
         self.root = tk.Tk()
-        self.root.bind("<Button 1>",self.getorigin)
+        self.root.bind("<Button 1>", self.getorigin)
+        self.root.bind("<Destroy>", lambda e: self.close())
         self.root.title("Latrunculi - The Game")
         self.root.iconbitmap('./view/gfx/favicon.ico')
-        self.canvas = tk.Canvas(self.root,width=540,height=680, background='lightgray')
+        self.canvas = tk.Canvas(self.root, width=540, height=680, background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
     # Initialize the board
@@ -93,20 +96,22 @@ class Gui():
         y = eventorigin.y
 
         coords = self.field_clicked(x, y, self.state.board, self.left_space, self.top_space, self.field_size)
-        
+
         # if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]):
-            
-        if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and len(self.mouseclick_move_list) == 0 and self.has_legal_move(coords):
+
+        if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
             self.draw_status_text(self.canvas, "Selected source coords: ({})".format(coords))
         else:
-            if len(self.mouseclick_move_list) == 1:
+            if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
+                self.make_move(self.state, coords, coords)
+            elif len(self.mouseclick_move_list) == 1:
                 if self.mouseclick_move_list[0] == coords:
                     self.mouseclick_move_list.pop()
                 elif self.is_currentPlayer_piece(self.state.player, self.state.board[coords]):
                     self.mouseclick_move_list.pop()
                     self.mouseclick_move_list.append(coords)
-                else: 
+                else:
                     if self.is_legal_move(self.mouseclick_move_list[0], coords):
                         self.draw_status_text(self.canvas, "Selected destination coords: ({})".format(coords))
                         self.mouseclick_move_list.append(coords)
@@ -117,7 +122,7 @@ class Gui():
             elif len(self.mouseclick_move_list) > 2:
                 self.mouseclick_move_list.pop()
 
-        print("mouseclick_move_list\n{}".format(self.mouseclick_move_list))
+        log("mouseclick_move_list\n{}".format(self.mouseclick_move_list))
 
         self.update(self.state)
 
@@ -175,7 +180,7 @@ class Gui():
         textcolor   = "darkblue"
         no_of_rows    = board.shape[0]
         no_of_cols    = board.shape[1]
-        
+
         # Draw row numbers on canvas
         rt = 10+top_space
         for row in range(0, no_of_rows):
@@ -317,7 +322,7 @@ class Gui():
         self.draw_board(state.board)
         self.draw_board_grid(state.board)
         self.draw_status_text(self.canvas, "Nice move")
-        print("Updated")
+        log("Updated")
 
     def make_move(self, state, source, dest):
         """
@@ -325,6 +330,7 @@ class Gui():
         Get the new state, and notify any listener about
         the new state.
         """
+        log("Moved from {} to {}".format(source, dest))
 
         result = self.game.result(state, Action(source, dest))
         self.state = result
@@ -339,3 +345,7 @@ class Gui():
         Called by main while the game loop is running.
         """
         self.listener = listener
+
+    def close(self):
+        self.active = False
+        self.root.destroy()

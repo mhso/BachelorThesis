@@ -116,7 +116,10 @@ class MCTS(GameAI):
 
     def execute_action(self, state):
         super.__doc__
+        
         time_total_b = time()
+        log("MCTS is calculating the best move...")
+
         # Get state ID and look the corresponding node up in the state map.
         state_id = state.stringify()
         original_node = None

@@ -11,7 +11,7 @@ class Minimax(GameAI):
         """
         player_piece = 1 if state.player else -1
         other_piece = -1 if state.player else 1
-        
+
         return (state.board == player_piece).sum() - (state.board == other_piece).sum()
 
     def minimax(self, state, depth, maxing_player, alpha, beta):

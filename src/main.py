@@ -77,7 +77,9 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
             play_game(game, p1, p2)
             train(game, p1, p2, type1, type2, iteration-1, save, gui)
     except KeyboardInterrupt:
-        print("Exiting by KeyboardInterrupt...")
+        print("Exiting by interrupt...")
+        if gui is not None:
+            gui.close()
     finally:
         if save:
             if type1 == "mcts" or type2 == "mcts":
@@ -91,14 +93,14 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
 
                 if not exists(MCTS_PATH):
                     mkdir(MCTS_PATH)
-                save_models(p1, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + iteration + 1)))
+                save_models(state_map, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + 1)))
 
 def save_models(model, path):
-    print("Saving model to file: {}".format(path))
-    pickle.dump(model.state_map, open(path, "wb"))
+    print("Saving model to file: {}".format(path), flush=True)
+    pickle.dump(model, open(path, "wb"))
 
 def load_model(path):
-    print("Loading model from file: {}".format(path))
+    print("Loading model from file: {}".format(path), flush=True)
     return pickle.load(open(path, "rb"))
 
 def get_game(game_name, size, rand_seed, wildcard):
@@ -143,8 +145,8 @@ if argc > 1:
     if args[1] in ("-help", "-h"):
         print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [options...]".format(args[0]))
         print("Write '{}' in place of any argument to use default value".format(wildcard))
-        print("Options: -d (debug), -s (save models), -l (load models)")
-        print("Fx. 'python {} minimax . latrunculi 8 42'".format(args[0]))
+        print("Options: -d (debug), -s (save models), -l (load models), -g (use GUI)")
+        print("Fx. 'python {} minimax . latrunculi 8 42 -g'".format(args[0]))
         exit(0)
     player1 = args[1] # Algorithm playing as player 1.
 
@@ -169,23 +171,25 @@ p_white, player1 = get_ai_algorithm(player1, game, wildcard)
 p_black, player2 = get_ai_algorithm(player2, game, wildcard)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
+player1 = player1.lower()
+player2 = player2.lower()
 
 if "-l" in options:
     MCTS_PATH = "../resources/"
     models = glob(MCTS_PATH+"/mcts*")
-    if len(models) > 0:
+    if models != []:
         if player1 == "mcts":
             p_white.state_map = load_model(models[-1])
         if player2 == "mcts":
             p_black.state_map = load_model(models[-1])
 
 gui = None
-if "-g" in options or player1 == "Human" or player2 == "Human":
+if "-g" in options or player1 == "human" or player2 == "human":
     gui = Gui(game)
     game.register_observer(gui)
-    if player1 == "Human":
+    if player1 == "human":
         p_white.gui = gui
-    if player2 == "Human":
+    if player2 == "human":
         p_black.gui = gui
 
-train(game, p_white, p_black, player1.lower(), player2.lower(), 1, "-s" in options, gui)
+train(game, p_white, p_black, player1, player2, 1, "-s" in options, gui)

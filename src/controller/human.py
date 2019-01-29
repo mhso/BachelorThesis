@@ -1,5 +1,5 @@
 """
-random: Implements Minimax with Alpha-Beta pruning for playing a game.
+human: Represents a person playing the game.
 """
 from time import sleep
 from controller.game_ai import GameAI
@@ -11,11 +11,11 @@ class Human(GameAI):
 
     def execute_action(self, state):
         super.__doc__
-        
+
         log("Waiting for player input...")
         self.state = None
         self.gui.add_action_listener(self)
-        while self.state is None:
+        while self.state is None and self.gui.active:
             sleep(0.1)
         return self.state
 

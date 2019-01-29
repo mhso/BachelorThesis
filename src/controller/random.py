@@ -1,9 +1,9 @@
 """
-random: Implements Minimax with Alpha-Beta pruning for playing a game.
+random: Implements a simple AI, that only performs random actions.
 """
-from controller.game_ai import GameAI
-from numpy.random import uniform
 from time import sleep
+from numpy.random import uniform
+from controller.game_ai import GameAI
 
 class Random(GameAI):
     def execute_action(self, state):

@@ -1,7 +1,9 @@
+from numpy.random import uniform
+from time import time
+from numpy import array
 from testing import assertion
 from controller.latrunculi import Latrunculi
 from model.state import Action
-from numpy import array
 
 def run_tests():
     print("-=-=-=- LATRUNCULI GAME TESTS -=-=-=-")
@@ -153,3 +155,18 @@ def run_tests():
         cant_move = action.dest != (3, 2) and cant_move
 
     assertion.assert_true(cant_move, "suicide can't move")
+
+    # TEST STUFF
+    game = Latrunculi(8, 42)
+    state = game.start_state()
+
+    time_b = time()
+    counter = 0
+    while not game.terminal_test(state):
+        actions = game.actions(state)
+        action = actions[int(uniform(0, len(actions)))]
+        state = game.result(state, action)
+        counter += 1
+
+    print("Time taken to play out game: {} s".format(time() - time_b))
+    print("Iterations: {}".format(counter))

@@ -35,7 +35,7 @@ class MCTS(GameAI):
     state_map = dict()
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 5
+    ITERATIONS = 5 # Number of times to run MCTS, per action taken in game.
 
     def select(self, node, sim_acc):
         """
@@ -46,7 +46,7 @@ class MCTS(GameAI):
             - w(i) = wins of current node.
             - n(i) = times current node was visited.
             - c = exploration constant, 2 usually.
-            - N(i) = accummulated visits of all parents.
+            - N(i) = accummulated visits of all parents of current node.
         This assures a balance between exploring new nodes,
         and exploiting nodes that are known to result in good outcomes.
         """
@@ -54,7 +54,7 @@ class MCTS(GameAI):
             return node
 
         sim_acc += node.visits
-        best_node = node.children[0]
+        best_node = node.children[0] # Choose first node if all are equal.
         best_value = 0
         for child in node.children:
             if child.visits == 0:
@@ -104,16 +104,20 @@ class MCTS(GameAI):
         for the current player, is returned.
         """
         state = node.state
-        
+        counter = 0
+
         while not self.game.terminal_test(state):
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
+            counter += 1
+
+        log("Iterations spent on rollout: {}".format(counter))
         return self.game.utility(state, og_state.player)
 
     def execute_action(self, state):
         super.__doc__
         time_total_b = time()
-        # Get state ID and look the corresponding node up, in the state map.
+        # Get state ID and look the corresponding node up in the state map.
         state_id = state.stringify()
         original_node = None
         try:
@@ -129,22 +133,20 @@ class MCTS(GameAI):
             self.state_map[state_id] = original_node
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
-        # After the iteration are done, the child of the original node with the highest
-        # wins are chosen as the best action.
+        # After the iterations are done, the child of the original node with the highest
+        # number of wins are chosen as the best action.
         for _ in range(self.ITERATIONS):
             node = self.select(original_node, 0)
             if node.visits > 0:
-                # Expand tree from available actions. Select first expanded node
-                # as new current and simulate an action from this node's possible actions.
+                # Expand tree from available actions. Select first expanded node as
+                # new current and simulate an action from this nodes possible actions.
                 actions = self.game.actions(node.state)
                 self.expand(node, actions)
                 node = node.children[0] # Select first child of expanded Node.
                 node.state.player = not node.state.player
 
-            #time_b = time()
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(node.state, node)
-            #log("Rollout duration: {} s".format(time() - time_b))
             self.back_propogate(node, value)
 
             node = original_node

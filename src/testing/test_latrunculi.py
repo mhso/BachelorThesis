@@ -1,7 +1,9 @@
+from numpy.random import uniform
+from time import time
+from numpy import array
 from testing import assertion
 from controller.latrunculi import Latrunculi
 from model.state import Action
-from numpy import array
 
 def run_tests():
     print("-=-=-=- LATRUNCULI GAME TESTS -=-=-=-")
@@ -90,3 +92,89 @@ def run_tests():
 
     assertion.assert_true(old_piece == new_piece, "jump move piece moved")
     assertion.assert_true(old_vacant == new_vacant, "jump move piece absent")
+
+    # =================================
+    # Test move causing piece to be captured.
+    game = Latrunculi(5, 42)
+    state = game.start_state()
+
+    result_cb = game.result(state, Action((4, 3), (3, 3)))
+    state.player = not state.player
+    result_cw = game.result(state, Action((1, 0), (2, 0)))
+
+    assertion.assert_equal(2, result_cw.board[2][1], "capture white piece")
+    assertion.assert_equal(-2, result_cb.board[2][3], "capture black piece")
+
+    # =================================
+    # Test captured piece not being able to move.
+    actions = game.actions(result_cw)
+
+    cant_move = True
+    for action in actions:
+        cant_move = action.source != (2, 1) and cant_move
+
+    assertion.assert_true(cant_move, "captured piece can't move")
+
+    # =================================
+    # Test move causing captured piece to be freed.
+    result_cw.player = not result_cw.player
+    result_cb.player = not result_cb.player
+
+    # Move both pieces that are capturing another.
+    result1 = game.result(result_cw, Action((2, 0), (1, 0)))
+    result2 = game.result(result_cw, Action((2, 2), (3, 2)))
+    result3 = game.result(result_cb, Action((1, 3), (0, 3)))
+    result4 = game.result(result_cb, Action((3, 3), (4, 3)))
+
+    assertion.assert_equal(1, result1.board[2][1], "move west frees captured piece")
+    assertion.assert_equal(1, result2.board[2][1], "move east frees captured piece")
+    assertion.assert_equal(-1, result3.board[2][3], "move north frees captured piece")
+    assertion.assert_equal(-1, result4.board[2][3], "move south frees captured piece")
+
+    # =================================
+    # Test capture causing captured piece to be freed.
+    game = Latrunculi(5, 302)
+    state = game.start_state()
+
+    result1 = game.result(state, Action((3, 4), (3, 3))) # Capture black piece.
+    result2 = game.result(result1, Action((1, 3), (2, 3))) # Free that piece.
+
+    assertion.assert_equal(-2, result1.board[3][2], "captured black piece for freeing")
+    assertion.assert_equal(-1, result2.board[3][2], "free piece by capture")
+
+    # =================================
+    # Test move causing instant capture not being possible.
+    game = Latrunculi(5, 56)
+    state = game.start_state()
+    state.player = not state.player
+
+    actions = game.actions(state)
+
+    cant_move = True
+    for action in actions:
+        cant_move = action.dest != (3, 2) and cant_move
+
+    assertion.assert_true(cant_move, "suicide can't move")
+
+    """
+    # TEST STUFF
+    game = Latrunculi(8, 42)
+    state = game.start_state()
+
+    time_b = time()
+
+    counter = 0
+    while not game.terminal_test(state):
+        actions = game.actions(state)
+        action = actions[int(uniform(0, len(actions)))]
+        state = game.result(state, action)
+        counter += 1
+    #action = Action((2, 0), (3, 0))
+    # 6855 iterations of:
+    # terminal = game.terminal_test(state)  = 0.06 seconds.
+    # actions = game.actions(state)         = ~3 seconds.
+    # result = game.result(state, action)   = 0.16 seconds.
+
+    print("Time taken to play out game: {} s".format(time() - time_b))
+    print("Iterations: {}".format(counter))
+    """

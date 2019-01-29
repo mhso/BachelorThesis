@@ -14,7 +14,7 @@ class Human(GameAI):
         
         log("Waiting for player input...")
         self.state = None
-        self.gui.listen_for_action(self)
+        self.gui.add_action_listener(self)
         while self.state is None:
             sleep(0.1)
         return self.state

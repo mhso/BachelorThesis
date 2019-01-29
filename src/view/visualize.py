@@ -335,7 +335,7 @@ class Gui():
             self.listener.action_made(result)
             self.listener = None
 
-    def listen_for_action(self, listener):
+    def add_action_listener(self, listener):
         """
         Called by main while the game loop is running.
         """

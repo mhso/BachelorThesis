@@ -47,3 +47,10 @@ class Game(ABC):
         If the given player has lost, return 0, else return 1
         """
         pass
+
+    @abstractmethod
+    def register_observer(self, observer):
+        """
+        Registere observers
+        """
+        pass

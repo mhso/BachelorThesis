@@ -16,7 +16,7 @@ from time import sleep
 
 # from FakeTestClasses import *
 
-class View:
+class Gui(threading.Thread):
     game        = None
     board       = None
     player      = None
@@ -45,17 +45,33 @@ class View:
     pmar = None
 
     def __init__(self, game):
+        
+        game.register_observer(self)
         self.game = game
         state = game.start_state()
         self.board = state.board
         self.player = state.player
         self.init()
+        threading.Thread.__init__(self)
+    
+    def notify(self, observable, *args, **kwargs):
+        print('Got', args, kwargs, 'From', observable)
+        state = State(self.board, self.player)
+        state = observable.actions(state)
+        self.update(state)
+
+    
+    def run(self):
+        print("Observer run")
+        self.root.mainloop()
+        
 
     def init(self):
         self.init_window()
         self.load_graphics()
         self.init_board()
-        self.root.mainloop()
+        
+        
     
      # Creating main window
     def init_window(self):
@@ -304,38 +320,39 @@ class View:
         self.board = state.board
         self.player = State.player
         self.draw_board(self.board)
+        self.canvas.update()
 
-class GuiThread (threading.Thread):
-    game = None
-    view = None
+# class GuiThread (threading.Thread):
+#     game = None
+#     view = None
 
-    def __init__(self, threadID, name, counter, game):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.counter = counter
-        self.game = game
+#     def __init__(self, threadID, name, counter, game):
+#         threading.Thread.__init__(self)
+#         self.threadID = threadID
+#         self.name = name
+#         self.counter = counter
+#         self.game = game
 
-    def run(self):
-        self.view = View(game=self.game)
+#     def run(self):
+#         self.view = View(game=self.game)
 
-    def update(self, state):
-        self.view.update(state)
+#     def update(self, state):
+#         self.view.update(state)
         
 
-class Gui():
-    guiThread = None
+# class Gui():
+#     guiThread = None
 
-    def __init__(self,  game):
-        threading.Thread.__init__(self)
-        # Create new threads
-        self.guiThread = GuiThread(1, "Thread-1", 1, game)
+#     def __init__(self,  game):
+#         threading.Thread.__init__(self)
+#         # Create new threads
+#         self.guiThread = GuiThread(1, "Thread-1", 1, game)
         
-        # Start new Threads
-        self.guiThread.start()
+#         # Start new Threads
+#         self.guiThread.start()
 
-    def update(self, state):
-        self.guiThread.update(state)
+#     def update(self, state):
+#         self.guiThread.update(state)
 
 
 # from controller.game import Game

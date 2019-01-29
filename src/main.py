@@ -23,6 +23,8 @@ def play_game(game, player_white, player_black, show_gui=False):
     gui = None
     if show_gui:
         gui = Gui(game)
+        game.register_observer(gui)
+        gui.start()
     while not game.terminal_test(state):
         print(state, flush=True)
         if game.player(state):

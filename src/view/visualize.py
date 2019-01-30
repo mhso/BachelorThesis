@@ -29,9 +29,13 @@ class Gui():
     mouseclick_move_list = None
 
     # Variables for board grid placement and design
-    left_space  = 50
-    top_space   = 50
-    field_size  = 55
+    left_space  = 30
+    top_space   = 30
+    board_field_size  = 55
+    board_hlen = -1
+    board_vlen = -1
+    board_no_of_rows = -1
+    board_no_of_cols = -1
 
     pblt = None
     pbl = None
@@ -47,6 +51,12 @@ class Gui():
         self.mouseclick_move_list = []
         self.game = game
         self.state = game.start_state()
+        
+        self.board_no_of_rows = self.state.board.shape[0]
+        self.board_no_of_cols = self.state.board.shape[1]
+        self.board_hlen = self.board_no_of_rows * self.board_field_size + self.left_space
+        self.board_vlen = self.board_no_of_cols * self.board_field_size + self.top_space
+
         self.init()
 
     def notify(self, observable, *args, **kwargs):
@@ -69,15 +79,18 @@ class Gui():
         self.root.bind("<Destroy>", lambda e: self.close())
         self.root.title("Latrunculi - The Game")
         self.root.iconbitmap('./view/gfx/favicon.ico')
-        self.canvas = tk.Canvas(self.root, width=540, height=680, background='lightgray')
+        self.canvas = tk.Canvas(self.root, width=510, height=600, background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
     # Initialize the board
     def init_board(self):
         self.widget_menubar(self.root)
         self.update(self.state)
-        self.draw_axis_numbers(self.left_space, self.top_space, self.field_size, self.state.board)
+        self.draw_axis_numbers(self.left_space, self.top_space, self.board_field_size, self.state.board)
+        self.draw_board_grid(self.state.board)
+        self.draw_status_bg()
         self.draw_status_text(canvas=self.canvas, msg="")
+        
 
     def load_graphics(self):
         # load the .gif image file
@@ -95,9 +108,7 @@ class Gui():
         x = eventorigin.x
         y = eventorigin.y
 
-        coords = self.field_clicked(x, y, self.state.board, self.left_space, self.top_space, self.field_size)
-
-        # if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]):
+        coords = self.field_clicked(x, y, self.state.board, self.left_space, self.top_space, self.board_field_size)
 
         if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
@@ -173,33 +184,38 @@ class Gui():
 
     # Places images on canvas at position
     def field(self, x, y, canvas, img_filename):
-        canvas.create_image(x, y, image=img_filename, anchor=tk.NW) 
+        canvas.create_image(x, y, image=img_filename, anchor=tk.NW, tags="board_field") 
 
     # Draw axis fields nuumbers
-    def draw_axis_numbers(self, left_space, top_space, field_size, board):
+    def draw_axis_numbers(self, left_space, top_space, board_field_size, board):
         textcolor   = "darkblue"
-        no_of_rows    = board.shape[0]
-        no_of_cols    = board.shape[1]
 
         # Draw row numbers on canvas
-        rt = 10+top_space
-        for row in range(0, no_of_rows):
-            self.canvas.create_text(left_space-10, rt+20, fill=textcolor, font="Courier 20", text=row)
-            rt = rt + field_size
+        rt = 10 + top_space
+        for row in range(self.board_no_of_rows):
+            self.canvas.create_text(left_space-10, rt+20, fill=textcolor, font="Courier 20", text=row, tags="axis_numbers")
+            rt = rt + board_field_size
 
         # Draw column numbers on canvas
-        ct = 10+left_space
-        for col in range(0, no_of_cols):
-            self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col)
-            ct = ct + field_size
+        ct = 10 + left_space
+        for col in range(self.board_no_of_cols):
+            self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col, tags="axis_numbers")
+            ct = ct + board_field_size
+
+    def draw_status_bg(self):
+        
+        x2 = self.board_hlen + self.left_space
+        print("board_field_size: {}".format(x2))
+        print("state.board[0]: {}".format(self.state.board[0]))
+        print("left_space: {}".format(self.left_space))
+        print("x2: {}".format(x2))
+        self.canvas.create_rectangle(self.left_space, 510, x2, 580, fill='white', tags="status_bg")
 
     def draw_status_text(self, canvas, msg):
-        canvas.create_rectangle(50, 510, 490, 650, fill='white')
         text_player_info = "Player1 is white, Player2 is black"
-        # text_current_player = "Currentplayer is: {}".format(self.player_color(self.player))
         text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
         text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
-        canvas.create_text(60,515, fill="black", font="Courier 10", text=text, anchor=tk.NW)
+        canvas.create_text(60,515, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
 
     def player_color(self, player):
         if player:
@@ -220,107 +236,95 @@ class Gui():
 
     # Draw board and place pieces
     def draw_board_grid(self, board):
-        canvas      = self.canvas
-        field_size   = self.field_size
-        left_space  = self.left_space
-        top_space   = self.top_space
-        gridcolor   = "black"
-        no_of_rows    = board.shape[0]
-        no_of_cols    = board.shape[1]
-        py          = self.top_space
-        px2         = self.left_space
-        hlen        = no_of_rows*field_size+left_space
-        vlen        = no_of_cols*field_size+top_space
-
-        for y in range(no_of_rows):
-            px = left_space
+        gridcolor = "black"
+ 
+        py = self.top_space
+        px2 = self.left_space
+        
+        for y in range(self.board_no_of_rows):
+            px = self.left_space
             # Draw vertical lines (column)
-            canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
+            self.canvas.create_line(px2, self.top_space, px2, self.board_vlen, fill=gridcolor, tags="board_grid")
             
-            for x in range(no_of_cols):
+            for x in range(self.board_no_of_cols):
 
-                px = px + field_size
+                px = px + self.board_field_size
                 
                 # Draw horizontal lines (row)
-                canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
-            py  = py + field_size
-            px2 = px2 + field_size
+                self.canvas.create_line(self.left_space, py, self.board_hlen, py, fill=gridcolor, tags="board_grid")
+            py  = py + self.board_field_size
+            px2 = px2 + self.board_field_size
 
         # Draw last horizontal lines (row)
-        canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
+        self.canvas.create_line(self.left_space, py, self.board_hlen, py, fill=gridcolor, tags="board_grid")
 
         # Draw last vertical lines (column)
-        canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
+        self.canvas.create_line(px2, self.top_space, px2, self.board_vlen, fill=gridcolor, tags="board_grid")
 
     # Draw board and place pieces
     def draw_board(self, board):
-        canvas      = self.canvas
-        field_size   = self.field_size
-        left_space  = self.left_space
-        top_space   = self.top_space
-        # gridcolor   = "black"
-        no_of_rows    = board.shape[0]
-        no_of_cols    = board.shape[1]
-        py          = self.top_space
-        px2         = self.left_space
-        hlen        = no_of_rows*field_size+left_space
-        vlen        = no_of_cols*field_size+top_space
-        
-        #Hack, clear canvas
-        canvas.create_rectangle(50, 50, hlen, vlen, fill='lightgray')
+        py = self.top_space
+        px2 = self.left_space
 
-        for y in range(no_of_rows):
-            px = left_space
+        for y in range(self.board_no_of_rows):
+            px = self.left_space
             
-            for x in range(no_of_cols):
+            for x in range(self.board_no_of_cols):
                 val = board[y, x]
                 
                 # If piece on field, place piece image
                 if val != 0:
-                    self.field(px, py, canvas, self.select_piece_type(val))
+                    self.field(px, py, self.canvas, self.select_piece_type(val))
                 
                 # Mark if clicked by mouse
                 if len(self.mouseclick_move_list) > 0 and self.mouseclick_move_list[0] == (y, x):
                     if val < 0:
-                        self.field(px, py, canvas, self.pblc) # Mark black piece
+                        self.field(px, py, self.canvas, self.pblc) # Mark black piece
                     else:
-                        self.field(px, py, canvas, self.pwhc) # Mark white piece
+                        self.field(px, py, self.canvas, self.pwhc) # Mark white piece
                 
                 # Mark legal moves
                 if len(self.mouseclick_move_list) > 0 and val == 0  and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
-                    self.field(px, py, canvas, self.pmar)
+                    self.field(px, py, self.canvas, self.pmar)
 
-                px = px + field_size
+                px = px + self.board_field_size
 
-            py  = py + field_size
-            px2 = px2 + field_size
+            py  = py + self.board_field_size
+            px2 = px2 + self.board_field_size
 
 
     # Check wheather (white) piece is owned by currentPlayer one
     def is_currentPlayer_piece(self, player, value):
-
             if (value < 0 and player == 0) or (value > 0 and player == 1):
                 return True
             else:
                 return False
 
-    def field_clicked(self, y, x, board, left_space, top_space, field_size):
+    def field_clicked(self, y, x, board, left_space, top_space, board_field_size):
         ymin = top_space
         for row in range(board.shape[0]):
             xmin = left_space
-            ymax = ymin + field_size
+            ymax = ymin + board_field_size
             for col in range(board.shape[1]):
-                xmax = xmin+field_size
+                xmax = xmin+board_field_size
                 if x >= xmin and x < xmax and y >= ymin and y < ymax:
                     return col, row
                 xmin = xmax
-            ymin = ymin + field_size
+            ymin = ymin + board_field_size
         return (-1, -1)
+
+    def canvas_remove_by_tag(self, tag):
+        self.canvas.delete(tag)
+
+    def canvas_remove_tags(self, tags):
+        for tag in tags:
+            self.canvas.delete(tag)
 
     def update(self, state):
         self.state = state
+
+        self.canvas_remove_tags(['board_field', 'status_text'])
         self.draw_board(state.board)
-        self.draw_board_grid(state.board)
         self.draw_status_text(self.canvas, "Nice move")
         log("Updated")
 

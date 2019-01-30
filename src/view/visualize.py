@@ -36,6 +36,7 @@ class Gui():
     board_vlen = -1
     board_no_of_rows = -1
     board_no_of_cols = -1
+    status_bg_heigt = 100
 
     pblt = None
     pbl = None
@@ -54,8 +55,8 @@ class Gui():
         
         self.board_no_of_rows = self.state.board.shape[0]
         self.board_no_of_cols = self.state.board.shape[1]
-        self.board_hlen = self.board_no_of_rows * self.board_field_size + self.left_space
-        self.board_vlen = self.board_no_of_cols * self.board_field_size + self.top_space
+        self.board_hlen = self.board_no_of_rows * self.board_field_size
+        self.board_vlen = self.board_no_of_cols * self.board_field_size
 
         self.init()
 
@@ -79,7 +80,9 @@ class Gui():
         self.root.bind("<Destroy>", lambda e: self.close())
         self.root.title("Latrunculi - The Game")
         self.root.iconbitmap('./view/gfx/favicon.ico')
-        self.canvas = tk.Canvas(self.root, width=510, height=600, background='lightgray')
+        w = self.board_hlen + self.left_space + 20
+        h = self.board_vlen + self.top_space + self.status_bg_heigt + 20
+        self.canvas = tk.Canvas(self.root, width=w, height=h, background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
     # Initialize the board
@@ -204,18 +207,22 @@ class Gui():
 
     def draw_status_bg(self):
         
+        y1 = self.board_vlen + self.top_space + 10
         x2 = self.board_hlen + self.left_space
-        print("board_field_size: {}".format(x2))
-        print("state.board[0]: {}".format(self.state.board[0]))
-        print("left_space: {}".format(self.left_space))
-        print("x2: {}".format(x2))
-        self.canvas.create_rectangle(self.left_space, 510, x2, 580, fill='white', tags="status_bg")
+        y2 = self.board_vlen + self.top_space + self.status_bg_heigt
+
+        self.canvas.create_rectangle(self.left_space, y1, x2, y2, fill='white', tags="status_bg")
 
     def draw_status_text(self, canvas, msg):
+        
+        x1 = self.left_space + 10
+        y1 = self.board_vlen + self.top_space + 15
+        
+        
         text_player_info = "Player1 is white, Player2 is black"
         text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
         text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
-        canvas.create_text(60,515, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
+        canvas.create_text(x1, y1, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
 
     def player_color(self, player):
         if player:
@@ -244,22 +251,22 @@ class Gui():
         for y in range(self.board_no_of_rows):
             px = self.left_space
             # Draw vertical lines (column)
-            self.canvas.create_line(px2, self.top_space, px2, self.board_vlen, fill=gridcolor, tags="board_grid")
+            self.canvas.create_line(px2, self.top_space, px2, self.board_vlen + self.top_space, fill=gridcolor, tags="board_grid")
             
             for x in range(self.board_no_of_cols):
 
                 px = px + self.board_field_size
                 
                 # Draw horizontal lines (row)
-                self.canvas.create_line(self.left_space, py, self.board_hlen, py, fill=gridcolor, tags="board_grid")
+                self.canvas.create_line(self.left_space, py, self.board_hlen + self.left_space, py, fill=gridcolor, tags="board_grid")
             py  = py + self.board_field_size
             px2 = px2 + self.board_field_size
 
         # Draw last horizontal lines (row)
-        self.canvas.create_line(self.left_space, py, self.board_hlen, py, fill=gridcolor, tags="board_grid")
+        self.canvas.create_line(self.left_space, py, self.board_hlen +  self.left_space, py, fill=gridcolor, tags="board_grid")
 
         # Draw last vertical lines (column)
-        self.canvas.create_line(px2, self.top_space, px2, self.board_vlen, fill=gridcolor, tags="board_grid")
+        self.canvas.create_line(px2, self.top_space, px2, self.board_vlen + self.top_space, fill=gridcolor, tags="board_grid")
 
     # Draw board and place pieces
     def draw_board(self, board):

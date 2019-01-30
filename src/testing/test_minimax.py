@@ -9,7 +9,7 @@ def run_tests():
     minimax = Minimax(game)
     state = game.start_state()
 
-    state.board[0][:2] = 0 # Simulate black losing 2 pieces.
+    state.board[0][:2] = -2 # Simulate black losing 2 pieces.
     eval_w = minimax.evaluate_board(state)
     state.player = not state.player # Simulate black having the turn.
     eval_b = minimax.evaluate_board(state)
@@ -18,3 +18,5 @@ def run_tests():
     assertion.assert_equal(-2, eval_b, "evaluate board negative")
 
     # =================================
+
+

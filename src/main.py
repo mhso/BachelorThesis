@@ -75,7 +75,7 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
         if gui is not None:
             # If GUI is used, (and if a non-human is playing),
             # create seperate thread to run the AI game logic in.
-            game_thread = SupportThread((game, p1, p2, type1, type2, iteration, save, gui))
+            game_thread = SupportThread((game, p1, p2, type1, type2, iteration-1, save, gui))
             game_thread.start() # Start game logic thread.
             gui.run() # Start GUI on main thread.
         else:
@@ -85,6 +85,7 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
         print("Exiting by interrupt...")
         if gui is not None:
             gui.close()
+        exit(0)
     finally:
         if save:
             if type1 == "mcts" or type2 == "mcts":

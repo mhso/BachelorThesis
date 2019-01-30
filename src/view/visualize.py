@@ -24,6 +24,7 @@ class Gui():
     canvas      = None
     listener    = None
     active      = True
+    text_field  = None
 
     # List for keeping track of active valid mouse clicks
     mouseclick_move_list = None
@@ -87,18 +88,11 @@ class Gui():
         h = self.board_vlen + self.top_space + 20
         self.canvas = tk.Canvas(self.root, width=w, height=h, background='lightgray')
         self.canvas.configure(bd=0, highlightthickness=0, relief='ridge')
-        # self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
         self.canvas.grid(row=0, column=0)
 
-        # w = self.root.winfo_width()
-        # print("w: {}".format(w))
         status_text_width = int(60 / 490 * self.board_hlen) + 2 # Fi for compensating for text field width based on char.
-        # print("status_text_width: {}".format(status_text_width))
-        text = tk.Text(self.root, width=status_text_width, height=self.status_field_height)
-        text.grid(row=1, column=0, pady=2, padx=self.top_space)
-        # tk.Label(self.root, text="First").grid(row=1, column=0)
-        # self.canvas.pack()
-
+        self.text_field = tk.Text(self.root, width=status_text_width, height=self.status_field_height)
+        self.text_field.grid(row=1, column=0, pady=2, padx=self.top_space)
 
     # Initialize the board
     def init_board(self):
@@ -106,9 +100,6 @@ class Gui():
         self.update(self.state)
         self.draw_axis_numbers(self.left_space, self.top_space, self.board_field_size, self.state.board)
         self.draw_board_grid(self.state.board)
-        # self.draw_status_bg()
-        # self.draw_status_text(canvas=self.canvas, msg="")
-
 
     def load_graphics(self):
         # load the .gif image file
@@ -130,7 +121,7 @@ class Gui():
 
         if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
-            # self.draw_status_text(self.canvas, "Selected source coords: ({})".format(coords))
+            self.draw_status_text("Selected source coords: ({})".format(coords))
         else:
             if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
                 self.make_move(self.state, coords, coords)
@@ -142,7 +133,7 @@ class Gui():
                     self.mouseclick_move_list.append(coords)
                 else:
                     if self.is_legal_move(self.mouseclick_move_list[0], coords):
-                        # self.draw_status_text(self.canvas, "Selected destination coords: ({})".format(coords))
+                        self.draw_status_text("Selected destination coords: ({})".format(coords))
                         self.mouseclick_move_list.append(coords)
 
                         self.make_move(self.state, self.mouseclick_move_list[0], self.mouseclick_move_list[1])
@@ -220,22 +211,14 @@ class Gui():
             self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col, tags="axis_numbers")
             ct = ct + board_field_size
 
-    # def draw_status_bg(self):
-    #     y1 = self.board_vlen + self.top_space + 10
-    #     x2 = self.board_hlen + self.left_space
-    #     y2 = self.board_vlen + self.top_space + self.status_field_height
+    def draw_status_text(self, msg):
+        x1 = self.left_space + 10
+        y1 = self.board_vlen + self.top_space + 15
 
-    #     self.canvas.create_rectangle(self.left_space, y1, x2, y2, fill='white', tags="status_bg")
-
-    # def draw_status_text(self, canvas, msg):
-
-    #     x1 = self.left_space + 10
-    #     y1 = self.board_vlen + self.top_space + 15
-
-    #     text_player_info = "Player1 is white, Player2 is black"
-    #     text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
-    #     text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
-    #     canvas.create_text(x1, y1, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
+        text_player_info = "Player1 is white, Player2 is black"
+        text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
+        text = "{}\n{}\n{}\n".format(text_player_info, text_current_player, msg)
+        self.text_field.insert(tk.END, text)
 
     def player_color(self, player):
         if player:
@@ -354,7 +337,8 @@ class Gui():
         Get the new state, and notify any listener about
         the new state.
         """
-        log("Moved from {} to {}".format(source, dest))
+        log("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
+        self.draw_status_text("{} moved from {} to {}".format(self.player_color(state.player), source, dest))        
 
         result = self.game.result(state, Action(source, dest))
         self.state = result

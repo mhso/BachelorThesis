@@ -28,15 +28,17 @@ class Gui():
     # List for keeping track of active valid mouse clicks
     mouseclick_move_list = None
 
-    # Variables for board grid placement and design
+    # Variables for board grid placement and design½
     left_space  = 30
     top_space   = 30
+
     board_field_size  = 55
     board_hlen = -1
     board_vlen = -1
     board_no_of_rows = -1
     board_no_of_cols = -1
-    status_bg_heigt = 100
+
+    status_field_height = 5
 
     pblt = None
     pbl = None
@@ -52,7 +54,7 @@ class Gui():
         self.mouseclick_move_list = []
         self.game = game
         self.state = game.start_state()
-        
+
         self.board_no_of_rows = self.state.board.shape[0]
         self.board_no_of_cols = self.state.board.shape[1]
         self.board_hlen = self.board_no_of_rows * self.board_field_size
@@ -80,10 +82,23 @@ class Gui():
         self.root.bind("<Destroy>", lambda e: self.close())
         self.root.title("Latrunculi - The Game")
         self.root.iconbitmap('./view/gfx/favicon.ico')
+        self.root.configure(background='lightgray')
         w = self.board_hlen + self.left_space + 20
-        h = self.board_vlen + self.top_space + self.status_bg_heigt + 20
+        h = self.board_vlen + self.top_space + 20
         self.canvas = tk.Canvas(self.root, width=w, height=h, background='lightgray')
-        self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
+        self.canvas.configure(bd=0, highlightthickness=0, relief='ridge')
+        # self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
+        self.canvas.grid(row=0, column=0)
+
+        # w = self.root.winfo_width()
+        # print("w: {}".format(w))
+        status_text_width = int(60 / 490 * self.board_hlen) + 2 # Fi for compensating for text field width based on char.
+        # print("status_text_width: {}".format(status_text_width))
+        text = tk.Text(self.root, width=status_text_width, height=self.status_field_height)
+        text.grid(row=1, column=0, pady=2, padx=self.top_space)
+        # tk.Label(self.root, text="First").grid(row=1, column=0)
+        # self.canvas.pack()
+
 
     # Initialize the board
     def init_board(self):
@@ -91,9 +106,9 @@ class Gui():
         self.update(self.state)
         self.draw_axis_numbers(self.left_space, self.top_space, self.board_field_size, self.state.board)
         self.draw_board_grid(self.state.board)
-        self.draw_status_bg()
-        self.draw_status_text(canvas=self.canvas, msg="")
-        
+        # self.draw_status_bg()
+        # self.draw_status_text(canvas=self.canvas, msg="")
+
 
     def load_graphics(self):
         # load the .gif image file
@@ -115,7 +130,7 @@ class Gui():
 
         if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
-            self.draw_status_text(self.canvas, "Selected source coords: ({})".format(coords))
+            # self.draw_status_text(self.canvas, "Selected source coords: ({})".format(coords))
         else:
             if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
                 self.make_move(self.state, coords, coords)
@@ -127,7 +142,7 @@ class Gui():
                     self.mouseclick_move_list.append(coords)
                 else:
                     if self.is_legal_move(self.mouseclick_move_list[0], coords):
-                        self.draw_status_text(self.canvas, "Selected destination coords: ({})".format(coords))
+                        # self.draw_status_text(self.canvas, "Selected destination coords: ({})".format(coords))
                         self.mouseclick_move_list.append(coords)
 
                         self.make_move(self.state, self.mouseclick_move_list[0], self.mouseclick_move_list[1])
@@ -187,7 +202,7 @@ class Gui():
 
     # Places images on canvas at position
     def field(self, x, y, canvas, img_filename):
-        canvas.create_image(x, y, image=img_filename, anchor=tk.NW, tags="board_field") 
+        canvas.create_image(x, y, image=img_filename, anchor=tk.NW, tags="board_field")
 
     # Draw axis fields nuumbers
     def draw_axis_numbers(self, left_space, top_space, board_field_size, board):
@@ -205,24 +220,22 @@ class Gui():
             self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col, tags="axis_numbers")
             ct = ct + board_field_size
 
-    def draw_status_bg(self):
-        
-        y1 = self.board_vlen + self.top_space + 10
-        x2 = self.board_hlen + self.left_space
-        y2 = self.board_vlen + self.top_space + self.status_bg_heigt
+    # def draw_status_bg(self):
+    #     y1 = self.board_vlen + self.top_space + 10
+    #     x2 = self.board_hlen + self.left_space
+    #     y2 = self.board_vlen + self.top_space + self.status_field_height
 
-        self.canvas.create_rectangle(self.left_space, y1, x2, y2, fill='white', tags="status_bg")
+    #     self.canvas.create_rectangle(self.left_space, y1, x2, y2, fill='white', tags="status_bg")
 
-    def draw_status_text(self, canvas, msg):
-        
-        x1 = self.left_space + 10
-        y1 = self.board_vlen + self.top_space + 15
-        
-        
-        text_player_info = "Player1 is white, Player2 is black"
-        text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
-        text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
-        canvas.create_text(x1, y1, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
+    # def draw_status_text(self, canvas, msg):
+
+    #     x1 = self.left_space + 10
+    #     y1 = self.board_vlen + self.top_space + 15
+
+    #     text_player_info = "Player1 is white, Player2 is black"
+    #     text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
+    #     text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
+    #     canvas.create_text(x1, y1, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
 
     def player_color(self, player):
         if player:
@@ -244,19 +257,19 @@ class Gui():
     # Draw board and place pieces
     def draw_board_grid(self, board):
         gridcolor = "black"
- 
+
         py = self.top_space
         px2 = self.left_space
-        
+
         for y in range(self.board_no_of_rows):
             px = self.left_space
             # Draw vertical lines (column)
             self.canvas.create_line(px2, self.top_space, px2, self.board_vlen + self.top_space, fill=gridcolor, tags="board_grid")
-            
+
             for x in range(self.board_no_of_cols):
 
                 px = px + self.board_field_size
-                
+
                 # Draw horizontal lines (row)
                 self.canvas.create_line(self.left_space, py, self.board_hlen + self.left_space, py, fill=gridcolor, tags="board_grid")
             py  = py + self.board_field_size
@@ -275,21 +288,21 @@ class Gui():
 
         for y in range(self.board_no_of_rows):
             px = self.left_space
-            
+
             for x in range(self.board_no_of_cols):
                 val = board[y, x]
-                
+
                 # If piece on field, place piece image
                 if val != 0:
                     self.field(px, py, self.canvas, self.select_piece_type(val))
-                
+
                 # Mark if clicked by mouse
                 if len(self.mouseclick_move_list) > 0 and self.mouseclick_move_list[0] == (y, x):
                     if val < 0:
                         self.field(px, py, self.canvas, self.pblc) # Mark black piece
                     else:
                         self.field(px, py, self.canvas, self.pwhc) # Mark white piece
-                
+
                 # Mark legal moves
                 if len(self.mouseclick_move_list) > 0 and val == 0  and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
                     self.field(px, py, self.canvas, self.pmar)
@@ -332,7 +345,7 @@ class Gui():
 
         self.canvas_remove_tags(['board_field', 'status_text'])
         self.draw_board(state.board)
-        self.draw_status_text(self.canvas, "Nice move")
+        # self.draw_status_text(self.canvas, "Nice move")
         log("Updated")
 
     def make_move(self, state, source, dest):

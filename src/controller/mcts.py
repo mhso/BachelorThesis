@@ -104,15 +104,22 @@ class MCTS(GameAI):
         for the current player, is returned.
         """
         state = node.state
-        
+        counter = 0
+
         while not self.game.terminal_test(state):
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
+            counter += 1
+
+        log("Iterations spent on rollout: {}".format(counter))
         return self.game.utility(state, og_state.player)
 
     def execute_action(self, state):
         super.__doc__
+        
         time_total_b = time()
+        log("MCTS is calculating the best move...")
+
         # Get state ID and look the corresponding node up in the state map.
         state_id = state.stringify()
         original_node = None
@@ -141,10 +148,8 @@ class MCTS(GameAI):
                 node = node.children[0] # Select first child of expanded Node.
                 node.state.player = not node.state.player
 
-            #time_b = time()
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(node.state, node)
-            #log("Rollout duration: {} s".format(time() - time_b))
             self.back_propogate(node, value)
 
             node = original_node

@@ -13,27 +13,30 @@ from model.state import State, Action
 
 import threading
 from time import sleep
+from view.log import log
 
 # from FakeTestClasses import *
 
-class MainWindow:
+class Gui():
     game        = None
-    board       = None
-    player      = None
-    # state       = None
+    state       = None
     root        = None
     canvas      = None
-    # Variables for mouse click handling
-    click_x         = -1
-    click_y         = -1
-    click_x_last    = -1
-    click_y_last    = -1
-    clickCount      = -1
+    listener    = None
+    active      = True
+
+    # List for keeping track of active valid mouse clicks
+    mouseclick_move_list = None
 
     # Variables for board grid placement and design
-    left_space  = 50
-    top_space   = 50
-    fieldsize   = 55
+    left_space  = 30
+    top_space   = 30
+    board_field_size  = 55
+    board_hlen = -1
+    board_vlen = -1
+    board_no_of_rows = -1
+    board_no_of_cols = -1
+    status_bg_heigt = 100
 
     pblt = None
     pbl = None
@@ -45,91 +48,113 @@ class MainWindow:
     pmar = None
 
     def __init__(self, game):
+        game.register_observer(self)
+        self.mouseclick_move_list = []
         self.game = game
-        state = game.start_state()
-        self.board = state.board
-        self.player = state.player
+        self.state = game.start_state()
+        
+        self.board_no_of_rows = self.state.board.shape[0]
+        self.board_no_of_cols = self.state.board.shape[1]
+        self.board_hlen = self.board_no_of_rows * self.board_field_size
+        self.board_vlen = self.board_no_of_cols * self.board_field_size
+
         self.init()
+
+    def notify(self, observable, *args, **kwargs):
+        log("Got {}, {} {}".format(args, kwargs, observable))
+        self.state = observable.actions(self.state)
+        self.update(self.state)
+
+    def run(self):
+        self.root.mainloop()
 
     def init(self):
         self.init_window()
         self.load_graphics()
         self.init_board()
-        self.root.mainloop()
-    
+
      # Creating main window
     def init_window(self):
         self.root = tk.Tk()
-        self.root.bind("<Button 1>",self.getorigin)
+        self.root.bind("<Button 1>", self.getorigin)
+        self.root.bind("<Destroy>", lambda e: self.close())
         self.root.title("Latrunculi - The Game")
-        self.root.iconbitmap('gfx/favicon.ico')
-        self.canvas = tk.Canvas(self.root,width=540,height=680,background='lightgray')
+        self.root.iconbitmap('./view/gfx/favicon.ico')
+        w = self.board_hlen + self.left_space + 20
+        h = self.board_vlen + self.top_space + self.status_bg_heigt + 20
+        self.canvas = tk.Canvas(self.root, width=w, height=h, background='lightgray')
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
     # Initialize the board
     def init_board(self):
         self.widget_menubar(self.root)
-        self.draw_board(self.board)
-        self.draw_axis_numbers(self.left_space, self.top_space, self.fieldsize, self.board)
-        self.draw_status_text(canvas=self.canvas, msg='Waiting for currentPlayer1, please move a piece...')
+        self.update(self.state)
+        self.draw_axis_numbers(self.left_space, self.top_space, self.board_field_size, self.state.board)
+        self.draw_board_grid(self.state.board)
+        self.draw_status_bg()
+        self.draw_status_text(canvas=self.canvas, msg="")
+        
 
     def load_graphics(self):
         # load the .gif image file
-        self.pblt    = tk.PhotoImage(file='gfx/pcs_bl_t.png')
-        self.pbl     = tk.PhotoImage(file='gfx/pcs_bl.png')
-        self.pblc    = tk.PhotoImage(file='gfx/pcs_bl_c.png')
-        self.pwh     = tk.PhotoImage(file='gfx/pcs_wh.png')
-        self.pwht    = tk.PhotoImage(file='gfx/pcs_wh_t.png')
-        self.pwhc    = tk.PhotoImage(file='gfx/pcs_wh_c.png')
-        self.pbla    = tk.PhotoImage(file='gfx/pcs_blank.png')
-        self.pmar    = tk.PhotoImage(file='gfx/pcs_mark.png')
+        self.pblt = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
+        self.pbl = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
+        self.pblc = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
+        self.pwh = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
+        self.pwht = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
+        self.pwhc = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
+        self.pbla = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
+        self.pmar = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
 
-    def clicksaver(self, x, y):
-        global click_x, click_y, click_x_last, click_y_last, clickCount
-        if (self.clickCount == 0):
-            click_x_last = self.click_x
-            click_y_last = self.click_y
-            click_x = x
-            click_y = y
-            clickCount = -1
-        else:
-            click_x_last = -1
-            click_y_last = -1
-            click_x = x
-            click_y = y
-            clickCount = 0
-    
     # Return coordinat for mouse click
     def getorigin(self, eventorigin):
-        left_space  = self.left_space
-        top_space   = self.top_space
-        fieldsize   = self.fieldsize
         x = eventorigin.x
         y = eventorigin.y
-        self.clicksaver(x, y)
-        coords = self.field_clicked(x, y, self.board, left_space, top_space, fieldsize)
-        if not self.is_currentPlayer1_piece(self.player, self.board[coords]):
-            coords = (-1,-1)
-        board = self.unmark_board(self.board, coords)
-        board = self.mark_unmark_piece(board, coords)
-        bx, by = coords
-        self.draw_status_text(self.canvas, 'Selected: (%(x)s,%(y)s)'%{'x':bx, 'y':by})
 
-        if self.is_currentPlayer1_piece(self.player, board[coords]) and not (click_x_last == -1 or click_y_last == -1 ):
-            (x2, y2) = self.field_clicked(x, y, board, left_space, top_space, fieldsize)
-            self.draw_status_text(self.canvas, 'Move from: (%(x)s,%(y)s) to (%(x2)s,%(y2)s)'%{'x':bx, 'y':by, 'x2':x2, 'y2':y2})
-        self.draw_board(board)
+        coords = self.field_clicked(x, y, self.state.board, self.left_space, self.top_space, self.board_field_size)
+
+        if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
+            self.mouseclick_move_list.append(coords)
+            self.draw_status_text(self.canvas, "Selected source coords: ({})".format(coords))
+        else:
+            if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
+                self.make_move(self.state, coords, coords)
+            elif len(self.mouseclick_move_list) == 1:
+                if self.mouseclick_move_list[0] == coords:
+                    self.mouseclick_move_list.pop()
+                elif self.is_currentPlayer_piece(self.state.player, self.state.board[coords]):
+                    self.mouseclick_move_list.pop()
+                    self.mouseclick_move_list.append(coords)
+                else:
+                    if self.is_legal_move(self.mouseclick_move_list[0], coords):
+                        self.draw_status_text(self.canvas, "Selected destination coords: ({})".format(coords))
+                        self.mouseclick_move_list.append(coords)
+
+                        self.make_move(self.state, self.mouseclick_move_list[0], self.mouseclick_move_list[1])
+                        self.mouseclick_move_list.clear()
+
+            elif len(self.mouseclick_move_list) > 2:
+                self.mouseclick_move_list.pop()
+
+        log("mouseclick_move_list\n{}".format(self.mouseclick_move_list))
+
+        self.update(self.state)
 
     # Confirms if a move i legal
     def is_legal_move(self, source_coords, dest_coords):
-        state = State(self.board, self.player)
-        for action in self.game.actions(state):
+        for action in self.game.actions(self.state):
             if action.source == source_coords and action.dest == dest_coords:
                 return True
         return False
 
+    def has_legal_move(self, source_coords):
+        for action in self.game.actions(self.state):
+            if action.source == source_coords:
+                return True
+        return False
+
     def hello(self):
-        print ("hello!")
+        print("hello!")
 
     def menubar_help_about_popup(self):
         showinfo("About", "This great game of Latrunculi is made as addition to our bachelor project at IT-University of Copenhagen, please enjoy.\n\n ITU 2019 Denmark\n\n Alexander M. Hansen <alhm@itu.dk>\n Mikkel H. Sørensen <mhso@itu.dk>\n Frank Andersen <fand@itu.dk>\n ")
@@ -162,173 +187,176 @@ class MainWindow:
 
     # Places images on canvas at position
     def field(self, x, y, canvas, img_filename):
-        canvas.create_image(x, y, image=img_filename, anchor=tk.NW) 
+        canvas.create_image(x, y, image=img_filename, anchor=tk.NW, tags="board_field") 
 
     # Draw axis fields nuumbers
-    def draw_axis_numbers(self, left_space, top_space, fieldsize, board):
+    def draw_axis_numbers(self, left_space, top_space, board_field_size, board):
         textcolor   = "darkblue"
-        noOfRows    = board.shape[0]
-        noOfCols    = board.shape[1]
+
         # Draw row numbers on canvas
-        rt = 10+top_space
-        for row in range(0, noOfRows):
-            self.canvas.create_text(left_space-10, rt+20, fill=textcolor, font="Courier 20", text=row)
-            rt=rt+fieldsize
+        rt = 10 + top_space
+        for row in range(self.board_no_of_rows):
+            self.canvas.create_text(left_space-10, rt+20, fill=textcolor, font="Courier 20", text=row, tags="axis_numbers")
+            rt = rt + board_field_size
 
         # Draw column numbers on canvas
-        ct = 10+left_space
-        for col in range(0, noOfCols):
-            self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col)
-            ct=ct+fieldsize
+        ct = 10 + left_space
+        for col in range(self.board_no_of_cols):
+            self.canvas.create_text(ct+20, top_space-10, fill=textcolor, font="Courier 20", text=col, tags="axis_numbers")
+            ct = ct + board_field_size
+
+    def draw_status_bg(self):
+        
+        y1 = self.board_vlen + self.top_space + 10
+        x2 = self.board_hlen + self.left_space
+        y2 = self.board_vlen + self.top_space + self.status_bg_heigt
+
+        self.canvas.create_rectangle(self.left_space, y1, x2, y2, fill='white', tags="status_bg")
 
     def draw_status_text(self, canvas, msg):
-        canvas.create_rectangle(50, 510, 490, 650, fill='white')
-        canvas.create_text(60,515, fill="black", font="Courier 10", text="currentPlayer1 is white, currentPlayer2 is black", anchor=tk.NW)
-        canvas.create_text(60,530, fill="black", font="Courier 10", text=msg, anchor=tk.NW)
+        
+        x1 = self.left_space + 10
+        y1 = self.board_vlen + self.top_space + 15
+        
+        
+        text_player_info = "Player1 is white, Player2 is black"
+        text_current_player = "Waiting for {}, please move a piece...".format(self.player_color(self.state.player))
+        text = "{}\n{}\n{}".format(text_player_info, text_current_player, msg)
+        canvas.create_text(x1, y1, fill="black", font="Courier 10", text=text, anchor=tk.NW, tags="status_text")
+
+    def player_color(self, player):
+        if player:
+            return "White"
+        else:
+            return "Black"
 
     # Returns image variable
     def select_piece_type(self, value):
         switcher = {
-        -3: self.pblc,
         -2: self.pblt,
         -1: self.pbl,
         0: self.pbla,
         1: self.pwh,
         2: self.pwht,
-        3: self.pwhc
         }
         return switcher.get(value,"Invalid value option for select_piece_type")
 
     # Draw board and place pieces
-    def draw_board(self, board):
-        self.board = board
-        canvas      = self.canvas
-        fieldsize   = self.fieldsize
-        left_space  = self.left_space
-        top_space   = self.top_space
-        gridcolor   = "black"
-        noOfRows    = board.shape[0]
-        noOfCols    = board.shape[1]
-        py          = self.top_space
-        px2         = self.left_space
-        hlen        = noOfRows*fieldsize+left_space
-        vlen        = noOfCols*fieldsize+top_space
-        markedCoords = (-1,-1)
+    def draw_board_grid(self, board):
+        gridcolor = "black"
+ 
+        py = self.top_space
+        px2 = self.left_space
         
-        #Hack, clear canvas
-        canvas.create_rectangle(50, 50, hlen, vlen, fill='lightgray')
-
-        for y in range(0, noOfRows):
-            for x in range(0, noOfCols):               
-                if board[x,y] == -3 or board[x,y] == 3:
-                    markedCoords = (x,y)
-
-        for y in range(0, noOfRows):
-            px = left_space
-            
+        for y in range(self.board_no_of_rows):
+            px = self.left_space
             # Draw vertical lines (column)
-            canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
+            self.canvas.create_line(px2, self.top_space, px2, self.board_vlen + self.top_space, fill=gridcolor, tags="board_grid")
             
-            for x in range(0, noOfCols):
-                val = board[x,y]
+            for x in range(self.board_no_of_cols):
+
+                px = px + self.board_field_size
+                
+                # Draw horizontal lines (row)
+                self.canvas.create_line(self.left_space, py, self.board_hlen + self.left_space, py, fill=gridcolor, tags="board_grid")
+            py  = py + self.board_field_size
+            px2 = px2 + self.board_field_size
+
+        # Draw last horizontal lines (row)
+        self.canvas.create_line(self.left_space, py, self.board_hlen +  self.left_space, py, fill=gridcolor, tags="board_grid")
+
+        # Draw last vertical lines (column)
+        self.canvas.create_line(px2, self.top_space, px2, self.board_vlen + self.top_space, fill=gridcolor, tags="board_grid")
+
+    # Draw board and place pieces
+    def draw_board(self, board):
+        py = self.top_space
+        px2 = self.left_space
+
+        for y in range(self.board_no_of_rows):
+            px = self.left_space
+            
+            for x in range(self.board_no_of_cols):
+                val = board[y, x]
                 
                 # If piece on field, place piece image
                 if val != 0:
-                    self.field(px, py, canvas, self.select_piece_type(val))
+                    self.field(px, py, self.canvas, self.select_piece_type(val))
                 
-                # Mark lega moves
-                if not markedCoords == (-1,-1) and val == 0  and self.is_legal_move(markedCoords, (x,y)):
-                    self.field(px, py, canvas, self.pmar)
-
-                #mystr = '(%(x)s,%(y)s)'% {'x':x, 'y':y}
-                # if debug:
-                #   canvas.create_text(px+25,py+30,fill="white",font="Courier 9 bold",text=mystr)
-                px = px+fieldsize
+                # Mark if clicked by mouse
+                if len(self.mouseclick_move_list) > 0 and self.mouseclick_move_list[0] == (y, x):
+                    if val < 0:
+                        self.field(px, py, self.canvas, self.pblc) # Mark black piece
+                    else:
+                        self.field(px, py, self.canvas, self.pwhc) # Mark white piece
                 
-                # Draw horizontal lines (row)
-                canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
-            py  = py+fieldsize
-            px2 = px2+fieldsize
+                # Mark legal moves
+                if len(self.mouseclick_move_list) > 0 and val == 0  and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
+                    self.field(px, py, self.canvas, self.pmar)
 
-        # Draw last horizontal lines (row)
-        canvas.create_line(left_space, py, hlen, py, fill=gridcolor)
+                px = px + self.board_field_size
 
-        # Draw last vertical lines (column)
-        canvas.create_line(px2, top_space, px2, vlen, fill=gridcolor)
+            py  = py + self.board_field_size
+            px2 = px2 + self.board_field_size
 
-    # Flips a piece marked/unmarked or unmarked/marked
-    def mark_unmark_piece(self, board, coords):
-        val = board[coords]
-        if (val == -1):
-            board[coords] = -3
-        elif (val == -3):
-            board[coords] = -1
-        if val == 1:
-            board[coords] = 3
-        elif (val == 3):
-            board[coords] = 1
-        return board
-
-    def unmark_board(self, board, exclude_coords=(-1,-1)):
-        for y in range(0, board.shape[1]):
-            for x in range(0, board.shape[1]):
-                if ((x,y) == exclude_coords):
-                    continue
-                if (board[x,y] == -3):
-                    board[x,y] = -1
-                if (board[x,y] == 3):
-                    board[x,y] = 1
-        return board
 
     # Check wheather (white) piece is owned by currentPlayer one
-    def is_currentPlayer1_piece(self, player, value):
-            if (player == 1 and value > 0):
+    def is_currentPlayer_piece(self, player, value):
+            if (value < 0 and player == 0) or (value > 0 and player == 1):
                 return True
             else:
                 return False
 
-    def field_clicked(self, x,y, board, left_space, top_space, fieldsize):  
+    def field_clicked(self, y, x, board, left_space, top_space, board_field_size):
         ymin = top_space
-        for row in range(0, board.shape[0]):
+        for row in range(board.shape[0]):
             xmin = left_space
-            ymax = ymin+fieldsize
-            for col in range(0, board.shape[1]):
-                xmax = xmin+fieldsize
-                if (x >= xmin and x < xmax and y >= ymin and y < ymax):
-                    return (col, row)
+            ymax = ymin + board_field_size
+            for col in range(board.shape[1]):
+                xmax = xmin+board_field_size
+                if x >= xmin and x < xmax and y >= ymin and y < ymax:
+                    return col, row
                 xmin = xmax
-            ymin = ymin+fieldsize
-        return (-1,-1)
+            ymin = ymin + board_field_size
+        return (-1, -1)
+
+    def canvas_remove_by_tag(self, tag):
+        self.canvas.delete(tag)
+
+    def canvas_remove_tags(self, tags):
+        for tag in tags:
+            self.canvas.delete(tag)
 
     def update(self, state):
-        self.board = state.board
-        self.player = State.player
+        self.state = state
 
-class GuiThread (threading.Thread):
-    game = None
+        self.canvas_remove_tags(['board_field', 'status_text'])
+        self.draw_board(state.board)
+        self.draw_status_text(self.canvas, "Nice move")
+        log("Updated")
 
-    def __init__(self, threadID, name, counter, game):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.counter = counter
-        self.game = game
+    def make_move(self, state, source, dest):
+        """
+        Move a piece from source to dest on the board.
+        Get the new state, and notify any listener about
+        the new state.
+        """
+        log("Moved from {} to {}".format(source, dest))
 
-    def run(self):
-        MainWindow(game=self.game)
+        result = self.game.result(state, Action(source, dest))
+        self.state = result
+        self.update(result)
 
-class Gui():
-    def __init__(self,  game):
-        threading.Thread.__init__(self)
-        # Create new threads
-        thread1 = GuiThread(1, "Thread-1", 1, game)
+        if self.listener is not None:
+            self.listener.action_made(result)
+            self.listener = None
 
-        # Start new Threads
-        thread1.start()
+    def add_action_listener(self, listener):
+        """
+        Called by main while the game loop is running.
+        """
+        self.listener = listener
 
-
-
-
-# from controller.game import Game
-# from model.state import State, Action
-
+    def close(self):
+        self.active = False
+        self.root.destroy()

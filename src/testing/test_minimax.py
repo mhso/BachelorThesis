@@ -14,7 +14,7 @@ def run_tests():
     state.player = not state.player # Simulate black having the turn.
     eval_b = minimax.evaluate_board(state)
 
-    assertion.assert_equal(2, eval_w, "evalualte board positive")
-    assertion.assert_equal(-2, eval_b, "evalualte board negative")
+    assertion.assert_equal(2, eval_w, "evaluate board positive")
+    assertion.assert_equal(-2, eval_b, "evaluate board negative")
 
     # =================================

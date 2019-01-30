@@ -11,7 +11,7 @@ class Minimax(GameAI):
         """
         player_piece = 1 if state.player else -1
         other_piece = -1 if state.player else 1
-        
+
         return (state.board == player_piece).sum() - (state.board == other_piece).sum()
 
     def minimax(self, state, depth, maxing_player, alpha, beta):
@@ -47,7 +47,7 @@ class Minimax(GameAI):
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:
             result = self.game.result(state, action)
-            value = self.minimax(result, 3, False, -10000, 10000)
+            value = self.minimax(result, 5, False, -10000, 10000)
             if value > highest_value:
                 highest_value = value
                 best_action = action

@@ -6,6 +6,11 @@ game: Super class for game. Implements actions, evaluations, terminal tests, etc
 from abc import ABC, abstractmethod
 
 class Game(ABC):
+    __observers = []
+
+    def __init(self):
+        self.__observers = []
+
     @abstractmethod
     def start_state(self):
         """
@@ -47,3 +52,9 @@ class Game(ABC):
         If the given player has lost, return 0, else return 1
         """
         pass
+
+    def register_observer(self, observer):
+        """
+        Registere observers
+        """
+        self.__observers.append(observer)

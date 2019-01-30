@@ -9,6 +9,7 @@ from glob import glob
 from sys import argv
 from os import mkdir
 from os.path import exists
+from time import sleep
 from controller.latrunculi import Latrunculi
 from controller.minimax import Minimax
 from controller.mcts import MCTS
@@ -31,6 +32,10 @@ def play_game(game, player_white, player_black, gui=None):
             state = player_black.execute_action(state)
 
         if gui is not None:
+            if type(player_white) != type(Human) and not state.player:
+                sleep(0.5)
+            elif type(player_black) != type(Human) and state.player:
+                sleep(0.5)
             gui.update(state)
 
     winner = "Black" if state.player else "White"

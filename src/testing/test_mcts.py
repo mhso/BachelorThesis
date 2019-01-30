@@ -3,7 +3,6 @@ from controller.mcts import MCTS, Node
 from controller.latrunculi import Latrunculi
 
 def run_tests():
-    print("-=-=-=- MCTS TESTS -=-=-=-")
     # Test selection.
     # Test first selection.
     game = Latrunculi(8)

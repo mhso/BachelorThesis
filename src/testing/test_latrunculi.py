@@ -6,7 +6,6 @@ from controller.latrunculi import Latrunculi
 from model.state import Action
 
 def run_tests():
-    print("-=-=-=- LATRUNCULI GAME TESTS -=-=-=-")
     # Test initial board setup.
 
     # Test correct board size.
@@ -157,8 +156,8 @@ def run_tests():
     assertion.assert_equal(-1, result2.board[3][2], "free piece by capture")
 
     # =================================
-    # Test move causing instant capture not being possible.
-    game = Latrunculi(5, 56)
+    # Test potential capture causing move not being possible.
+    game = Latrunculi(8, 31)
     state = game.start_state()
     state.player = not state.player
 
@@ -171,11 +170,70 @@ def run_tests():
     assertion.assert_true(cant_move, "suicide can't move")
 
     # =================================
+    # Test suicide move,a move that would normally result in capture,
+    # but instead captures one of the two enemy pieces.
+
+    # Test south
+    game = Latrunculi(8, 42)
+    state = game.start_state()
+    state.player = not state.player
+
+    exists = Action((6, 1), (7, 1)) in game.actions(state)
+
+    assertion.assert_true(exists, "regular suicide move south")
+
+    # =================================
+    # Test south again
+    game = Latrunculi(8, 107)
+    state = game.start_state()
+    state.player = not state.player
+
+    exists = Action((3, 2), (4, 2)) in game.actions(state)
+
+    assertion.assert_true(exists, "regular suicide move south 2")
+
+    # =================================
+    # Test west
+    game = Latrunculi(8, 96)
+    state = game.start_state()
+    state.player = not state.player
+
+    exists = Action((3, 3), (3, 2)) in game.actions(state)
+
+    assertion.assert_true(exists, "regular suicide move west")
+
+    # =================================
+    # Test east
+    game = Latrunculi(8, 102)
+    state = game.start_state()
+
+    exists = Action((2, 1), (2, 2)) in game.actions(state)
+
+    assertion.assert_true(exists, "regular suicide move east")
+
+    # =================================
+    # Test north
+    game = Latrunculi(8, 118)
+    state = game.start_state()
+
+    exists = Action((6, 3), (5, 3)) in game.actions(state)
+
+    assertion.assert_true(exists, "regular suicide move north")
+
+    # =================================
+    # Test potential capture causign move not being possible.
+    game = Latrunculi(8, 69)
+    state = game.start_state()
+    state.player = not state.player
+
+    exists = Action((1, 2), (3, 2)) in game.actions(state)
+
+    assertion.assert_true(exists, "jump suicide move")
+
+    # =================================
     # Test chump jain being broken, by potential capture.
 
-    
-
-    
+    """
     # TEST STUFF
     game = Latrunculi(8, 42)
     state = game.start_state()
@@ -196,4 +254,4 @@ def run_tests():
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
-    
+    """

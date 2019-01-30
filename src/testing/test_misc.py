@@ -3,7 +3,6 @@ from model.state import Action, State
 from controller.latrunculi import Latrunculi
 
 def run_tests():
-    print("-=-=-=- MISCELLANEOUS TESTS -=-=-=-")
     # Test Action ID.
     action1 = Action((1, 2), (3, 4))
     action2 = Action((0, 0), (3, 4))

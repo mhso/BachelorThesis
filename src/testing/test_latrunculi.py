@@ -175,7 +175,7 @@ def run_tests():
 
     
 
-    """
+    
     # TEST STUFF
     game = Latrunculi(8, 42)
     state = game.start_state()
@@ -196,4 +196,4 @@ def run_tests():
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
-    """
+    

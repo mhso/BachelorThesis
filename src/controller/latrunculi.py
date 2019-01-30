@@ -89,15 +89,7 @@ class Latrunculi(Game):
         if (i + direction) >= 0 and (i + direction) < self.size: # check for whether 1 square NORTH/SOUTH is within the board
             if board[i + direction][j] == 0: #check for NORTH/SOUTH square being empty
                 if (j - 1) >= 0 and (j + 1) < self.size: #check for whether insta-capture is possible or if we are too close to edge of the board
-                    if board[i + direction][j - 1] == enemy_player and board[i + direction][j + 1] == enemy_player: #check for insta capture
-                        if (j - 2) >= 0: #check whether there is room for possible suicide move to the west
-                            if board[i + direction][j - 2] == player: #check for possible suicide action to the west
-                                actionsList.append(Action((i, j), (i+direction, j)))
-                        elif (j + 2) < self.size: #check whether there is room for possible suicide move to the east
-                            if board[i + direction][j + 2] == player: #check for possible suicide action to the east
-                                actionsList.append(Action((i, j), (i+direction, j)))
-                    else: #if there is no insta capture on this square, create action
-                        actionsList.append(Action((i, j), (i+direction, j)))
+                    actionsList.extend(self.check_for_capture_north_or_south(i, j, direction, player, board))
                 else:  #if there is no chance for insta capture, create action to empty square
                     actionsList.append(Action((i, j), (i+direction, j)))
             else: # if the north/south square contains a piece (either 1, 2, -1, -2), check for jumps
@@ -128,15 +120,7 @@ class Latrunculi(Game):
         if (j + direction) >= 0 and (j + direction) < self.size: # check for whether 1 square WEST/EAST is within the board
             if board[i][j + direction] == 0: #check for WEST/EAST square being empty
                 if (i - 1) >= 0 and (i + 1) < self.size: #check for whether insta-capture is possible or if we are too close to edge of the board
-                    if board[i - 1][j + direction] == enemy_player and board[i + 1][j + direction] == enemy_player: #check for insta capture
-                        if (i - 2) >= 0: #check whether there is room for possible suicide move to the north
-                            if board[i - 2][j + direction] == player: #check for possible suicide action to the north
-                                actionsList.append(Action((i, j), (i, j+direction)))
-                        elif (i + 2) < self.size: #check whether there is room for possible suicide move to the south
-                            if board[i + 2][j + direction] == player: #check for possible suicide action to the south
-                                actionsList.append(Action((i, j), (i, j+direction)))
-                    else: #if there is no insta capture on this square, create action
-                        actionsList.append(Action((i, j), (i, j+direction)))
+                    actionsList.extend(self.check_for_capture_east_or_west(i, j, direction, player, board))
                 else:  #if there is no chance for insta capture, create action to empty square
                     actionsList.append(Action((i, j), (i, j+direction)))
             else: # if the WEST/EAST square contains a piece (either 1, 2, -1, -2), check for jumps
@@ -159,6 +143,34 @@ class Latrunculi(Game):
                     else:
                         break #break if outside of board bounds
         return actionsList
+
+    def check_for_capture_north_or_south(self, i, j, direction, player, board):
+        enemy_player = -1*player
+        action_list = []
+        if board[i + direction][j - 1] == enemy_player and board[i + direction][j + 1] == enemy_player: #check for insta capture
+            if (j - 2) >= 0: #check whether there is room for possible suicide move to the west
+                if board[i + direction][j - 2] == player: #check for possible suicide action to the west
+                    action_list.append(Action((i, j), (i+direction, j)))
+            elif (j + 2) < self.size: #check whether there is room for possible suicide move to the east
+                if board[i + direction][j + 2] == player: #check for possible suicide action to the east
+                    action_list.append(Action((i, j), (i+direction, j)))
+        else: #if there is no insta capture on this square, create action
+            action_list.append(Action((i, j), (i+direction, j)))
+        return action_list
+
+    def check_for_capture_east_or_west(self, i, j, direction, player, board):
+        enemy_player = -1*player
+        action_list = []
+        if board[i - 1][j + direction] == enemy_player and board[i + 1][j + direction] == enemy_player: #check for insta capture
+            if (i - 2) >= 0: #check whether there is room for possible suicide move to the north
+                if board[i - 2][j + direction] == player: #check for possible suicide action to the north
+                    action_list.append(Action((i, j), (i, j+direction)))
+            elif (i + 2) < self.size: #check whether there is room for possible suicide move to the south
+                if board[i + 2][j + direction] == player: #check for possible suicide action to the south
+                    action_list.append(Action((i, j), (i, j+direction)))
+        else: #if there is no insta capture on this square, create action
+            action_list.append(Action((i, j), (i, j+direction)))
+        return action_list
 
     def result(self, state, action):
         super.__doc__

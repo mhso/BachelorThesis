@@ -52,7 +52,7 @@ class Latrunculi(Game):
     def actions(self, state):
         super.__doc__
         currentPlayer = 0
-        if state.player: 
+        if state.player:
             currentPlayer = 1 #White
         else:
             currentPlayer = -1 #Black
@@ -280,7 +280,7 @@ class Latrunculi(Game):
 
     def terminal_test(self, state):
         super.__doc__
-        return (state.board == 1).sum() == 1 or (state.board == -1).sum() == 1
+        return (state.board == 1).sum() < 2 or (state.board == -1).sum() < 2
 
     def utility(self, state, player):
         super.__doc__

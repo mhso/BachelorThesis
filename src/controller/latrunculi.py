@@ -143,9 +143,9 @@ class Latrunculi(Game):
         enemy_player = -1*player
         action_list = []
         if board[iDest][jDest + 1] == enemy_player and board[iDest][jDest - 1] == enemy_player: #check for insta capture
-            if (jDest - 2) >= 0 and board[iDest][jDest - 2] == player: #check for possible suicide action to the west
+            if (jDest - 2) >= 0 and board[iDest][jDest - 2] == player and (jDest - 2) != jOrigin: #check for possible suicide action to the west
                     action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
-            elif (jDest + 2) < self.size and board[iDest][jDest + 2] == player: #check for possible suicide action to the east
+            elif (jDest + 2) < self.size and board[iDest][jDest + 2] == player and (jDest + 2) != jOrigin: #check for possible suicide action to the east
                     action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
         else: #if there is no insta capture on this square, create action
             action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
@@ -155,9 +155,9 @@ class Latrunculi(Game):
         enemy_player = -1*player
         action_list = []
         if board[iDest + 1][jDest] == enemy_player and board[iDest - 1][jDest] == enemy_player: #check for insta capture
-            if (iDest - 2) >= 0 and board[iDest - 2][jDest] == player: #check for possible suicide action to the north
+            if (iDest - 2) >= 0 and board[iDest - 2][jDest] == player and (iDest - 2) != iOrigin: #check for possible suicide action to the north
                     action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
-            elif (iDest + 2) < self.size and board[iDest + 2][jDest] == player: #check for possible suicide action to the south
+            elif (iDest + 2) < self.size and board[iDest + 2][jDest] == player and (iDest + 2) != iOrigin: #check for possible suicide action to the south
                     action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
         else: #if there is no insta capture on this square, create action
             action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))

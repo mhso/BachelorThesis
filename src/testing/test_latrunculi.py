@@ -60,8 +60,6 @@ def run_tests():
     game = Latrunculi(5)
     state = game.start_state()
 
-    print(state)
-
     legal_moves = [
         Action((3, 0), (2, 0)), Action((3, 1), (2, 1)), Action((3, 2), (2, 2)),
         Action((3, 3), (2, 3)), Action((3, 4), (2, 4)),

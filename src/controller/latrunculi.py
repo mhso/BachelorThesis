@@ -104,7 +104,6 @@ class Latrunculi(Game):
                                     actionsList.extend(self.check_for_capture_and_suicide_west_or_east_of_given_piece(i, j, x, j, player, board))
                                 elif (x - 1) >= 0 and (x + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
                                     actionsList.extend(self.check_for_capture_and_suicide_north_or_south_of_given_piece(i, j, x, j, player, board))
-                                actionsList.append(Action((i, j), (x, j))) #generate a jump action to the empty square
                             else:
                                 break #jump chain is broken
                         else:
@@ -132,7 +131,6 @@ class Latrunculi(Game):
                                     actionsList.extend(self.check_for_capture_and_suicide_west_or_east_of_given_piece(i, j, i, x, player, board))
                                 elif (i - 1) >= 0 and (i + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
                                     actionsList.extend(self.check_for_capture_and_suicide_north_or_south_of_given_piece(i, j, i, x, player, board))
-                                actionsList.append(Action((i, j), (i, x))) #generate a jump action to the empty square
                             else:
                                 break #jump chain is broken
                         else:

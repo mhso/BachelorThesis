@@ -211,7 +211,6 @@ def run_tests():
     # Test west
     game = Latrunculi(8, 96)
     state = game.start_state()
-    state.player = not state.player
 
     print(state)
 
@@ -297,6 +296,7 @@ def run_tests():
 
     # =================================
     # Test chump jain being broken, by potential capture.
+
 
     """
     # TEST STUFF

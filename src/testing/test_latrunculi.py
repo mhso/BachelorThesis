@@ -196,7 +196,6 @@ def run_tests():
     # Test west
     game = Latrunculi(8, 96)
     state = game.start_state()
-    state.player = not state.player
 
     exists = Action((3, 3), (3, 2)) in game.actions(state)
 
@@ -232,6 +231,7 @@ def run_tests():
 
     # =================================
     # Test chump jain being broken, by potential capture.
+
 
     """
     # TEST STUFF

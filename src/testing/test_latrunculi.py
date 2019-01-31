@@ -56,7 +56,7 @@ def run_tests():
     assertion.assert_equal(1, game.utility(state, False), "utility black")
 
     # =================================
-    # Test available actions.
+    # Test available actions for "Chess" formation.
     game = Latrunculi(5)
     state = game.start_state()
 
@@ -70,8 +70,28 @@ def run_tests():
     assertion.assert_all_equal(legal_moves, game.actions(state), "legal moves white")
 
     # =================================
+    # Test available actions for "random" board.
+    game = Latrunculi(6, 5)
+    state = game.start_state()
+    state.player = not state.player
+
+    legal_moves = [
+        Action((0, 1), (1, 1)), Action((0, 2), (1, 2)), Action((0, 2), (0, 4)),
+        Action((1, 0), (2, 0)), Action((1, 0), (1, 1)), Action((1, 4), (0, 4)),
+        Action((1, 4), (2, 4)), Action((1, 4), (1, 3)), Action((1, 5), (2, 5)),
+        Action((1, 5), (1, 3)), Action((2, 1), (1, 1)), Action((2, 1), (4, 1)), 
+        Action((2, 1), (2, 0)), Action((2, 1), (2, 2)), Action((5, 0), (4, 0)), 
+        Action((5, 2), (4, 2)), Action((5, 2), (5, 3)), Action((5, 4), (4, 4)), 
+        Action((5, 4), (5, 3)), Action((5, 4), (5, 5))
+    ]
+
+    assertion.assert_all_equal(legal_moves, game.actions(state), "legal random moves white")
+
+    # =================================
     # Test result of action.
     # Test simple move.
+    game = Latrunculi(5)
+    state = game.start_state()
 
     result = game.result(state, Action((3, 0), (2, 0)))
     old_piece = state.board[3][0]

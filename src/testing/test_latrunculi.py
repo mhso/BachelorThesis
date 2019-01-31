@@ -178,8 +178,6 @@ def run_tests():
     state = game.start_state()
     state.player = not state.player
 
-    print(state)
-
     exists = Action((6, 1), (7, 1)) in game.actions(state)
 
     assertion.assert_true(exists, "regular suicide move south")
@@ -190,8 +188,6 @@ def run_tests():
     state = game.start_state()
     state.player = not state.player
 
-    print(state)
-
     exists = Action((3, 2), (4, 2)) in game.actions(state)
 
     assertion.assert_true(exists, "regular suicide move south 2")
@@ -200,8 +196,6 @@ def run_tests():
     # Test south again again
     game = Latrunculi(8, 75)
     state = game.start_state()
-
-    print(state)
 
     exists = Action((0, 2), (1, 2)) in game.actions(state)
 
@@ -212,8 +206,6 @@ def run_tests():
     game = Latrunculi(8, 96)
     state = game.start_state()
 
-    print(state)
-
     exists = Action((3, 3), (3, 2)) in game.actions(state)
 
     assertion.assert_true(exists, "regular suicide move west")
@@ -222,8 +214,6 @@ def run_tests():
     # Test west again
     game = Latrunculi(8, 118)
     state = game.start_state()
-
-    print(state)
 
     exists = Action((3, 7), (3, 6)) in game.actions(state)
 
@@ -234,8 +224,6 @@ def run_tests():
     game = Latrunculi(8, 102)
     state = game.start_state()
 
-    print(state)
-
     exists = Action((2, 1), (2, 2)) in game.actions(state)
 
     assertion.assert_true(exists, "regular suicide move east")
@@ -244,8 +232,6 @@ def run_tests():
     # Test east again
     game = Latrunculi(8, 77)
     state = game.start_state()
-
-    print(state)
 
     exists = Action((1, 1), (1, 2)) in game.actions(state)
 
@@ -256,8 +242,6 @@ def run_tests():
     game = Latrunculi(8, 118)
     state = game.start_state()
 
-    print(state)
-
     exists = Action((6, 3), (5, 3)) in game.actions(state)
 
     assertion.assert_true(exists, "regular suicide move north")
@@ -267,22 +251,9 @@ def run_tests():
     game = Latrunculi(8, 70)
     state = game.start_state()
 
-    print(state)
-
     exists = Action((6, 3), (5, 3)) in game.actions(state)
 
     assertion.assert_true(exists, "regular suicide move north 2")
-
-    # =================================
-    # Test ---- again
-    game = Latrunculi(8, 77)
-    state = game.start_state()
-
-    print(state)
-
-    exists = Action((3, 7), (3, 6)) in game.actions(state)
-
-    assertion.assert_true(exists, "looking for board states with suicide moves")
 
     # =================================
     # Test potential capture causign move not being possible.

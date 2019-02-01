@@ -76,7 +76,7 @@ def run_tests():
     state.player = not state.player
 
     legal_moves = [
-        Action((0, 1), (1, 1)), Action((0, 2), (1, 2)), Action((0, 2), (0, 4)),
+        Action((0, 1), (1, 1)), Action((0, 2), (1, 2)),
         Action((1, 0), (2, 0)), Action((1, 0), (1, 1)), Action((1, 4), (0, 4)),
         Action((1, 4), (2, 4)), Action((1, 4), (1, 3)), Action((1, 5), (2, 5)),
         Action((1, 5), (1, 3)), Action((2, 1), (1, 1)), Action((2, 1), (4, 1)), 
@@ -288,7 +288,7 @@ def run_tests():
 
     # =================================
     # Test chump jain being broken, by potential capture.
-
+    
 
     """
     # TEST STUFF

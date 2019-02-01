@@ -87,15 +87,15 @@ class MCTS(GameAI):
         chosen_action = actions[int(np.random.uniform(0, len(actions)))] # Chose random action.
         return self.game.result(state, chosen_action)
 
-    def back_propogate(self, node, value):
+    def back_propagate(self, node, value):
         """
-        After a full simulation, propogate result up the tree.
+        After a full simulation, propagate result up the tree.
         """
         node.visits += 1
         node.wins += value
         if node.parent is None:
             return
-        self.back_propogate(node.parent, value)
+        self.back_propagate(node.parent, value)
 
     def rollout(self, og_state, node):
         """
@@ -150,7 +150,7 @@ class MCTS(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(node.state, node)
-            self.back_propogate(node, value)
+            self.back_propagate(node, value)
 
             node = original_node
 

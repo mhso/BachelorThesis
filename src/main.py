@@ -23,8 +23,10 @@ def play_game(game, player_white, player_black, gui=None):
     Play a game to the end, and return the reward for each player.
     """
     state = game.start_state()
+    MAX_ITER = 1000
+    counter = 0
 
-    while not game.terminal_test(state):
+    while not game.terminal_test(state) and counter < MAX_ITER:
         print(state, flush=True)
         if game.player(state):
             state = player_white.execute_action(state)
@@ -37,6 +39,7 @@ def play_game(game, player_white, player_black, gui=None):
             elif type(player_black) != type(Human) and state.player:
                 sleep(0.5)
             gui.update(state)
+        counter += 1
 
     winner = "Black" if state.player else "White"
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))

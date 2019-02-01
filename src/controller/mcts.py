@@ -35,7 +35,8 @@ class MCTS(GameAI):
     state_map = dict()
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 5 # Number of times to run MCTS, per action taken in game.
+    ITERATIONS = 50 # Number of times to run MCTS, per action taken in game.
+    MAX_MOVES = 1000 # Max moves before a simulation is deemed a draw.
 
     def select(self, node, sim_acc):
         """
@@ -106,12 +107,13 @@ class MCTS(GameAI):
         state = node.state
         counter = 0
 
-        while not self.game.terminal_test(state):
+        while not self.game.terminal_test(state) and counter < self.MAX_MOVES:
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
             counter += 1
 
-        log("Iterations spent on rollout: {}".format(counter))
+        if counter < self.MAX_MOVES:
+            log("Iterations spent on rollout: {}".format(counter))
         return self.game.utility(state, og_state.player)
 
     def execute_action(self, state):
@@ -146,7 +148,8 @@ class MCTS(GameAI):
                 actions = self.game.actions(node.state)
                 self.expand(node, actions)
                 node = node.children[0] # Select first child of expanded Node.
-                node.state.player = not node.state.player
+                #node.state.player = not node.state.player
+            self.state_map[node.state.stringify()] = node
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(node.state, node)

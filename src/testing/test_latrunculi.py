@@ -290,9 +290,9 @@ def run_tests():
     # Test chump jain being broken, by potential capture.
     
 
-    """
+    
     # TEST STUFF
-    game = Latrunculi(8, 42)
+    game = Latrunculi(8, 55)
     state = game.start_state()
 
     time_b = time()
@@ -311,4 +311,4 @@ def run_tests():
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
-    """
+    

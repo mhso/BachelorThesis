@@ -1,9 +1,10 @@
 from numpy.random import uniform
 from time import time
-from numpy import array
 from testing import assertion
 from controller.latrunculi import Latrunculi
 from model.state import Action
+import numpy as np
+import scipy
 
 def run_tests():
     # Test initial board setup.
@@ -290,8 +291,8 @@ def run_tests():
     # Test chump jain being broken, by potential capture.
     
 
-    
     # TEST STUFF
+    """
     game = Latrunculi(8, 55)
     state = game.start_state()
 
@@ -311,4 +312,4 @@ def run_tests():
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
-    
+    """

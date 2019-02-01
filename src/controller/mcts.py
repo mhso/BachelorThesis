@@ -5,6 +5,7 @@ mcts: Monte Carlo Tree Search.
 """
 from math import inf
 from time import time
+from sys import argv
 from controller.game_ai import GameAI
 from view.log import log
 import numpy as np
@@ -35,14 +36,26 @@ class MCTS(GameAI):
     state_map = dict()
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 50 # Number of times to run MCTS, per action taken in game.
-    MAX_MOVES = 1000 # Max moves before a simulation is deemed a draw.
+    ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
+    MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
+
+    def __init__(self, game, playouts=None):
+        super().__init__(game)
+        if playouts is None and self.game.size > 3:
+            playouts = [150, 100, 35, 20, 10, 5, 5]
+            max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
+            self.ITERATIONS = playouts[self.game.size-4]
+            self.MAX_MOVES = max_moves[self.game.size-4]
+        else:
+            self.ITERATIONS = playouts
+
+        print("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 
     def select(self, node, sim_acc):
         """
         Select a node to run simulations from.
         Nodes are chosen according to how they maximize
-        the UCB1 formula = w(i) + c * sqrt (ln N(i) / n(i))).
+        the UCB1 formula = w(i)/n(i) + c * sqrt (ln N(i) / n(i))).
         Where
             - w(i) = wins of current node.
             - n(i) = times current node was visited.
@@ -64,7 +77,7 @@ class MCTS(GameAI):
                 break
             else:
                 # UCB1 formula (split up, for readability).
-                exploit = child.wins + self.EXPLORE_PARAM
+                exploit = child.wins/child.visits + self.EXPLORE_PARAM
                 val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
                 if val > best_value:
                     best_value = val
@@ -112,13 +125,11 @@ class MCTS(GameAI):
             state = self.simulate(state, actions)
             counter += 1
 
-        if counter < self.MAX_MOVES:
-            log("Iterations spent on rollout: {}".format(counter))
+        log("Iterations spent on rollout: {}".format(counter))
         return self.game.utility(state, og_state.player)
 
     def execute_action(self, state):
         super.__doc__
-        
         time_total_b = time()
         log("MCTS is calculating the best move...")
 
@@ -157,8 +168,9 @@ class MCTS(GameAI):
 
             node = original_node
 
-        best_node = max(original_node.children, key=lambda n: n.wins)
-        log("Total action duration: {} s".format(time() - time_total_b))
+        best_node = max(original_node.children, key=lambda n: n.visits)
+        if "-t" in argv:
+            log("Total action duration: {} s".format(time() - time_total_b))
         return best_node.state
 
     def __str__(self):

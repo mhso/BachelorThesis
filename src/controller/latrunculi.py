@@ -97,13 +97,16 @@ class Latrunculi(Game):
                     actionsList.append(Action((i, j), (i+direction, j)))
             else: # if the north/south square contains a piece (either 1, 2, -1, -2), check for jumps
                 for x in range(i + (2*direction), (self.convert_to_positive_int((self.size * direction))), (2*direction)): #Jump-loop
-                    if x >= 0 and x < self.size: #check that x squares north/south is within the bounds of the board (might not be needed)
+                    if x >= 0 and x < self.size: #check that x squares north/south is within the bounds of the board 
                         if board[x + (-1*direction)][j] != 0: #check if there is a piece on the odd number square north/south... #this is a double check for the first jump, might want to optimize it...
                             if board[x][j] == 0: #checks for the even number square north/south being empty, if the square before was occupied
-                                if (j - 1) >= 0 and (j + 1) < self.size: #check if there is room for a possible insta-capture WEST/EAST
-                                    actionsList.extend(self.check_for_capture_and_suicide_west_or_east_of_given_piece(i, j, x, j, player, board))
-                                elif (x - 1) >= 0 and (x + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
-                                    actionsList.extend(self.check_for_capture_and_suicide_north_or_south_of_given_piece(i, j, x, j, player, board))
+                                #check for capture/suicide in all directions of the jump destination
+                                jumpActions = []
+                                jumpActions.extend(self.check_for_capture_and_suicide_all_directions_of_given_piece(i, j, x, j, player, board))
+                                if jumpActions != []:
+                                    actionsList.extend(jumpActions)
+                                else:
+                                    break #this jump results in capture, which breaks the jump chain
                             else:
                                 break #jump chain is broken
                         else:
@@ -124,13 +127,16 @@ class Latrunculi(Game):
                     actionsList.append(Action((i, j), (i, j+direction)))
             else: # if the WEST/EAST square contains a piece (either 1, 2, -1, -2), check for jumps
                 for x in range(j + (2*direction), (self.convert_to_positive_int((self.size*direction))), (2*direction)): #Jump-loop
-                    if x >= 0 and x < self.size: #check that x squares WEST/EAST is within the bounds of the board (might not be needed)
+                    if x >= 0 and x < self.size: #check that x squares WEST/EAST is within the bounds of the board
                         if board[i][(x + (-1*direction))] != 0: #check if there is a piece on the odd number square WEST/EAST... #this is a double check for the first jump, might want to optimize it...
                             if board[i][x] == 0: #checks for the even number square WEST/EAST being empty, if the square before was occupied
-                                if (x - 1) >= 0 and (x + 1) < self.size: #check if there is room for a possible insta-capture WEST/EAST
-                                    actionsList.extend(self.check_for_capture_and_suicide_west_or_east_of_given_piece(i, j, i, x, player, board))
-                                elif (i - 1) >= 0 and (i + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
-                                    actionsList.extend(self.check_for_capture_and_suicide_north_or_south_of_given_piece(i, j, i, x, player, board))
+                                #check for capture/suicide in all directions of the jump destination
+                                jumpActions = []
+                                jumpActions.extend(self.check_for_capture_and_suicide_all_directions_of_given_piece(i, j, i, x, player, board))
+                                if jumpActions != []:
+                                    actionsList.extend(jumpActions)
+                                else:
+                                    break #this jump results in capture, which breaks the jump chain
                             else:
                                 break #jump chain is broken
                         else:
@@ -139,34 +145,52 @@ class Latrunculi(Game):
                         break #break if outside of board bounds
         return actionsList
 
+    def check_for_capture_and_suicide_all_directions_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
+        action_list = []
+        actionsListWE = (self.check_for_capture_and_suicide_west_or_east_of_given_piece(iOrigin, jOrigin, iDest, jDest, player, board)) #check for action WEST/EAST
+        actionsListNS = (self.check_for_capture_and_suicide_north_or_south_of_given_piece(iOrigin, jOrigin, iDest, jDest, player, board)) #check for action NORTH/SOUTH
+
+        if actionsListNS != [] and actionsListWE != []: #checks whether any insta capture was found, empty list means that you cant move to this square
+            return actionsListNS #they should result in the same action, so retuning any one of them should be fine
+        else:
+            return []
+        
     def check_for_capture_and_suicide_west_or_east_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
         enemy_player = -1*player
         action_list = []
-        if board[iDest][jDest + 1] == enemy_player and board[iDest][jDest - 1] == enemy_player: #check for insta capture
-            if (jDest - 2) >= 0 and board[iDest][jDest - 2] == player and (jDest - 2) != jOrigin: #check for possible suicide action to the west
-                    action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
-            elif (jDest + 2) < self.size and board[iDest][jDest + 2] == player and (jDest + 2) != jOrigin: #check for possible suicide action to the east
-                    action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
-        else: #if there is no insta capture on this square, create action
-            action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+        if (jDest - 1) >= 0 and (jDest + 1) < self.size: #check if there is room for a possible insta-capture WEST/EAST
+            if board[iDest][jDest + 1] == enemy_player and board[iDest][jDest - 1] == enemy_player: #check for insta capture
+                if (jDest - 2) >= 0 and board[iDest][jDest - 2] == player and (jDest - 2) != jOrigin: #check for possible suicide action to the west
+                        action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+                elif (jDest + 2) < self.size and board[iDest][jDest + 2] == player and (jDest + 2) != jOrigin: #check for possible suicide action to the east
+                        action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+            else: #if there is no insta capture on this square, create action
+                action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+        else: #if there is no room for an insta capture on this square, create action
+                action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
         return action_list
 
     def check_for_capture_and_suicide_north_or_south_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
         enemy_player = -1*player
         action_list = []
-        if board[iDest + 1][jDest] == enemy_player and board[iDest - 1][jDest] == enemy_player: #check for insta capture
-            if (iDest - 2) >= 0 and board[iDest - 2][jDest] == player and (iDest - 2) != iOrigin: #check for possible suicide action to the north
-                    action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
-            elif (iDest + 2) < self.size and board[iDest + 2][jDest] == player and (iDest + 2) != iOrigin: #check for possible suicide action to the south
-                    action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
-        else: #if there is no insta capture on this square, create action
+        if (iDest - 1) >= 0 and (iDest + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
+            if board[iDest + 1][jDest] == enemy_player and board[iDest - 1][jDest] == enemy_player: #check for insta capture
+                if (iDest - 2) >= 0 and board[iDest - 2][jDest] == player and (iDest - 2) != iOrigin: #check for possible suicide action to the north
+                        action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+                elif (iDest + 2) < self.size and board[iDest + 2][jDest] == player and (iDest + 2) != iOrigin: #check for possible suicide action to the south
+                        action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+            else: #if there is no insta capture on this square, create action
+                action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
+        else: #if there is no room for an insta capture on this square, create action
             action_list.append(Action((iOrigin, jOrigin), (iDest, jDest)))
         return action_list
 
-    #i needed this quick, but there is likely a library method for this, just could not find it
+    #i needed this quick, but there might be a library method for this, just could not find it
+    #this method helps construct a stop value for the range used in jump calculations, it makes any negative integer into -1
+    #which should let the range run to 0 inclusive, which is what we want, because the stop value is exclusive
     def convert_to_positive_int(self, x):
         if x < 0:
-            return 0
+            return -1
         else:
             return x
 

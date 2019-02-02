@@ -11,7 +11,8 @@ def run_tests():
 
     actions = game.actions(state)
     root = Node(state, [])
-    child_nodes = [Node(game.result(state, action), [], root) for action in actions]
+    probability = 1/len(actions)
+    child_nodes = [Node(game.result(state, action), [], probability, root) for action in actions]
     root.children = child_nodes
     node = mcts.select(root, 0)
 
@@ -19,10 +20,10 @@ def run_tests():
 
     # =================================
     # Test exploitation of promising node.
-    root.visits = 2
+    root.visits = 3
     for child in child_nodes:
         child.wins = 2
-        child.visits = 2
+        child.visits = 3
 
     child_nodes[4].wins = 3
     node = mcts.select(root, 0)

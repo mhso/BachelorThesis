@@ -19,12 +19,7 @@ class Action_Move(Enum):
     DOWN = 8
     DOWN_RIGHT = 9
 
-class Player_Color(Enum):
-    BLACK = 0
-    WHITE = 1
-    NONE = 3
-
-class Field_Status(Enum):
+class Field_Enum(Enum):
     BLACK_TRAPPED = -2
     BLACK = -1
     NONE = 0
@@ -86,15 +81,17 @@ class Latrunculi_s(Game):
 
     def actions(self, state):
         super.__doc__
-        current_player = -1
-        enemy_captured = 2
-        player_color = Field_Status.BLACK
-        opponent_color = Field_Status.WHITE
-        if state.player:
-            current_player = 1 #White
-            enemy_captured = -2 #Black
-            player_color = Field_Status.WHITE
-            opponent_color = Field_Status.BLACK
+        # current_player = -1
+        # enemy_captured = 2
+        # player_color = Field_Enum.BLACK
+        # opponent_color = Field_Enum.WHITE
+        # if state.player:
+        #     current_player = 1 #White
+        #     enemy_captured = -2 #Black
+        #     player_color = Field_Enum.WHITE
+        #     opponent_color = Field_Enum.BLACK
+
+        player_color = self.player_color(state.player)
 
         actionsList = [] #we might have to add a pass option???
 
@@ -102,17 +99,18 @@ class Latrunculi_s(Game):
         
         for y in range(self.board_no_of_rows):
             for x in range(self.board_no_of_cols):
-                if self.board[y, x] == current_player:
+                
+                if self.field_value((y, x)) == player_color:
 
                     # self.append_list_if_valid(actionsList, x, y, y-1, x-1)
-                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y-1, x))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), (y-1, x))
                     # self.append_list_if_valid(board_no_of_rows, board_no_of_cols, board, actionsList, x, y, y-1, x+1)
 
-                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y, x-1))
-                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y, x+1))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), (y, x-1))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), (y, x+1))
 
                     # self.append_list_if_valid(actionsList, x, y, y+1, x-1)
-                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y+1, x))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), (y+1, x))
                     # self.append_list_if_valid(actionsList, x, y, y+1, x+1)
 
                     # board[y-1, x-1]     # Above left
@@ -140,62 +138,99 @@ class Latrunculi_s(Game):
     def is_empty_field(self, coords):
         return self.is_within_board(coords) and self.board[coords] == 0
     
-    def append_list_if_valid(self, opponent_color, alist, coords_from, coords_to):
-        if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, opponent_color):
+    def append_list_if_valid(self, player_color, alist, coords_from, coords_to):
+        if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, player_color):
             alist.append(Action(coords_from, coords_to))
     
-    def is_suicide_move(self, coords_from, coords_to, opponent_color):
+    def is_suicide_move(self, coords_from, coords_to, player_color):
         move = self.get_direction(coords_from, coords_to)
+        opponent_color = self.oppenent_player_color(player_color)
+        # print("player_color: {}".format(player_color))
+        # print("opponent_color: {}".format(opponent_color))
+        
 
         if move == Action_Move.UP:
-            return not self.valid_left_right(coords_to, opponent_color)
+            return not self.valid_left_right(coords_to, player_color, opponent_color)
 
         elif move == Action_Move.LEFT:
-            return not self.valid_up_down(coords_to, opponent_color)
+            return not self.valid_up_down(coords_to, player_color, opponent_color)
 
         elif move == Action_Move.RIGHT:
-            return not self.valid_up_down(coords_to, opponent_color)
+            return not self.valid_up_down(coords_to, player_color, opponent_color)
 
         elif move == Action_Move.DOWN:
-            return not self.valid_left_right(coords_to, opponent_color)
+            return not self.valid_left_right(coords_to, player_color, opponent_color)
 
         return True
 
-    def valid_left_right(self, coords, opponent_color):
+    def valid_left_right(self, coords, player_color, opponent_color):
 
         left = self.move_coords(Action_Move.LEFT, coords)
         right = self.move_coords(Action_Move.RIGHT, coords)
         if self.is_empty_field(left) or self.is_empty_field(right) or not self.is_within_board(left) or not self.is_within_board(right):
+            # if coords == (3, 5): print("{} valid_left_right empty field or not within board".format(coords))
             return True
         else:
-            if self.is_within_board(left) and self.is_within_board(right) and self.field_status(left) == opponent_color and self.field_status(right) == opponent_color:
+            if self.is_within_board(left) and self.is_within_board(right) and self.field_value(left) == opponent_color and self.field_value(right) == opponent_color:
+                
+                # left_left = self.move_coords(Action_Move.LEFT, left)
+                # right_right = self.move_coords(Action_Move.RIGHT, right)
+                # if self.is_within_board(left_left) and self.field_player(left_left) == player_color or self.is_within_board(right_right) and self.field_player(right_right) == player_color:
+                #     return True
+                #if coords == (3, 5): print("{} valid_left_right within board and not opponent colors".format(coords))
                 return False
             else:
+                #if coords == (3, 5): print("{} valid_left_right not within board or not opponent colors".format(coords))
                 return True
 
-    def valid_up_down(self, coords, opponent_color):
+    def valid_up_down(self, coords, player_color, opponent_color):
+        
         up = self.move_coords(Action_Move.UP, coords)
         down = self.move_coords(Action_Move.DOWN, coords)
         if self.is_empty_field(up) or self.is_empty_field(down) or not self.is_within_board(up) or not self.is_within_board(down):
+            if coords == (3, 5): print("{} valid_up_down empty field or not within board".format(coords))
             return True
         else:           
-            if self.is_within_board(up) and self.is_within_board(down) and self.field_status(up) == opponent_color and self.field_status(down) == opponent_color:
+            if self.is_within_board(up) and self.is_within_board(down) and self.field_value(up) == opponent_color and self.field_value(down) == opponent_color:
+
+                # up_up = self.move_coords(Action_Move.UP, up)
+                # down_down = self.move_coords(Action_Move.DOWN, down)
+                # if self.is_within_board(up_up) and self.field_player(up_up) == player_color or self.is_within_board(down_down) and self.field_player(down_down) == player_color:
+                #     return True
+                if coords == (3, 5): print("{} valid_up_down within board and not opponent colors".format(coords))
                 return False
             else:
+                if coords == (3, 5):
+                    print("{} valid_up_down not within board or not opponent colors".format(coords))
+                    print("player_color: {}".format(player_color))
+                    print("self.field_value(up): {}".format(self.field_value(up)))
+                    print("self.field_value(down): {}".format(self.field_value(down)))
+                    print("opponent_color: {}".format(opponent_color))
                 return True
 
-    def field_status(self, coords):
+    def field_player(self, coords):
+            return self.field_player_color(self.field_value(coords))
+
+    def field_value(self, coords):
         val = self.board[coords]
         if val == -2:
-            return Field_Status.BLACK_TRAPPED
+            return Field_Enum.BLACK_TRAPPED
         elif val == -1:
-            return Field_Status.BLACK
+            return Field_Enum.BLACK
         elif val == 0:
-            return Field_Status.NONE
+            return Field_Enum.NONE
         elif val == 1:
-            return Field_Status.WHITE
+            return Field_Enum.WHITE
         elif val == 2:
-            return Field_Status.WHITE_TRAPPED
+            return Field_Enum.WHITE_TRAPPED
+
+    def field_player_color(self, value):
+        if value == Field_Enum.BLACK_TRAPPED or value == Field_Enum.BLACK:
+            return Field_Enum.BLACK
+        elif value == Field_Enum.WHITE_TRAPPED  or value == Field_Enum.WHITE:
+            return Field_Enum.WHITE
+        else:
+            return Field_Enum.NONE
 
     def move_coords(self, direction, coords):
         y, x = coords
@@ -246,13 +281,29 @@ class Latrunculi_s(Game):
             return Action_Move.DOWN_RIGHT
         return None
 
+    def player_color(self, value):
+        if value == 0:
+            return Field_Enum.BLACK
+        elif value == 1:
+            return Field_Enum.WHITE
+        else:
+            return None
+
+    def oppenent_player_color(self, player_color):
+        if player_color == Field_Enum.BLACK:
+            return Field_Enum.WHITE
+        elif player_color == Field_Enum.WHITE:
+            return Field_Enum.BLACK
+        else: 
+            return None
+
     def piece_color(self, value):
         if value < 0:
-            return Player_Color.BLACK
+            return Field_Enum.BLACK
         elif value > 0:
-            return Player_Color.WHITE
+            return Field_Enum.WHITE
         else:
-            return Player_Color.NONE
+            return Field_Enum.NONE
 
     def traverse(self, board, kernel):
         pass
@@ -270,6 +321,36 @@ class Latrunculi_s(Game):
             enemy_player = -1
 
         newBoard = np.copy(state.board) #newBoard is the one that will be returned
+        
+        if state.board[source] == current_player: #if source is a piece owned by the current player
+            if not source == dest: #check if source and dest are different 
+                illegal_action = True
+                for ac in self.actions(state):
+                    if ac.source == source and ac.dest == dest:
+                        illegal_action = False
+                
+                if illegal_action:
+                    raise Exception("you have attempted an illegal move...")
+                
+                newBoard[source] = 0
+                newBoard[dest] = current_player
+
+
+
+                print("Lets move the piece")
+
+
+            else:
+                raise Exception("you attempted to move your piece, to the square where the piece started")
+        elif state.board[source] == (enemy_player*2): #if source is an opponents captured piece
+            if source == dest: #if source and dest is equal, remove opponents captured piece
+                newBoard[source] = 0 #removed captured piece
+            else:
+                raise Exception("you have attempted to move an opponents captured piece...")
+        else: #If none of the above, illegal move...
+            raise Exception("you have attempted to move a piece that you do not own...")
+
+
         # if state.board[source[0]][source[1]] == current_player: #if source is a piece owned by the current player
         #     if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different
         #         i = dest[0]

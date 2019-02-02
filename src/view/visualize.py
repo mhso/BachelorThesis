@@ -118,7 +118,7 @@ class Gui():
         y = eventorigin.y
 
         coords = self.field_clicked(x, y, self.state.board, self.left_space, self.top_space, self.board_field_size)
-
+        print("Coords: {}".format(coords))
         if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
             self.draw_status_text("Selected source coords: ({})".format(coords))

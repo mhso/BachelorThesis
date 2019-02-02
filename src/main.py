@@ -11,6 +11,7 @@ from os import mkdir
 from os.path import exists
 from time import sleep
 from controller.latrunculi import Latrunculi
+from controller.latrunculi_s import Latrunculi_s
 from controller.minimax import Minimax
 from controller.mcts import MCTS
 from controller.human import Human
@@ -116,6 +117,8 @@ def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
     if lower in ("latrunculi", wildcard):
         return Latrunculi(size, rand_seed), "Latrunculi"
+    elif lower in ("latrunculi_s", wildcard):
+        return Latrunculi_s(size, rand_seed), "Latrunculi_s"
     return None, "unknown"
 
 def get_ai_algorithm(algorithm, game, wildcard, gui=None):

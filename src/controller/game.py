@@ -49,7 +49,7 @@ class Game(ABC):
     @abstractmethod
     def utility(self, state, player):
         """
-        If the given player has lost, return 0, else return 1
+        If the given player has lost, return -1, for draw return 0, for win return 1
         """
         pass
 

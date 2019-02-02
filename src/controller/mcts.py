@@ -5,6 +5,7 @@ mcts: Monte Carlo Tree Search.
 """
 from math import inf
 from time import time
+from sys import argv
 from controller.game_ai import GameAI
 from view.log import log
 import numpy as np
@@ -35,13 +36,26 @@ class MCTS(GameAI):
     state_map = dict()
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 5 # Number of times to run MCTS, per action taken in game.
+    ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
+    MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
+
+    def __init__(self, game, playouts=None):
+        super().__init__(game)
+        if playouts is None and self.game.size > 3:
+            playouts = [150, 100, 35, 20, 10, 5, 5]
+            max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
+            self.ITERATIONS = playouts[self.game.size-4]
+            self.MAX_MOVES = max_moves[self.game.size-4]
+        else:
+            self.ITERATIONS = playouts
+
+        print("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 
     def select(self, node, sim_acc):
         """
         Select a node to run simulations from.
         Nodes are chosen according to how they maximize
-        the UCB1 formula = w(i) + c * sqrt (ln N(i) / n(i))).
+        the UCB1 formula = w(i)/n(i) + c * sqrt (ln N(i) / n(i))).
         Where
             - w(i) = wins of current node.
             - n(i) = times current node was visited.
@@ -63,7 +77,7 @@ class MCTS(GameAI):
                 break
             else:
                 # UCB1 formula (split up, for readability).
-                exploit = child.wins + self.EXPLORE_PARAM
+                exploit = child.wins/child.visits + self.EXPLORE_PARAM
                 val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
                 if val > best_value:
                     best_value = val
@@ -87,15 +101,15 @@ class MCTS(GameAI):
         chosen_action = actions[int(np.random.uniform(0, len(actions)))] # Chose random action.
         return self.game.result(state, chosen_action)
 
-    def back_propogate(self, node, value):
+    def back_propagate(self, node, value):
         """
-        After a full simulation, propogate result up the tree.
+        After a full simulation, propagate result up the tree.
         """
         node.visits += 1
         node.wins += value
         if node.parent is None:
             return
-        self.back_propogate(node.parent, value)
+        self.back_propagate(node.parent, value)
 
     def rollout(self, og_state, node):
         """
@@ -106,7 +120,7 @@ class MCTS(GameAI):
         state = node.state
         counter = 0
 
-        while not self.game.terminal_test(state):
+        while not self.game.terminal_test(state) and counter < self.MAX_MOVES:
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
             counter += 1
@@ -116,7 +130,6 @@ class MCTS(GameAI):
 
     def execute_action(self, state):
         super.__doc__
-        
         time_total_b = time()
         log("MCTS is calculating the best move...")
 
@@ -146,16 +159,18 @@ class MCTS(GameAI):
                 actions = self.game.actions(node.state)
                 self.expand(node, actions)
                 node = node.children[0] # Select first child of expanded Node.
-                node.state.player = not node.state.player
+                #node.state.player = not node.state.player
+            self.state_map[node.state.stringify()] = node
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(node.state, node)
-            self.back_propogate(node, value)
+            self.back_propagate(node, value)
 
             node = original_node
 
-        best_node = max(original_node.children, key=lambda n: n.wins)
-        log("Total action duration: {} s".format(time() - time_total_b))
+        best_node = max(original_node.children, key=lambda n: n.visits)
+        if "-t" in argv:
+            log("Total action duration: {} s".format(time() - time_total_b))
         return best_node.state
 
     def __str__(self):

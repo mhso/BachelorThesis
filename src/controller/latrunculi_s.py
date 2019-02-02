@@ -88,11 +88,13 @@ class Latrunculi_s(Game):
         super.__doc__
         current_player = -1
         enemy_captured = 2
-        player_color = Player_Color.BLACK
+        player_color = Field_Status.BLACK
+        opponent_color = Field_Status.WHITE
         if state.player:
             current_player = 1 #White
             enemy_captured = -2 #Black
-            player_color = Player_Color.WHITE
+            player_color = Field_Status.WHITE
+            opponent_color = Field_Status.BLACK
 
         actionsList = [] #we might have to add a pass option???
 
@@ -103,14 +105,14 @@ class Latrunculi_s(Game):
                 if self.board[y, x] == current_player:
 
                     # self.append_list_if_valid(actionsList, x, y, y-1, x-1)
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y-1, x))
+                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y-1, x))
                     # self.append_list_if_valid(board_no_of_rows, board_no_of_cols, board, actionsList, x, y, y-1, x+1)
 
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y, x-1))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y, x+1))
+                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y, x-1))
+                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y, x+1))
 
                     # self.append_list_if_valid(actionsList, x, y, y+1, x-1)
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y+1, x))
+                    self.append_list_if_valid(opponent_color, actionsList, (y, x), (y+1, x))
                     # self.append_list_if_valid(actionsList, x, y, y+1, x+1)
 
                     # board[y-1, x-1]     # Above left
@@ -138,35 +140,35 @@ class Latrunculi_s(Game):
     def is_empty_field(self, coords):
         return self.is_within_board(coords) and self.board[coords] == 0
     
-    def append_list_if_valid(self, player_color, alist, coords_from, coords_to):
-        if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, player_color):
+    def append_list_if_valid(self, opponent_color, alist, coords_from, coords_to):
+        if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, opponent_color):
             alist.append(Action(coords_from, coords_to))
     
-    def is_suicide_move(self, coords_from, coords_to, player_color):
+    def is_suicide_move(self, coords_from, coords_to, opponent_color):
         move = self.get_direction(coords_from, coords_to)
         if move == Action_Move.UP:
-            if not self.valid_left_right(coords_to, player_color):
+            if not self.valid_left_right(coords_to, opponent_color):
                 return True
                 
             else:
                 return False
 
         if move == Action_Move.LEFT:
-            if not self.valid_up_down(coords_to, player_color):
+            if not self.valid_up_down(coords_to, opponent_color):
                     return True
                     
             else:
                 return False
 
         if move == Action_Move.RIGHT:
-            if not self.valid_up_down(coords_to, player_color):
+            if not self.valid_up_down(coords_to, opponent_color):
                     return True
                     
             else:
                 return False
 
         if move == Action_Move.DOWN:
-            if not self.valid_left_right(coords_to, player_color):
+            if not self.valid_left_right(coords_to, opponent_color):
                     return True
                     
             else:
@@ -175,57 +177,63 @@ class Latrunculi_s(Game):
         
         return False
 
-    def valid_left_right(self, coords, player_color):
+    def valid_left_right(self, coords, opponent_color):
 
         left = self.move_coords(Action_Move.LEFT, coords)
         right = self.move_coords(Action_Move.RIGHT, coords)
         if self.is_empty_field(left) or self.is_empty_field(right) or not self.is_within_board(left) or not self.is_within_board(right):
             return True
         else:
-            return not (self.is_within_board(left) and self.is_within_board(right) and not self.piece_color(self.board[left]) == player_color and not self.piece_color(self.board[right]) == player_color)
+            if self.is_within_board(left) and self.is_within_board(right) and self.field_status(left) == opponent_color and self.field_status(right) == opponent_color:
+                return False
+            else:
+                return True
 
-    def valid_up_down(self, coords, player_color):
+    def valid_up_down(self, coords, opponent_color):
         up = self.move_coords(Action_Move.UP, coords)
         down = self.move_coords(Action_Move.DOWN, coords)
         if self.is_empty_field(up) or self.is_empty_field(down) or not self.is_within_board(up) or not self.is_within_board(down):
             return True
-        else:
-            return not (self.is_within_board(up) and self.is_within_board(down) and not self.piece_color(self.board[up]) == player_color and not self.piece_color(self.board[down]) == player_color)
+        else:           
+            if self.is_within_board(up) and self.is_within_board(down) and self.field_status(up) == opponent_color and self.field_status(down) == opponent_color:
+                return False
+            else:
+                return True
 
     def field_status(self, coords):
         val = self.board[coords]
-        if val == Field_Status.BLACK_TRAPPED:
+        if val == -2:
             return Field_Status.BLACK_TRAPPED
-        if val == Field_Status.BLACK:
+        elif val == -1:
             return Field_Status.BLACK
-        if val == Field_Status.NONE:
+        elif val == 0:
             return Field_Status.NONE
-        if val == Field_Status.WHITE:
+        elif val == 1:
             return Field_Status.WHITE
-        if val == Field_Status.WHITE_TRAPPED:
+        elif val == 2:
             return Field_Status.WHITE_TRAPPED
 
     def move_coords(self, direction, coords):
         y, x = coords
         if direction == Action_Move.UP_LEFT:
             return (y-1, x-1)
-        if direction == Action_Move.UP:
+        elif direction == Action_Move.UP:
             return (y-1, x)
-        if direction == Action_Move.UP_RIGHT:
+        elif direction == Action_Move.UP_RIGHT:
             return (y-1, x+1)
 
-        if direction == Action_Move.LEFT:
+        elif direction == Action_Move.LEFT:
             return (y, x-1)
-        if direction == Action_Move.CENTER:
+        elif direction == Action_Move.CENTER:
             return (y, x)
-        if direction == Action_Move.RIGHT:
+        elif direction == Action_Move.RIGHT:
             return (y, x+1)
 
-        if direction == Action_Move.DOWN_LEFT:
+        elif direction == Action_Move.DOWN_LEFT:
             return (y+1, x)
-        if direction == Action_Move.DOWN:
+        elif direction == Action_Move.DOWN:
             return (y+1, x)
-        if direction == Action_Move.DOWN_RIGHT:
+        elif direction == Action_Move.DOWN_RIGHT:
             return (y+1, x)
         
     def get_direction(self, coords_from, coords_to):

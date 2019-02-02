@@ -16,10 +16,13 @@ class Node():
     parent = None
     visits = 0
     wins = 0
+    mean_value = 0
+    probability = 0
 
-    def __init__(self, state, children, parent=None):
+    def __init__(self, state, children, probability=1, parent=None):
         self.state = state
         self.children = children
+        self.probability = probability
         self.parent = parent
 
     def __str__(self):
@@ -77,8 +80,15 @@ class MCTS(GameAI):
                 break
             else:
                 # UCB1 formula (split up, for readability).
-                exploit = child.wins/child.visits + self.EXPLORE_PARAM
-                val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
+                #exploit = child.wins/child.visits + self.EXPLORE_PARAM
+                #val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
+
+                # PUTCT formula.
+                val = child.mean_value + (
+                    self.EXPLORE_PARAM * child.probability
+                    * np.sqrt(sim_acc) / (1+child.visits)
+                )
+
                 if val > best_value:
                     best_value = val
                     best_node = child
@@ -90,7 +100,8 @@ class MCTS(GameAI):
         Expand the tree with new nodes, corresponding to
         taking any possible actions from the current node.
         """
-        children = [Node(self.game.result(node.state, action), [], node) for action in actions]
+        node_probability = 1/len(actions) # Probability of selecting node.
+        children = [Node(self.game.result(node.state, action), [], node_probability, node) for action in actions]
         node.children = children
 
     def simulate(self, state, actions):
@@ -107,6 +118,8 @@ class MCTS(GameAI):
         """
         node.visits += 1
         node.wins += value
+        node.mean_value = node.wins/node.visits
+        
         if node.parent is None:
             return
         self.back_propagate(node.parent, value)

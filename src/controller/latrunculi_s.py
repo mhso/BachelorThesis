@@ -146,36 +146,20 @@ class Latrunculi_s(Game):
     
     def is_suicide_move(self, coords_from, coords_to, opponent_color):
         move = self.get_direction(coords_from, coords_to)
+
         if move == Action_Move.UP:
-            if not self.valid_left_right(coords_to, opponent_color):
-                return True
-                
-            else:
-                return False
+            return not self.valid_left_right(coords_to, opponent_color)
 
-        if move == Action_Move.LEFT:
-            if not self.valid_up_down(coords_to, opponent_color):
-                    return True
-                    
-            else:
-                return False
+        elif move == Action_Move.LEFT:
+            return not self.valid_up_down(coords_to, opponent_color)
 
-        if move == Action_Move.RIGHT:
-            if not self.valid_up_down(coords_to, opponent_color):
-                    return True
-                    
-            else:
-                return False
+        elif move == Action_Move.RIGHT:
+            return not self.valid_up_down(coords_to, opponent_color)
 
-        if move == Action_Move.DOWN:
-            if not self.valid_left_right(coords_to, opponent_color):
-                    return True
-                    
-            else:
-                return False
+        elif move == Action_Move.DOWN:
+            return not self.valid_left_right(coords_to, opponent_color)
 
-        
-        return False
+        return True
 
     def valid_left_right(self, coords, opponent_color):
 
@@ -235,30 +219,32 @@ class Latrunculi_s(Game):
             return (y+1, x)
         elif direction == Action_Move.DOWN_RIGHT:
             return (y+1, x)
-        
+        return None
+
     def get_direction(self, coords_from, coords_to):
         y_from, x_from = coords_from
         y_to, x_to = coords_to
         if y_from-1 == y_to and x_from-1 == x_to:
             return Action_Move.UP_LEFT
-        if y_from-1 == y_to and x_from == x_to:
+        elif y_from-1 == y_to and x_from == x_to:
             return Action_Move.UP
-        if y_from-1 == y_to and x_from+1 == x_to:
+        elif y_from-1 == y_to and x_from+1 == x_to:
             return Action_Move.UP_RIGHT
 
-        if y_from == y_to and x_from-1 == x_to:
+        elif y_from == y_to and x_from-1 == x_to:
             return Action_Move.LEFT
-        if y_from == y_to and x_from == x_to:
+        elif y_from == y_to and x_from == x_to:
             return Action_Move.CENTER
-        if y_from == y_to and x_from+1 == x_to:
+        elif y_from == y_to and x_from+1 == x_to:
             return Action_Move.RIGHT
         
-        if y_from+1 == y_to and x_from-1 == x_to:
+        elif y_from+1 == y_to and x_from-1 == x_to:
             return Action_Move.DOWN_LEFT
-        if y_from+1 == y_to and x_from == x_to:
+        elif y_from+1 == y_to and x_from == x_to:
             return Action_Move.DOWN
-        if y_from+1 == y_to and x_from+1 == x_to:
+        elif y_from+1 == y_to and x_from+1 == x_to:
             return Action_Move.DOWN_RIGHT
+        return None
 
     def piece_color(self, value):
         if value < 0:

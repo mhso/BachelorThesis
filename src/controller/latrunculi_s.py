@@ -8,6 +8,58 @@ from controller.game import Game
 from model.state import State, Action
 from enum import Enum
 
+class PieceUtil:
+    @staticmethod
+    def piece_player_value(value):
+        if value < 0: return 0
+        elif value > 0: return 1
+        else: return -1
+    
+    @staticmethod
+    def player_color(value):
+        if value > 0: return Field_Enum.WHITE
+        return Field_Enum.BLACK
+
+    @staticmethod
+    def player_invers(value):
+        return not value
+
+    @staticmethod
+    def piece_name(value):
+        if value == -2: return Field_Enum.BLACK_TRAPPED
+        elif value == -1: return Field_Enum.BLACK
+        elif value == 1: return Field_Enum.WHITE
+        elif value == 2: return Field_Enum.WHITE_TRAPPED
+        else: return Field_Enum.NONE
+
+    @staticmethod
+    def piece_value(name):
+        if name == Field_Enum.BLACK_TRAPPED: return -2
+        elif name == Field_Enum.BLACK: return -1
+        elif name == Field_Enum.WHITE: return 1
+        elif name == Field_Enum.WHITE_TRAPPED: return 2
+        else: return 0
+
+    @staticmethod
+    def norm_value(value):
+        if value > 0: return 1
+        elif value < 0: return -1
+        else: return 0
+
+    @staticmethod
+    def trap_value(value):
+        if value > 0: return 2
+        elif value < 0: return -2
+        else: return 0
+
+    @staticmethod
+    def invers_value(value):
+        if value == -2: return -1
+        elif value == -1: return -2
+        elif value == 1: return 2
+        elif value == 2: return 1
+        else: return 0
+
 class Action_Move(Enum):
     UP_LEFT = 1
     UP = 2
@@ -96,36 +148,14 @@ class Latrunculi_s(Game):
         actionsList = [] #we might have to add a pass option???
 
         self.board = state.board
-        
         for y in range(self.board_no_of_rows):
             for x in range(self.board_no_of_cols):
-                
                 if self.field_value((y, x)) == player_color:
-
-                    # self.append_list_if_valid(actionsList, x, y, y-1, x-1)
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y-1, x))
-                    # self.append_list_if_valid(board_no_of_rows, board_no_of_cols, board, actionsList, x, y, y-1, x+1)
-
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y, x-1))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y, x+1))
-
-                    # self.append_list_if_valid(actionsList, x, y, y+1, x-1)
-                    self.append_list_if_valid(player_color, actionsList, (y, x), (y+1, x))
-                    # self.append_list_if_valid(actionsList, x, y, y+1, x+1)
-
-                    # board[y-1, x-1]     # Above left
-                    # board[y-1, x]       # Above center
-                    # board[y-1, x+1]     # Above right
-
-                    # board[y, x-1]     # Midt left
-
-                    # board[y, x]         # Midt center
-
-                    # board[y, x+1]     # Midt right
-
-                    # board[y+1, x-1]     # Below left
-                    # board[y+1, x]     # Below center
-                    # board[y+1, x+1]     # Below right
+                
+                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(Action_Move.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(Action_Move.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(Action_Move.RIGHT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(Action_Move.DOWN, (y, x)))
 
         # if actionsList == []:
         #     actionsList.append(None)
@@ -145,21 +175,12 @@ class Latrunculi_s(Game):
     def is_suicide_move(self, coords_from, coords_to, player_color):
         move = self.get_direction(coords_from, coords_to)
         opponent_color = self.oppenent_player_color(player_color)
-        # print("player_color: {}".format(player_color))
-        # print("opponent_color: {}".format(opponent_color))
-        
 
-        if move == Action_Move.UP:
+        if move == Action_Move.UP or move == Action_Move.DOWN:
             return not self.valid_left_right(coords_to, player_color, opponent_color)
 
-        elif move == Action_Move.LEFT:
+        elif move == Action_Move.LEFT or move == Action_Move.RIGHT:
             return not self.valid_up_down(coords_to, player_color, opponent_color)
-
-        elif move == Action_Move.RIGHT:
-            return not self.valid_up_down(coords_to, player_color, opponent_color)
-
-        elif move == Action_Move.DOWN:
-            return not self.valid_left_right(coords_to, player_color, opponent_color)
 
         return True
 
@@ -168,44 +189,36 @@ class Latrunculi_s(Game):
         left = self.move_coords(Action_Move.LEFT, coords)
         right = self.move_coords(Action_Move.RIGHT, coords)
         if self.is_empty_field(left) or self.is_empty_field(right) or not self.is_within_board(left) or not self.is_within_board(right):
-            # if coords == (3, 5): print("{} valid_left_right empty field or not within board".format(coords))
             return True
         else:
             if self.is_within_board(left) and self.is_within_board(right) and self.field_value(left) == opponent_color and self.field_value(right) == opponent_color:
                 
-                # left_left = self.move_coords(Action_Move.LEFT, left)
-                # right_right = self.move_coords(Action_Move.RIGHT, right)
-                # if self.is_within_board(left_left) and self.field_player(left_left) == player_color or self.is_within_board(right_right) and self.field_player(right_right) == player_color:
-                #     return True
-                #if coords == (3, 5): print("{} valid_left_right within board and not opponent colors".format(coords))
+                left_left = self.move_coords(Action_Move.LEFT, left)
+                right_right = self.move_coords(Action_Move.RIGHT, right)
+                if self.is_within_board(left_left) and self.field_player(left_left) == player_color or self.is_within_board(right_right) and self.field_player(right_right) == player_color:
+                    return True
                 return False
             else:
-                #if coords == (3, 5): print("{} valid_left_right not within board or not opponent colors".format(coords))
                 return True
 
     def valid_up_down(self, coords, player_color, opponent_color):
         
         up = self.move_coords(Action_Move.UP, coords)
         down = self.move_coords(Action_Move.DOWN, coords)
+        up_up = self.move_coords(Action_Move.UP, up)
+        down_down = self.move_coords(Action_Move.DOWN, down)
+
         if self.is_empty_field(up) or self.is_empty_field(down) or not self.is_within_board(up) or not self.is_within_board(down):
-            if coords == (3, 5): print("{} valid_up_down empty field or not within board".format(coords))
             return True
         else:           
             if self.is_within_board(up) and self.is_within_board(down) and self.field_value(up) == opponent_color and self.field_value(down) == opponent_color:
 
-                # up_up = self.move_coords(Action_Move.UP, up)
-                # down_down = self.move_coords(Action_Move.DOWN, down)
-                # if self.is_within_board(up_up) and self.field_player(up_up) == player_color or self.is_within_board(down_down) and self.field_player(down_down) == player_color:
-                #     return True
-                if coords == (3, 5): print("{} valid_up_down within board and not opponent colors".format(coords))
+                up_up = self.move_coords(Action_Move.UP, up)
+                down_down = self.move_coords(Action_Move.DOWN, down)
+                if self.is_within_board(up_up) and self.field_player(up_up) == player_color or self.is_within_board(down_down) and self.field_player(down_down) == player_color:
+                    return True
                 return False
             else:
-                if coords == (3, 5):
-                    print("{} valid_up_down not within board or not opponent colors".format(coords))
-                    print("player_color: {}".format(player_color))
-                    print("self.field_value(up): {}".format(self.field_value(up)))
-                    print("self.field_value(down): {}".format(self.field_value(down)))
-                    print("opponent_color: {}".format(opponent_color))
                 return True
 
     def field_player(self, coords):
@@ -223,7 +236,7 @@ class Latrunculi_s(Game):
             return Field_Enum.WHITE
         elif val == 2:
             return Field_Enum.WHITE_TRAPPED
-
+        
     def field_player_color(self, value):
         if value == Field_Enum.BLACK_TRAPPED or value == Field_Enum.BLACK:
             return Field_Enum.BLACK
@@ -249,11 +262,11 @@ class Latrunculi_s(Game):
             return (y, x+1)
 
         elif direction == Action_Move.DOWN_LEFT:
-            return (y+1, x)
+            return (y+1, x-1)
         elif direction == Action_Move.DOWN:
             return (y+1, x)
         elif direction == Action_Move.DOWN_RIGHT:
-            return (y+1, x)
+            return (y+1, x+1)
         return None
 
     def get_direction(self, coords_from, coords_to):
@@ -305,8 +318,59 @@ class Latrunculi_s(Game):
         else:
             return Field_Enum.NONE
 
+    def update_up_down(self, workboard, dest, current_player):
+        y, x = dest
+
+        for i in range(y, 0, -1):           
+            if i > 2:
+                this_c = i, x
+                next_c1 = i-1, x
+                next_c2 = i-2, x
+                self.board_update(workboard, this_c, next_c1, next_c2, current_player)
+
+        for i in range(y, self.board_no_of_rows):
+            if i < self.board_no_of_rows-2:
+                this_c = i, x
+                next_c1 = i+1, x
+                next_c2 = i+2, x
+                self.board_update(workboard, this_c, next_c1, next_c2, current_player)
+        return workboard
+    
+    def update_left_right(self, workboard, dest, current_player):
+        y, x = dest
+
+        for i in range(y, 0, -1):           
+            if i > 2:
+                this_c = y, i
+                next_c1 = y, i-1
+                next_c2 = y, i-2
+                self.board_update(workboard, this_c, next_c1, next_c2, current_player)
+
+        for i in range(y, self.board_no_of_cols):
+            if i < self.board_no_of_cols-2:
+                this_c = y, i
+                next_c1 = y, i+1
+                next_c2 = y, i+2
+                self.board_update(workboard, this_c, next_c1, next_c2, current_player)
+        return workboard
+
+    def board_update(self, board, this_c, next_c1, next_c2, current_player):
+        opponent_player = PieceUtil.player_invers(current_player)
+        this_v = board[this_c]
+        next_v1 = board[next_c1]
+        next_v2 = board[next_c2]
+        if PieceUtil.piece_player_value(this_v) == current_player and PieceUtil.piece_player_value(next_v1) == opponent_player  and PieceUtil.piece_player_value(next_v2) == current_player:
+            v1 = PieceUtil.norm_value(this_v)
+            v2 = PieceUtil.trap_value(next_v1)
+            v3 = PieceUtil.norm_value(next_v2)
+            print("Update: {} {} {}".format(v1, v2, v3))
+            board[this_c] = v1
+            board[next_c1] = v2
+            board[next_c2] = v3
+
     def traverse(self, board, kernel):
         pass
+
 
     def result(self, state, action):
         super.__doc__
@@ -334,11 +398,11 @@ class Latrunculi_s(Game):
                 
                 newBoard[source] = 0
                 newBoard[dest] = current_player
-
-
+                
+                newBoard = self.update_up_down(newBoard, dest, state.player)
+                newBoard = self.update_left_right(newBoard, dest, state.player)
 
                 print("Lets move the piece")
-
 
             else:
                 raise Exception("you attempted to move your piece, to the square where the piece started")
@@ -350,125 +414,7 @@ class Latrunculi_s(Game):
         else: #If none of the above, illegal move...
             raise Exception("you have attempted to move a piece that you do not own...")
 
-
-        # if state.board[source[0]][source[1]] == current_player: #if source is a piece owned by the current player
-        #     if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different
-        #         i = dest[0]
-        #         j = dest[1]
-        #         newBoard[i][j] = current_player #moves piece to destination (dest)
-        #         newBoard[source[0]][source[1]] = 0 #removes piece from source
-        #         workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
-
-        #         #check if the move frees an opponents captured piece
-        #         self.check_For_Freeing_Due_To_Move(source[0], source[1], newBoard, enemy_player)
-
-        #         #check for suicide moves
-        #         if (i-1) >= 0 and (i+1) < self.size: #check if possible suicide move is within board bounds NORTH/SOUTH
-        #             if workBoard[i-1][j] == enemy_player and workBoard[i+1][j] == enemy_player: #check for suicide move NORTH/SOUTH
-        #                 #NORTH
-        #                 if (i-2) >= 0: #check if suicide move capture, is within board bounds NORTH
-        #                     if workBoard[i-2][j] == current_player: #check for suicide move capture NORTH
-        #                         newBoard[i-1][j] = enemy_player*2 #captures the oppenents piece NORTH
-        #                         self.freed_Check_West_East_of_Piece((i-1), j, newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-        #                 #SOUTH
-        #                 if (i+2) < self.size: #check if suicide move capture, is within board bounds SOUTH
-        #                     if workBoard[i+2][j] == current_player: #check for suicide move capture SOUTH
-        #                         newBoard[i+1][j] = enemy_player*2 #captures the oppenents piece SOUTH
-        #                         #check for freeing of another piece
-        #                         self.freed_Check_West_East_of_Piece((i+1), j, newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-
-        #         if (j-1) >= 0 and (j+1) < self.size: #check if possible suicide move is within board bounds WEST/EAST
-        #             if workBoard[i][j-1] == enemy_player and workBoard[i][j+1] == enemy_player: #check for suicide move WEST/EAST
-        #                 #WEST
-        #                 if (j-2) >= 0: #check if suicide move capture, is within board bounds WEST
-        #                     if workBoard[i][j-2] == current_player: #check for suicide move capture WEST
-        #                         newBoard[i][j-1] = enemy_player*2 #captures the oppenents piece WEST
-        #                         self.freed_Check_North_South_of_Piece(i, (j-1), newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-        #                 #EAST
-        #                 if (j+2) < self.size: #check if suicide move capture, is within board bounds EAST
-        #                     if workBoard[i][j+2] == current_player: #check for suicide move capture EAST
-        #                         newBoard[i][j+1] = enemy_player*2 #captures the oppenents piece EAST
-        #                         self.freed_Check_North_South_of_Piece(i, (j+1), newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-
-        #         #check for regular capture of enemies
-        #         #NORTH
-        #         if (i-2) >= 0: #check if possible regular capture is within board bounds NORTH
-        #             if workBoard[i-1][j] == enemy_player and workBoard[i-2][j] == current_player: #check for regular capture NORTH
-        #                 newBoard[i-1][j] = enemy_player*2 #capture the opponents piece NORTH
-        #                 self.freed_Check_West_East_of_Piece((i-1), j, newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-        #         #SOUTH
-        #         if (i+2) < self.size: #check if possible regular capture is within board bounds SOUTH
-        #             if workBoard[i+1][j] == enemy_player and workBoard[i+2][j] == current_player: #check for regular capture SOUTH
-        #                 newBoard[i+1][j] = enemy_player*2 #capture the opponents piece SOUTH
-        #                 self.freed_Check_West_East_of_Piece((i+1), j, newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-        #         #WEST
-        #         if (j-2) >= 0: #check if possible regular capture is within board bounds WEST
-        #             if workBoard[i][j-1] == enemy_player and workBoard[i][j-2] == current_player: #check for regular capture WEST
-        #                 newBoard[i][j-1] = enemy_player*2 #capture the opponents piece WEST
-        #                 self.freed_Check_North_South_of_Piece(i, (j-1), newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-        #         #EAST
-        #         if (j+2) < self.size: #check if possible regular capture is within board bounds EAST
-        #             if workBoard[i][j+1] == enemy_player and workBoard[i][j+2] == current_player: #check for regular capture EAST
-        #                 newBoard[i][j+1] = enemy_player*2 #capture the opponents piece EAST
-        #                 self.freed_Check_North_South_of_Piece(i, (j+1), newBoard, current_player) #check for freeing of another piece, due to capture of enemy piece
-        #     else:
-        #         raise Exception("you attempted to move your piece, to the square where the piece started")
-        # elif state.board[source[0]][source[1]] == (enemy_player*2): #if source is an opponents captured piece
-        #     if source[0] == dest[0] and source[1] == dest[1]: #if source and dest is equal, remove opponents captured piece
-        #         newBoard[source[0]][source[1]] = 0 #removed captured piece
-        #     else:
-        #         raise Exception("you have attempted to move an opponents captured piece...")
-        # else: #If none of the above, illegal move...
-        #     raise Exception("you have attempted to move a piece that you do not own...")
         return State(newBoard, (not state.player))
-
-    # #checks whether moving a piece from its source, causes an enemys piece to be freed
-    # def check_For_Freeing_Due_To_Move(self, i, j, board, enemy):
-    #     if (i-1) >= 0: #check that we are within board bounds
-    #         if self.check_For_Freeing((i-1), j, board): #checks piece NORTH of source
-    #             board[i-1][j] = enemy #frees piece
-    #     if (i+1) < self.size: #check that we are within board bounds
-    #         if self.check_For_Freeing((i+1), j, board): #checks piece SOUTH of source
-    #             board[i+1][j] = enemy #frees piece
-    #     if (j-1) >= 0: #check that we are within board bounds
-    #         if self.check_For_Freeing(i, (j-1), board): #checks piece WEST of source
-    #             board[i][j-1] = enemy #frees piece
-    #     if (j+1) < self.size: #check that we are within board bounds
-    #         if self.check_For_Freeing(i, (j+1), board): #checks piece EAST of source
-    #             board[i][j+1] = enemy #frees piece
-
-    # #check for freed pieces to the WEST/EAST of the given piece
-    # def freed_Check_West_East_of_Piece(self, i, j, board, current_player):
-    #     if i >= 0 and i < self.size: #check if the given i is within the board bounds
-    #         if (j-1) >= 0: #check if its within the board bounds WEST
-    #             if self.check_For_Freeing((i), (j-1), board): #check for freed piece to the WEST of the captured NORTH/SOUTH piece
-    #                 board[i][j-1] = current_player #frees currentPlayers Alligatus
-    #         if (j+1) < self.size: #check if its within the board bounds EAST
-    #             if self.check_For_Freeing((i), (j+1), board): #check for freed piece to the EAST of the captured NORTH/SOUTH piece
-    #                 board[i][j+1] = current_player #frees currentPlayers Alligatus
-    
-    # #check for freed pieces to the NORTH/SOUTH of the given piece
-    # def freed_Check_North_South_of_Piece(self, i, j, board, current_player):
-    #     if j >= 0 and j < self.size: #check if the given i is within the board bounds
-    #         if (i-1) >= 0: #check if its within the board bounds NORTH
-    #             if self.check_For_Freeing((i-1), (j), board): #check for freed piece to the NORTH of the captured WEST/EAST piece
-    #                 board[i-1][j] = current_player #frees currentPlayers Alligatus
-    #         if (i+1) < self.size: #check if its within the board bounds SOUTH
-    #             if self.check_For_Freeing((i+1), (j), board): #check for freed piece to the SOUTH of the captured WEST/EAST piece
-    #                 board[i+1][j] = current_player #frees currentPlayers Alligatus
-
-    # #check if piece on the given position has possibly been freed, returns true, if the piece has been freed, false if not (or there is no captured piece)
-    # def check_For_Freeing(self, i, j, board):
-    #     if board[i][j] == 2 or board[i][j] == -2: #check if the given piece is captured
-    #         enemy_value = int(board[i][j]*-0.5)
-    #         if (j-1 >= 0 and j+1 < self.size and board[i][j-1] == enemy_value
-    #               and board[i][j+1] == enemy_value): #check if WEST/EAST pieces does capture the given piece
-    #             return False
-    #         elif (i-1 >= 0 and i+1 < self.size and board[i-1][j] == enemy_value
-    #               and board[i+1][j] == enemy_value): #check if NORTH/SOUTH pieces does capture the given piece
-    #             return False
-    #         else: #if there is not a capturing pair of enemy pieces, return true and free the captured piece
-    #             return True
 
     def terminal_test(self, state):
         super.__doc__

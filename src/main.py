@@ -11,7 +11,7 @@ from os import mkdir
 from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
-# from controller.connect_four import ConnectFour
+from controller.connect_four import ConnectFour
 from controller.latrunculi_s import Latrunculi_s
 from controller.minimax import Minimax
 from controller.mcts import MCTS

@@ -315,5 +315,5 @@ def run_tests():
     print("Iterations: {}".format(counter))
 
     # Appending results to standard excel file "test_results.xlsx"
-    row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_ne", counter, (time() - time_b))
+    row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi", counter, (time() - time_b))
     ExcelUtil.excel_append_row(row)

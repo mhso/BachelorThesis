@@ -14,23 +14,18 @@ RESET = "\033[0;37;40m"
 
 args = sys.argv
 
-test_iterations = int(args[1])+1
+test_iterations = int(args[1])
 
 
 print("\n{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
-for i in range(1, test_iterations):
+for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
     test_latrunculi.run_iteration_timing_test()
 print("\n{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
-for i in range(1, test_iterations):
+for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
     test_latrunculi_ne.run_iteration_timing_test()
 print("\n{}-=-=-=-=- CONNECT FOUR TESTS -=-=-=-=-{}".format(YELLOW, RESET))
-for i in range(1, test_iterations):
+for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
     test_cnnct_four.run_iteration_timing_test()
-
-print("===============================================")
-print("Tests Run: {}".format(assertion.PASSED + assertion.FAILED))
-print("{}Passed: {}".format(GREEN, assertion.PASSED))
-print("{}Failed: {}{}".format(RED, assertion.FAILED, RESET))

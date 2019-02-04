@@ -1,5 +1,6 @@
 from testing import assertion
 from testing import test_latrunculi
+from testing import test_latrunculi_ne
 from testing import test_cnnct_four
 from testing import test_minimax
 from testing import test_mcts
@@ -12,6 +13,8 @@ RESET = "\033[0;37;40m"
 
 print("{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 test_latrunculi.run_tests()
+print("{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
+test_latrunculi_ne.run_tests()
 print("{}-=-=-=-=- CONNECT FOUR TESTS -=-=-=-=-{}".format(YELLOW, RESET))
 test_cnnct_four.run_tests()
 print("{}-=-=-=-=-=- MINIMAX TESTS -=-=-=-=-=-{}".format(YELLOW, RESET))

@@ -27,6 +27,9 @@ class Action:
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
 
+    def __hash__(self):
+        return hash(str(self))
+
     def numeric(self):
         """
         Return unique numeric ID of Action.

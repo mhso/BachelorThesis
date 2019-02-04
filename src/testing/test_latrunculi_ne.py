@@ -1,7 +1,7 @@
 from numpy.random import uniform
 from time import time
 from testing import assertion
-from controller.latrunculi import Latrunculi
+from controller.latrunculi_ne import Latrunculi_ne
 from model.state import Action
 from util.excelUtil import ExcelUtil
 import numpy as np
@@ -12,7 +12,7 @@ def run_tests():
 
     # Test correct board size.
     test_size = 8
-    game = Latrunculi(test_size)
+    game = Latrunculi_ne(test_size)
     state = game.start_state()
     assertion.assert_equal(test_size, state.board.shape[1], "correct board width")
     assertion.assert_equal(test_size, state.board.shape[0], "correct board height")
@@ -29,7 +29,7 @@ def run_tests():
     # =================================
     # Random distribution.
     # Test number of white and black pieces are equal, and is the correct amount.
-    game = Latrunculi(8, 432)
+    game = Latrunculi_ne(8, 432)
     state = game.start_state()
     num_white = (state.board == 1).sum()
     num_black = (state.board == -1).sum()
@@ -44,7 +44,7 @@ def run_tests():
     # =================================
     # Test terminal state methods.
     # Test terminal_test.
-    game = Latrunculi(8)
+    game = Latrunculi_ne(8)
     state = game.start_state()
     state.board[-3:][:] = 0 # Set white's pieces, except 1, to empty squares.
     state.board[-1][0] = 1
@@ -59,7 +59,7 @@ def run_tests():
 
     # =================================
     # Test available actions for "Chess" formation.
-    game = Latrunculi(5)
+    game = Latrunculi_ne(5)
     state = game.start_state()
 
     legal_moves = [
@@ -73,7 +73,7 @@ def run_tests():
 
     # =================================
     # Test available actions for "random" board.
-    game = Latrunculi(6, 5)
+    game = Latrunculi_ne(6, 5)
     state = game.start_state()
     state.player = not state.player
 
@@ -92,7 +92,7 @@ def run_tests():
     # =================================
     # Test result of action.
     # Test simple move.
-    game = Latrunculi(5)
+    game = Latrunculi_ne(5)
     state = game.start_state()
 
     result = game.result(state, Action((3, 0), (2, 0)))
@@ -117,7 +117,7 @@ def run_tests():
 
     # =================================
     # Test double jump.
-    game = Latrunculi(6, 489)
+    game = Latrunculi_ne(6, 489)
     state = game.start_state()
 
     result = game.result(state, Action((4, 1), (4, 5)))
@@ -131,7 +131,7 @@ def run_tests():
 
     # =================================
     # Test move causing piece to be captured.
-    game = Latrunculi(5, 42)
+    game = Latrunculi_ne(5, 42)
     state = game.start_state()
 
     result_cb = game.result(state, Action((4, 3), (3, 3)))
@@ -169,7 +169,7 @@ def run_tests():
 
     # =================================
     # Test capture causing captured piece to be freed.
-    game = Latrunculi(5, 302)
+    game = Latrunculi_ne(5, 302)
     state = game.start_state()
 
     result1 = game.result(state, Action((3, 4), (3, 3))) # Capture black piece.
@@ -180,7 +180,7 @@ def run_tests():
 
     # =================================
     # Test potential capture causing move not being possible.
-    game = Latrunculi(8, 31)
+    game = Latrunculi_ne(8, 31)
     state = game.start_state()
     state.player = not state.player
 
@@ -197,7 +197,7 @@ def run_tests():
     # but instead captures one of the two enemy pieces.
 
     # Test south
-    game = Latrunculi(8, 42)
+    game = Latrunculi_ne(8, 42)
     state = game.start_state()
     state.player = not state.player
 
@@ -207,7 +207,7 @@ def run_tests():
 
     # =================================
     # Test south again
-    game = Latrunculi(8, 107)
+    game = Latrunculi_ne(8, 107)
     state = game.start_state()
     state.player = not state.player
 
@@ -217,7 +217,7 @@ def run_tests():
 
     # =================================
     # Test south again again
-    game = Latrunculi(8, 75)
+    game = Latrunculi_ne(8, 75)
     state = game.start_state()
 
     exists = Action((0, 2), (1, 2)) in game.actions(state)
@@ -226,7 +226,7 @@ def run_tests():
 
     # =================================
     # Test west
-    game = Latrunculi(8, 96)
+    game = Latrunculi_ne(8, 96)
     state = game.start_state()
 
     exists = Action((3, 3), (3, 2)) in game.actions(state)
@@ -235,7 +235,7 @@ def run_tests():
 
     # =================================
     # Test west again
-    game = Latrunculi(8, 118)
+    game = Latrunculi_ne(8, 118)
     state = game.start_state()
 
     exists = Action((3, 7), (3, 6)) in game.actions(state)
@@ -244,7 +244,7 @@ def run_tests():
 
     # =================================
     # Test east
-    game = Latrunculi(8, 102)
+    game = Latrunculi_ne(8, 102)
     state = game.start_state()
 
     exists = Action((2, 1), (2, 2)) in game.actions(state)
@@ -253,7 +253,7 @@ def run_tests():
 
     # =================================
     # Test east again
-    game = Latrunculi(8, 77)
+    game = Latrunculi_ne(8, 77)
     state = game.start_state()
 
     exists = Action((1, 1), (1, 2)) in game.actions(state)
@@ -262,7 +262,7 @@ def run_tests():
 
     # =================================
     # Test north
-    game = Latrunculi(8, 118)
+    game = Latrunculi_ne(8, 118)
     state = game.start_state()
 
     exists = Action((6, 3), (5, 3)) in game.actions(state)
@@ -271,7 +271,7 @@ def run_tests():
 
     # =================================
     # Test north again
-    game = Latrunculi(8, 70)
+    game = Latrunculi_ne(8, 70)
     state = game.start_state()
 
     exists = Action((6, 3), (5, 3)) in game.actions(state)
@@ -280,7 +280,7 @@ def run_tests():
 
     # =================================
     # Test potential capture causign move not being possible.
-    game = Latrunculi(8, 69)
+    game = Latrunculi_ne(8, 69)
     state = game.start_state()
     state.player = not state.player
 
@@ -291,10 +291,9 @@ def run_tests():
     # =================================
     # Test chump jain being broken, by potential capture.
     
-
     # TEST STUFF
-    print("### TESTING_ Latrunculi ###")
-    game = Latrunculi(8, 55)
+    print("### TESTING_ Latrunculi_ne ###")
+    game = Latrunculi_ne(8, 55)
     state = game.start_state()
 
     time_b = time()
@@ -310,9 +309,10 @@ def run_tests():
     # terminal = game.terminal_test(state)  = 0.06 seconds.
     # actions = game.actions(state)         = ~3 seconds.
     # result = game.result(state, action)   = 0.16 seconds.
-
+    
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
+
 
     # Appending results to standard excel file "test_results.xlsx"
     row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_ne", counter, (time() - time_b))

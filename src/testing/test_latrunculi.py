@@ -291,9 +291,9 @@ def run_tests():
     # =================================
     # Test chump jain being broken, by potential capture.
     
-
+def run_iteration_timing_test():
     # TEST STUFF
-    print("### TESTING_ Latrunculi ###")
+    print("run iteration timing test Latrunculi")
     game = Latrunculi(8, 55)
     state = game.start_state()
 
@@ -305,11 +305,6 @@ def run_tests():
         action = actions[int(uniform(0, len(actions)))]
         state = game.result(state, action)
         counter += 1
-    #action = Action((2, 0), (3, 0))
-    # 6855 iterations of:
-    # terminal = game.terminal_test(state)  = 0.06 seconds.
-    # actions = game.actions(state)         = ~3 seconds.
-    # result = game.result(state, action)   = 0.16 seconds.
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))

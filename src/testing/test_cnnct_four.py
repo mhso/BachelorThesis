@@ -2,6 +2,7 @@ from testing import assertion
 from controller.connect_four import ConnectFour
 from model.state import Action
 from time import time
+from util.excelUtil import ExcelUtil
 from numpy.random import uniform
 
 def run_tests():
@@ -44,7 +45,9 @@ def run_tests():
 
     assertion.assert_true(game.terminal_test(result), "terminal test vertical")
 
-    """
+def run_iteration_timing_test():
+    # TEST STUFF
+    print("run iteration timing test ConnectFour")
     game = ConnectFour(7)
     state = game.start_state()
 
@@ -59,5 +62,8 @@ def run_tests():
 
     print("Time taken to play out game: {} s".format(time() - time_b))
     print("Iterations: {}".format(counter))
-    """
+
+    # Appending results to standard excel file "test_results.xlsx"
+    row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "ConnectFour", counter, (time() - time_b))
+    ExcelUtil.excel_append_row(row)
     

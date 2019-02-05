@@ -6,12 +6,26 @@ class State:
         self.board = board
         self.player = player
 
-    def __str__(self):
-        player = "White" if self.player else "Black"
+    def count_pieces(self):
+        """
+        Debug method for returning number of white
+        and black pieces on the board.
+        """
         white_pieces = (self.board == 1).sum()
         black_pieces = (self.board == -1).sum()
+        return white_pieces, black_pieces
+
+    def str_player(self):
+        """
+        Debug method for returning a string
+        representation of which player has the turn.
+        """
+        return "White" if self.player else "Black"
+
+    def __str__(self):
+        white_pieces, black_pieces = self.count_pieces()
         return "[State: \nPlayer turn = {}\nWhite pieces = {}\nBlack pieces = {}\nBoard =\n{}\n]".format(
-            player, white_pieces, black_pieces, self.board)
+            self.str_player(), white_pieces, black_pieces, self.board)
 
     def stringify(self):
         return ("1" if self.player else "0") + ("".join([str(p) for p in self.board.ravel()]))

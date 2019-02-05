@@ -58,8 +58,7 @@ class Minimax(GameAI):
                 highest_value = value
                 best_action = action
         
-        print("Highest worth: {}".format(highest_value))
-        print("Action taken: {}".format(best_action))
+        print("Minimax action: {} worth: {}".format(best_action, highest_value))
         return self.game.result(state, best_action)
     
     def __str__(self):

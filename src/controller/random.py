@@ -9,10 +9,11 @@ class Random(GameAI):
     def execute_action(self, state):
         super.__doc__
         actions = self.game.actions(state)
+        #print("WHITE POS ACTIONS: {}".format([[str(a) for a in actions]]))
         index = int(uniform(0, len(actions)))
         chosen = actions[index]
 
-        print("Action taken: {}".format(chosen))
+        print("Random action: {}".format(chosen))
         return self.game.result(state, chosen)
     
     def __str__(self):

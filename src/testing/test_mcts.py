@@ -46,7 +46,7 @@ def run_tests():
     # =================================
     # Test expansion.
     # Test correct number of children.
-    root = Node(state, [])
+    root = Node(state, None, [])
     mcts.expand(root, actions)
 
     assertion.assert_equal(16, len(root.children), "expansion correct num of children")

@@ -329,7 +329,6 @@ class Gui():
         self.canvas_remove_tags(['board_field', 'status_text'])
         self.draw_board(state.board)
         # self.draw_status_text(self.canvas, "Nice move")
-        log("Updated")
 
     def make_move(self, state, source, dest):
         """

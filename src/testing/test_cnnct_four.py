@@ -60,10 +60,11 @@ def run_iteration_timing_test():
         state = game.result(state, action)
         counter += 1
 
-    print("Time taken to play out game: {} s".format(time() - time_b))
+    time_taken = time() - time_b
+    print("Time taken to play out game: {} s".format(time_taken))
     print("Iterations: {}".format(counter))
 
     # Appending results to standard excel file "test_results.xlsx"
     row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "ConnectFour", counter, (time() - time_b))
     ExcelUtil.excel_append_row(row)
-    
+    return time_taken

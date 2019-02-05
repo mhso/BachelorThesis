@@ -25,12 +25,14 @@ def run_iteration_timing_l_vs_l_ne_test():
     l_terminal = False
     l_ne_terminal = False
     count_terminal = 2
+    time_taken_l = 0
+    time_taken_ne = 0
     while count_terminal > 0:
-        
         if not l_terminal:
 
             if l_game.terminal_test(l_state):
-                print("Latrunculi Time taken to play out game: {} s".format(time() - time_b))
+                time_taken_l = time() - time_b
+                print("Latrunculi Time taken to play out game: {} s".format(time_taken_l))
                 print("Latrunculi Iterations: {}".format(l_counter))
 
                 # Appending results to standard excel file "test_results.xlsx"
@@ -49,7 +51,8 @@ def run_iteration_timing_l_vs_l_ne_test():
         if not l_ne_terminal:
 
             if l_ne_game.terminal_test(l_ne_state):
-                print("Latrunculi_ne Time taken to play out game: {} s".format(time() - time_b))
+                time_taken_ne = time() - time_b
+                print("Latrunculi_ne Time taken to play out game: {} s".format(time_taken_ne))
                 print("Latrunculi_ne Iterations: {}".format(l_ne_counter))
 
                 # Appending results to standard excel file "test_results.xlsx"
@@ -64,3 +67,4 @@ def run_iteration_timing_l_vs_l_ne_test():
                 l_ne_action = l_ne_actions[l_ne_rand]
                 l_ne_state = l_ne_game.result(l_ne_state, l_ne_action)
                 l_ne_counter += 1
+    return time_taken_l, time_taken_ne

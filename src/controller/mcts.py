@@ -173,11 +173,10 @@ class MCTS(GameAI):
                 actions = self.game.actions(node.state)
                 self.expand(node, actions)
                 node = node.children[0] # Select first child of expanded Node.
-                node.state.player = not node.state.player
             self.state_map[node.state.stringify()] = node
 
             # Perform rollout, simulate till end of game and return outcome.
-            value = self.rollout(node.state, node)
+            value = self.rollout(original_node.state, node)
             self.back_propagate(node, value)
 
             node = original_node
@@ -185,11 +184,10 @@ class MCTS(GameAI):
         best_node = max(original_node.children, key=lambda n: n.mean_value)
         if "-t" in argv:
             log("Total action duration: {} s".format(time() - time_total_b))
-        #log("MCTS action probabilities of win: {}".format([str(int(n.mean_value * 100))+"%" for n in original_node.children]))
-        #log("MCTS node visits: {}".format([n.visits for n in original_node.children]))
-        highest_visit = max(original_node.children, key=lambda n: n.visits)
-        lowest_visit = min(original_node.children, key=lambda n: n.visits)
-        log("MCTS lowest visit: {}, highest visit: {}".format(lowest_visit.visits, highest_visit.visits))
+
+        #highest_visit = max(original_node.children, key=lambda n: n.visits)
+        #lowest_visit = min(original_node.children, key=lambda n: n.visits)
+        #log("MCTS lowest visit: {}, highest visit: {}".format(lowest_visit.visits, highest_visit.visits))
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
         return best_node.state
 

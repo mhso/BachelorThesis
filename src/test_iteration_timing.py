@@ -22,17 +22,17 @@ times_cf = []
 print("\n{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
-    time_taken = test_latrunculi.run_iteration_timing_test()
+    time_taken = test_latrunculi.run_iteration_timing_test(log_type="sql")
     times_l.append(time_taken)
 print("\n{}-=-=-=- LATRUNCULI_NE GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
-    time_taken = test_latrunculi_ne.run_iteration_timing_test()
+    time_taken = test_latrunculi_ne.run_iteration_timing_test(log_type=None)
     times_ne.append(time_taken)
 print("\n{}-=-=-=-=- CONNECT FOUR TESTS -=-=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
-    time_taken = test_cnnct_four.run_iteration_timing_test()
+    time_taken = test_cnnct_four.run_iteration_timing_test(log_type=None)
     times_cf.append(time_taken)
 
 print("Average time for Latrunculi: {} s".format(sum(times_l) / len(times_l)))

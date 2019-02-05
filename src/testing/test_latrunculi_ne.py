@@ -4,6 +4,7 @@ from testing import assertion
 from controller.latrunculi_ne import Latrunculi_ne
 from model.state import Action
 from util.excelUtil import ExcelUtil
+from util.sqlUtil import SqlUtil
 import numpy as np
 import scipy
 
@@ -291,7 +292,7 @@ def run_tests():
     # =================================
     # Test chump jain being broken, by potential capture.
 
-def run_iteration_timing_test():
+def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test Latrunculi_ne")
     game = Latrunculi_ne(8, 55)
@@ -310,7 +311,13 @@ def run_iteration_timing_test():
     print("Time taken to play out game: {} s".format(time_taken))
     print("Iterations: {}".format(counter))
 
-    # Appending results to standard excel file "test_results.xlsx"
-    row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_ne", counter, (time() - time_b))
-    ExcelUtil.excel_append_row(row)
+    if log_type == 'excel':
+        # Appending results to standard excel file "test_results.xlsx"
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_ne", counter, (time() - time_b))
+        ExcelUtil.excel_append_row(row)
+    elif log_type == 'sql':
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_ne", counter, (time() - time_b))
+        sql_conn = SqlUtil.connect()
+        SqlUtil.test_iteration_timing_insert_row(sql_conn, row)
+
     return time_taken

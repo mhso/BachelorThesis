@@ -3,6 +3,7 @@ from controller.connect_four import ConnectFour
 from model.state import Action
 from time import time
 from util.excelUtil import ExcelUtil
+from util.sqlUtil import SqlUtil
 from numpy.random import uniform
 
 def run_tests():
@@ -45,7 +46,7 @@ def run_tests():
 
     assertion.assert_true(game.terminal_test(result), "terminal test vertical")
 
-def run_iteration_timing_test():
+def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test ConnectFour")
     game = ConnectFour(7)
@@ -64,7 +65,14 @@ def run_iteration_timing_test():
     print("Time taken to play out game: {} s".format(time_taken))
     print("Iterations: {}".format(counter))
 
-    # Appending results to standard excel file "test_results.xlsx"
-    row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "ConnectFour", counter, (time() - time_b))
-    ExcelUtil.excel_append_row(row)
+    if log_type == 'excel':
+        # Appending results to standard excel file "test_results.xlsx"
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "ConnectFour", counter, (time() - time_b))
+        ExcelUtil.excel_append_row(row)
+    elif log_type == 'sql':
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "ConnectFour", counter, (time() - time_b))
+        sql_conn = SqlUtil.connect()
+        SqlUtil.test_iteration_timing_insert_row(sql_conn, row)
+
+
     return time_taken

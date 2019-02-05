@@ -10,7 +10,6 @@ args = sys.argv
 
 test_iterations = int(args[1])
 
-
 print("\n{}-=-=-=- LATRUNCULI VS LATRUNCULI_NE GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))

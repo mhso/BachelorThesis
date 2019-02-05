@@ -17,7 +17,7 @@ from controller.minimax import Minimax
 from controller.mcts import MCTS
 from controller.human import Human
 from controller.random import Random
-
+from view.log import log
 from view.visualize import Gui
 
 def play_game(game, player_white, player_black, gui=None):
@@ -27,18 +27,22 @@ def play_game(game, player_white, player_black, gui=None):
     state = game.start_state()
     MAX_ITER = 1000
     counter = 0
-    time_b = time()
+    time_game = time()
 
     while not game.terminal_test(state) and counter < MAX_ITER:
         print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
         print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
         print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
+        time_turn = time()
 
         if game.player(state):
             state = player_white.execute_action(state)
         else:
             state = player_black.execute_action(state)
+
+        if "-t" in argv:
+            log("Move took: {} s".format(time() - time_turn))
 
         if gui is not None:
             if type(player_white) != type(Human) and not state.player:
@@ -54,7 +58,7 @@ def play_game(game, player_white, player_black, gui=None):
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner), flush=True)
     print(state.board, flush=True)
     if "-t" in argv:
-        print("Game took {} s.".format(time() - time_b), flush=True)
+        print("Game took {} s.".format(time() - time_game), flush=True)
     # Return reward/punishment for player1 and player2.
     return game.utility(state, player1), game.utility(state, player2)
 

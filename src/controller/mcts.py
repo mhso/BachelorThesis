@@ -3,8 +3,6 @@
 mcts: Monte Carlo Tree Search.
 ------------------------------------
 """
-from time import time
-from sys import argv
 import numpy as np
 from controller.game_ai import GameAI
 from view.log import log
@@ -144,7 +142,6 @@ class MCTS(GameAI):
 
     def execute_action(self, state):
         super.__doc__
-        time_total_b = time()
         log("MCTS is calculating the best move...")
 
         # Get state ID and look the corresponding node up in the state map.
@@ -182,8 +179,6 @@ class MCTS(GameAI):
             node = original_node
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
-        if "-t" in argv:
-            log("Total action duration: {} s".format(time() - time_total_b))
 
         #highest_visit = max(original_node.children, key=lambda n: n.visits)
         #lowest_visit = min(original_node.children, key=lambda n: n.visits)

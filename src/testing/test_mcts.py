@@ -10,9 +10,9 @@ def run_tests():
     state = game.start_state()
 
     actions = game.actions(state)
-    root = Node(state, [])
+    root = Node(state, None, [])
     probability = 1/len(actions)
-    child_nodes = [Node(game.result(state, action), [], probability, root) for action in actions]
+    child_nodes = [Node(game.result(state, action), action, [], probability, root) for action in actions]
     root.children = child_nodes
     node = mcts.select(root, 0)
 

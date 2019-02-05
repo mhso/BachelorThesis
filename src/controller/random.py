@@ -12,7 +12,7 @@ class Random(GameAI):
         index = int(uniform(0, len(actions)))
         chosen = actions[index]
 
-        print("Action taken: {}".format(chosen))
+        print("Random action: {}".format(chosen))
         return self.game.result(state, chosen)
     
     def __str__(self):

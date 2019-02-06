@@ -2,6 +2,8 @@ from numpy.random import uniform
 from time import time
 from testing import assertion
 from controller.latrunculi_s import Latrunculi_s
+from util.excelUtil import ExcelUtil
+from util.sqlUtil import SqlUtil
 from model.state import Action
 import numpy as np
 # import scipy
@@ -42,68 +44,68 @@ def run_tests():
     # Test initial player turn is white.
     assertion.assert_true(game.player(state), "initial player turn")
 
-    # # =================================
-    # # Test terminal state methods.
-    # # Test terminal_test.
-    # game = Latrunculi(8)
-    # state = game.start_state()
-    # state.board[-3:][:] = 0 # Set white's pieces, except 1, to empty squares.
-    # state.board[-1][0] = 1
+    # =================================
+    # Test terminal state methods.
+    # Test terminal_test.
+    game = Latrunculi_s(8)
+    state = game.start_state()
+    state.board[-3:][:] = 0 # Set white's pieces, except 1, to empty squares.
+    state.board[-1][0] = 1
 
-    # assertion.assert_true(game.terminal_test(state), "terminal state true")
+    assertion.assert_true(game.terminal_test(state), "terminal state true")
 
-    # # =================================
-    # # Test utility function.
+    # =================================
+    # Test utility function.
 
-    # assertion.assert_equal(0, game.utility(state, True), "utility white")
-    # assertion.assert_equal(1, game.utility(state, False), "utility black")
+    assertion.assert_equal(0, game.utility(state, True), "utility white")
+    assertion.assert_equal(1, game.utility(state, False), "utility black")
 
-    # # =================================
-    # # Test available actions for "Chess" formation.
-    # game = Latrunculi(5)
-    # state = game.start_state()
+    # =================================
+    # Test available actions for "Chess" formation.
+    game = Latrunculi_s(5)
+    state = game.start_state()
 
-    # legal_moves = [
-    #     Action((3, 0), (2, 0)), Action((3, 1), (2, 1)), Action((3, 2), (2, 2)),
-    #     Action((3, 3), (2, 3)), Action((3, 4), (2, 4)),
-    #     Action((4, 0), (2, 0)), Action((4, 1), (2, 1)), Action((4, 2), (2, 2)),
-    #     Action((4, 3), (2, 3)), Action((4, 4), (2, 4))
-    # ]
+    legal_moves = [
+        Action((3, 0), (2, 0)), Action((3, 1), (2, 1)), Action((3, 2), (2, 2)),
+        Action((3, 3), (2, 3)), Action((3, 4), (2, 4)),
+        Action((4, 0), (2, 0)), Action((4, 1), (2, 1)), Action((4, 2), (2, 2)),
+        Action((4, 3), (2, 3)), Action((4, 4), (2, 4))
+    ]
 
-    # assertion.assert_all_equal(legal_moves, game.actions(state), "legal moves white")
+    assertion.assert_all_equal(legal_moves, game.actions(state), "legal moves white")
 
-    # # =================================
-    # # Test available actions for "random" board.
-    # game = Latrunculi(6, 5)
-    # state = game.start_state()
-    # state.player = not state.player
+    # =================================
+    # Test available actions for "random" board.
+    game = Latrunculi_s(6, 5)
+    state = game.start_state()
+    state.player = not state.player
 
-    # legal_moves = [
-    #     Action((0, 1), (1, 1)), Action((0, 2), (1, 2)),
-    #     Action((1, 0), (2, 0)), Action((1, 0), (1, 1)), Action((1, 4), (0, 4)),
-    #     Action((1, 4), (2, 4)), Action((1, 4), (1, 3)), Action((1, 5), (2, 5)),
-    #     Action((1, 5), (1, 3)), Action((2, 1), (1, 1)), Action((2, 1), (4, 1)), 
-    #     Action((2, 1), (2, 0)), Action((2, 1), (2, 2)), Action((5, 0), (4, 0)), 
-    #     Action((5, 2), (4, 2)), Action((5, 2), (5, 3)), Action((5, 4), (4, 4)), 
-    #     Action((5, 4), (5, 3)), Action((5, 4), (5, 5))
-    # ]
+    legal_moves = [
+        Action((0, 1), (1, 1)), Action((0, 2), (1, 2)),
+        Action((1, 0), (2, 0)), Action((1, 0), (1, 1)), Action((1, 4), (0, 4)),
+        Action((1, 4), (2, 4)), Action((1, 4), (1, 3)), Action((1, 5), (2, 5)),
+        Action((1, 5), (1, 3)), Action((2, 1), (1, 1)), Action((2, 1), (4, 1)), 
+        Action((2, 1), (2, 0)), Action((2, 1), (2, 2)), Action((5, 0), (4, 0)), 
+        Action((5, 2), (4, 2)), Action((5, 2), (5, 3)), Action((5, 4), (4, 4)), 
+        Action((5, 4), (5, 3)), Action((5, 4), (5, 5))
+    ]
 
-    # assertion.assert_all_equal(legal_moves, game.actions(state), "legal random moves white")
+    assertion.assert_all_equal(legal_moves, game.actions(state), "legal random moves white")
 
-    # # =================================
-    # # Test result of action.
-    # # Test simple move.
-    # game = Latrunculi(5)
-    # state = game.start_state()
+    # =================================
+    # Test result of action.
+    # Test simple move.
+    game = Latrunculi_s(5)
+    state = game.start_state()
 
-    # result = game.result(state, Action((3, 0), (2, 0)))
-    # old_piece = state.board[3][0]
-    # old_vacant = state.board[2][0]
-    # new_vacant = result.board[3][0]
-    # new_piece = result.board[2][0]
+    result = game.result(state, Action((3, 0), (2, 0)))
+    old_piece = state.board[3][0]
+    old_vacant = state.board[2][0]
+    new_vacant = result.board[3][0]
+    new_piece = result.board[2][0]
 
-    # assertion.assert_true(old_piece == new_piece, "regular move piece moved")
-    # assertion.assert_true(old_vacant == new_vacant, "regular move piece absent")
+    assertion.assert_true(old_piece == new_piece, "regular move piece moved")
+    assertion.assert_true(old_vacant == new_vacant, "regular move piece absent")
 
     # # =================================
     # # Test jump.
@@ -130,158 +132,158 @@ def run_tests():
     # assertion.assert_true(old_piece == new_piece, "double jump move piece moved")
     # assertion.assert_true(old_vacant == new_vacant, "double jump move piece absent")
 
-    # # =================================
-    # # Test move causing piece to be captured.
-    # game = Latrunculi(5, 42)
-    # state = game.start_state()
+    # =================================
+    # Test move causing piece to be captured.
+    game = Latrunculi_s(5, 42)
+    state = game.start_state()
 
-    # result_cb = game.result(state, Action((4, 3), (3, 3)))
-    # state.player = not state.player
-    # result_cw = game.result(state, Action((1, 0), (2, 0)))
+    result_cb = game.result(state, Action((4, 3), (3, 3)))
+    state.player = not state.player
+    result_cw = game.result(state, Action((1, 0), (2, 0)))
 
-    # assertion.assert_equal(2, result_cw.board[2][1], "capture white piece")
-    # assertion.assert_equal(-2, result_cb.board[2][3], "capture black piece")
+    assertion.assert_equal(2, result_cw.board[2][1], "capture white piece")
+    assertion.assert_equal(-2, result_cb.board[2][3], "capture black piece")
 
-    # # =================================
-    # # Test captured piece not being able to move.
-    # actions = game.actions(result_cw)
+    # =================================
+    # Test captured piece not being able to move.
+    actions = game.actions(result_cw)
 
-    # cant_move = True
-    # for action in actions:
-    #     cant_move = action.source != (2, 1) and cant_move
+    cant_move = True
+    for action in actions:
+        cant_move = action.source != (2, 1) and cant_move
 
-    # assertion.assert_true(cant_move, "captured piece can't move")
+    assertion.assert_true(cant_move, "captured piece can't move")
 
-    # # =================================
-    # # Test move causing captured piece to be freed.
-    # result_cw.player = not result_cw.player
-    # result_cb.player = not result_cb.player
+    # =================================
+    # Test move causing captured piece to be freed.
+    result_cw.player = not result_cw.player
+    result_cb.player = not result_cb.player
 
-    # # Move both pieces that are capturing another.
-    # result1 = game.result(result_cw, Action((2, 0), (1, 0)))
-    # result2 = game.result(result_cw, Action((2, 2), (3, 2)))
-    # result3 = game.result(result_cb, Action((1, 3), (0, 3)))
-    # result4 = game.result(result_cb, Action((3, 3), (4, 3)))
+    # Move both pieces that are capturing another.
+    result1 = game.result(result_cw, Action((2, 0), (1, 0)))
+    result2 = game.result(result_cw, Action((2, 2), (3, 2)))
+    result3 = game.result(result_cb, Action((1, 3), (0, 3)))
+    result4 = game.result(result_cb, Action((3, 3), (4, 3)))
 
-    # assertion.assert_equal(1, result1.board[2][1], "move west frees captured piece")
-    # assertion.assert_equal(1, result2.board[2][1], "move east frees captured piece")
-    # assertion.assert_equal(-1, result3.board[2][3], "move north frees captured piece")
-    # assertion.assert_equal(-1, result4.board[2][3], "move south frees captured piece")
+    assertion.assert_equal(1, result1.board[2][1], "move west frees captured piece")
+    assertion.assert_equal(1, result2.board[2][1], "move east frees captured piece")
+    assertion.assert_equal(-1, result3.board[2][3], "move north frees captured piece")
+    assertion.assert_equal(-1, result4.board[2][3], "move south frees captured piece")
 
-    # # =================================
-    # # Test capture causing captured piece to be freed.
-    # game = Latrunculi(5, 302)
-    # state = game.start_state()
+    # =================================
+    # Test capture causing captured piece to be freed.
+    game = Latrunculi_s(5, 302)
+    state = game.start_state()
 
-    # result1 = game.result(state, Action((3, 4), (3, 3))) # Capture black piece.
-    # result2 = game.result(result1, Action((1, 3), (2, 3))) # Free that piece.
+    result1 = game.result(state, Action((3, 4), (3, 3))) # Capture black piece.
+    result2 = game.result(result1, Action((1, 3), (2, 3))) # Free that piece.
 
-    # assertion.assert_equal(-2, result1.board[3][2], "captured black piece for freeing")
-    # assertion.assert_equal(-1, result2.board[3][2], "free piece by capture")
+    assertion.assert_equal(-2, result1.board[3][2], "captured black piece for freeing")
+    assertion.assert_equal(-1, result2.board[3][2], "free piece by capture")
 
-    # # =================================
-    # # Test potential capture causing move not being possible.
-    # game = Latrunculi(8, 31)
-    # state = game.start_state()
-    # state.player = not state.player
+    # =================================
+    # Test potential capture causing move not being possible.
+    game = Latrunculi_s(8, 31)
+    state = game.start_state()
+    state.player = not state.player
 
-    # actions = game.actions(state)
+    actions = game.actions(state)
 
-    # cant_move = True
-    # for action in actions:
-    #     cant_move = action.dest != (3, 2) and cant_move
+    cant_move = True
+    for action in actions:
+        cant_move = action.dest != (3, 2) and cant_move
 
-    # assertion.assert_true(cant_move, "suicide can't move")
+    assertion.assert_true(cant_move, "suicide can't move")
 
-    # # =================================
-    # # Test suicide move, a move that would normally result in capture,
-    # # but instead captures one of the two enemy pieces.
+    # =================================
+    # Test suicide move, a move that would normally result in capture,
+    # but instead captures one of the two enemy pieces.
 
-    # # Test south
-    # game = Latrunculi(8, 42)
-    # state = game.start_state()
-    # state.player = not state.player
+    # Test south
+    game = Latrunculi_s(8, 42)
+    state = game.start_state()
+    state.player = not state.player
 
-    # exists = Action((6, 1), (7, 1)) in game.actions(state)
+    exists = Action((6, 1), (7, 1)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move south")
+    assertion.assert_true(exists, "regular suicide move south")
 
-    # # =================================
-    # # Test south again
-    # game = Latrunculi(8, 107)
-    # state = game.start_state()
-    # state.player = not state.player
+    # =================================
+    # Test south again
+    game = Latrunculi_s(8, 107)
+    state = game.start_state()
+    state.player = not state.player
 
-    # exists = Action((3, 2), (4, 2)) in game.actions(state)
+    exists = Action((3, 2), (4, 2)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move south 2")
+    assertion.assert_true(exists, "regular suicide move south 2")
 
-    # # =================================
-    # # Test south again again
-    # game = Latrunculi(8, 75)
-    # state = game.start_state()
+    # =================================
+    # Test south again again
+    game = Latrunculi_s(8, 75)
+    state = game.start_state()
 
-    # exists = Action((0, 2), (1, 2)) in game.actions(state)
+    exists = Action((0, 2), (1, 2)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move south 3")
+    assertion.assert_true(exists, "regular suicide move south 3")
 
-    # # =================================
-    # # Test west
-    # game = Latrunculi(8, 96)
-    # state = game.start_state()
+    # =================================
+    # Test west
+    game = Latrunculi_s(8, 96)
+    state = game.start_state()
 
-    # exists = Action((3, 3), (3, 2)) in game.actions(state)
+    exists = Action((3, 3), (3, 2)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move west")
+    assertion.assert_true(exists, "regular suicide move west")
 
-    # # =================================
-    # # Test west again
-    # game = Latrunculi(8, 118)
-    # state = game.start_state()
+    # =================================
+    # Test west again
+    game = Latrunculi_s(8, 118)
+    state = game.start_state()
 
-    # exists = Action((3, 7), (3, 6)) in game.actions(state)
+    exists = Action((3, 7), (3, 6)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move west 2")
+    assertion.assert_true(exists, "regular suicide move west 2")
 
-    # # =================================
-    # # Test east
-    # game = Latrunculi(8, 102)
-    # state = game.start_state()
+    # =================================
+    # Test east
+    game = Latrunculi_s(8, 102)
+    state = game.start_state()
 
-    # exists = Action((2, 1), (2, 2)) in game.actions(state)
+    exists = Action((2, 1), (2, 2)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move east")
+    assertion.assert_true(exists, "regular suicide move east")
 
-    # # =================================
-    # # Test east again
-    # game = Latrunculi(8, 77)
-    # state = game.start_state()
+    # =================================
+    # Test east again
+    game = Latrunculi_s(8, 77)
+    state = game.start_state()
 
-    # exists = Action((1, 1), (1, 2)) in game.actions(state)
+    exists = Action((1, 1), (1, 2)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move east 2")
+    assertion.assert_true(exists, "regular suicide move east 2")
 
-    # # =================================
-    # # Test north
-    # game = Latrunculi(8, 118)
-    # state = game.start_state()
+    # =================================
+    # Test north
+    game = Latrunculi_s(8, 118)
+    state = game.start_state()
 
-    # exists = Action((6, 3), (5, 3)) in game.actions(state)
+    exists = Action((6, 3), (5, 3)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move north")
+    assertion.assert_true(exists, "regular suicide move north")
 
-    # # =================================
-    # # Test north again
-    # game = Latrunculi(8, 70)
-    # state = game.start_state()
+    # =================================
+    # Test north again
+    game = Latrunculi_s(8, 70)
+    state = game.start_state()
 
-    # exists = Action((6, 3), (5, 3)) in game.actions(state)
+    exists = Action((6, 3), (5, 3)) in game.actions(state)
 
-    # assertion.assert_true(exists, "regular suicide move north 2")
+    assertion.assert_true(exists, "regular suicide move north 2")
 
     # # =================================
     # # Test potential capture causign move not being possible.
-    # game = Latrunculi(8, 69)
+    # game = Latrunculi_s(8, 69)
     # state = game.start_state()
     # state.player = not state.player
 
@@ -289,29 +291,36 @@ def run_tests():
 
     # assertion.assert_true(exists, "jump suicide move")
 
-    # # =================================
-    # # Test chump jain being broken, by potential capture.
+    # =================================
+    # Test chump jain being broken, by potential capture.
     
 
-    # # TEST STUFF
-    # """
-    # game = Latrunculi(8, 55)
-    # state = game.start_state()
+def run_iteration_timing_test(log_type=None):
+    # TEST STUFF
+    print("run iteration timing test Latrunculi_s")
+    game = Latrunculi_s(8, 55)
+    state = game.start_state()
 
-    # time_b = time()
+    time_b = time()
 
-    # counter = 0
-    # while not game.terminal_test(state):
-    #     actions = game.actions(state)
-    #     action = actions[int(uniform(0, len(actions)))]
-    #     state = game.result(state, action)
-    #     counter += 1
-    # #action = Action((2, 0), (3, 0))
-    # # 6855 iterations of:
-    # # terminal = game.terminal_test(state)  = 0.06 seconds.
-    # # actions = game.actions(state)         = ~3 seconds.
-    # # result = game.result(state, action)   = 0.16 seconds.
+    counter = 0
+    while not game.terminal_test(state):
+        actions = game.actions(state)
+        action = actions[int(uniform(0, len(actions)))]
+        state = game.result(state, action)
+        counter += 1
 
-    # print("Time taken to play out game: {} s".format(time() - time_b))
-    # print("Iterations: {}".format(counter))
-    # """
+    time_taken = time() - time_b
+    print("Time taken to play out game: {} s".format(time_taken))
+    print("Iterations: {}".format(counter))
+
+    if log_type == 'excel':
+        # Appending results to standard excel file "test_results.xlsx"
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_s", counter, (time() - time_b))
+        ExcelUtil.excel_append_row(row)
+    elif log_type == 'sql':
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi_s", counter, (time() - time_b))
+        sql_conn = SqlUtil.connect()
+        SqlUtil.test_iteration_timing_insert_row(sql_conn, row)
+
+    return time_taken

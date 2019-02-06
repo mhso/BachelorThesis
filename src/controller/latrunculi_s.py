@@ -270,13 +270,15 @@ class Latrunculi_s(Game):
         self.board = state.board
         for y in range(self.board_no_of_rows):
             for x in range(self.board_no_of_cols):
-                if PlayerUtil.player_from_piece(self.board[y, x]) == player_color:
+                if PlayerUtil.player_from_non_trapped_piece(FieldUtil.piece_type(self.board[y, x])) == player_color:
                 
                     self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
                     self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
                     self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
                     self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
 
+        if actionsList == []:
+            actionsList.append(None)
         return actionsList
 
     def is_within_board(self, coords):

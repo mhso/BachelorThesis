@@ -1,6 +1,7 @@
 import sys
 from testing import assertion
 from testing import test_latrunculi
+from testing import test_latrunculi_s
 from testing import test_latrunculi_ne
 from testing import test_cnnct_four
 from testing import test_minimax
@@ -23,6 +24,11 @@ print("\n{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):
     print("Test iteration {}/{} ".format(i, test_iterations))
     time_taken = test_latrunculi.run_iteration_timing_test(log_type="sql")
+    times_l.append(time_taken)
+print("\n{}-=-=-=- LATRUNCULI_S GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
+for i in range(1, test_iterations+1):
+    print("Test iteration {}/{} ".format(i, test_iterations))
+    time_taken = test_latrunculi_s.run_iteration_timing_test(log_type="sql")
     times_l.append(time_taken)
 print("\n{}-=-=-=- LATRUNCULI_NE GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):

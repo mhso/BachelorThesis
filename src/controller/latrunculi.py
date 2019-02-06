@@ -147,13 +147,39 @@ class Latrunculi(Game):
 
     def check_for_capture_and_suicide_all_directions_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
         action_list = []
-        actionsListWE = (self.check_for_capture_and_suicide_west_or_east_of_given_piece(iOrigin, jOrigin, iDest, jDest, player, board)) #check for action WEST/EAST
-        actionsListNS = (self.check_for_capture_and_suicide_north_or_south_of_given_piece(iOrigin, jOrigin, iDest, jDest, player, board)) #check for action NORTH/SOUTH
+        boolWE = self.check_for_capture_and_suicide_west_or_east_of_given_piece_bool(iOrigin, jOrigin, iDest, jDest, player, board) #check for insta-capture WEST/EAST
+        boolNS = self.check_for_capture_and_suicide_north_or_south_of_given_piece_bool(iOrigin, jOrigin, iDest, jDest, player, board) #check for insta-capture NORTH/SOUTH
 
-        if actionsListNS != [] and actionsListWE != []: #checks whether any insta capture was found, empty list means that you cant move to this square
-            return actionsListNS #they should result in the same action, so retuning any one of them should be fine
-        else:
-            return []
+        if boolWE and boolNS: #checks whether any insta capture was found, false means that an insta-capture exists on this square
+            action_list.append(Action((iOrigin, jOrigin), (iDest, jDest))) #if the move is legal, create action
+
+        return action_list #return the actions_list which is empty if no legal move was found.
+
+    #returns false if there is an insta-capture and no suicide option, true if there is no insta-capture WE
+    def check_for_capture_and_suicide_west_or_east_of_given_piece_bool(self, iOrigin, jOrigin, iDest, jDest, player, board):
+        enemy_player = -1*player
+        if (jDest - 1) >= 0 and (jDest + 1) < self.size: #check if there is room for a possible insta-capture WEST/EAST
+            if board[iDest][jDest + 1] == enemy_player and board[iDest][jDest - 1] == enemy_player: #check for insta capture
+                if (jDest - 2) >= 0 and board[iDest][jDest - 2] == player and (jDest - 2) != jOrigin: #check for possible suicide action to the west
+                    return True
+                elif (jDest + 2) < self.size and board[iDest][jDest + 2] == player and (jDest + 2) != jOrigin: #check for possible suicide action to the east
+                    return True
+                else:
+                    return False
+        return True
+
+    #returns false if there is an insta-capture and no suicide option, true if there is no insta-capture NS
+    def check_for_capture_and_suicide_north_or_south_of_given_piece_bool(self, iOrigin, jOrigin, iDest, jDest, player, board):
+        enemy_player = -1*player
+        if (iDest - 1) >= 0 and (iDest + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
+            if board[iDest + 1][jDest] == enemy_player and board[iDest - 1][jDest] == enemy_player: #check for insta capture
+                if (iDest - 2) >= 0 and board[iDest - 2][jDest] == player and (iDest - 2) != iOrigin: #check for possible suicide action to the north
+                    return True
+                elif (iDest + 2) < self.size and board[iDest + 2][jDest] == player and (iDest + 2) != iOrigin: #check for possible suicide action to the south
+                    return True
+                else:
+                    return False
+        return True
         
     def check_for_capture_and_suicide_west_or_east_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
         enemy_player = -1*player

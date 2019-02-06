@@ -99,10 +99,59 @@ class PlayerUtil:
             return PlayerEnum.WHITE
         else:
             return PlayerEnum.BLACK
-    
 
+def PieceUtil():
 
+    @staticmethod
+    def move_coords(self, direction, coords):
+        y, x = coords
+        if direction == MoveEnum.UP_LEFT:
+            return (y-1, x-1)
+        elif direction == MoveEnum.UP:
+            return (y-1, x)
+        elif direction == MoveEnum.UP_RIGHT:
+            return (y-1, x+1)
 
+        elif direction == MoveEnum.LEFT:
+            return (y, x-1)
+        elif direction == MoveEnum.CENTER:
+            return (y, x)
+        elif direction == MoveEnum.RIGHT:
+            return (y, x+1)
+
+        elif direction == MoveEnum.DOWN_LEFT:
+            return (y+1, x-1)
+        elif direction == MoveEnum.DOWN:
+            return (y+1, x)
+        elif direction == MoveEnum.DOWN_RIGHT:
+            return (y+1, x+1)
+        return None
+
+    @staticmethod
+    def get_direction(self, coords_from, coords_to):
+        y_from, x_from = coords_from
+        y_to, x_to = coords_to
+        if y_from-1 == y_to and x_from-1 == x_to:
+            return MoveEnum.UP_LEFT
+        elif y_from-1 == y_to and x_from == x_to:
+            return MoveEnum.UP
+        elif y_from-1 == y_to and x_from+1 == x_to:
+            return MoveEnum.UP_RIGHT
+
+        elif y_from == y_to and x_from-1 == x_to:
+            return MoveEnum.LEFT
+        elif y_from == y_to and x_from == x_to:
+            return MoveEnum.CENTER
+        elif y_from == y_to and x_from+1 == x_to:
+            return MoveEnum.RIGHT
+        
+        elif y_from+1 == y_to and x_from-1 == x_to:
+            return MoveEnum.DOWN_LEFT
+        elif y_from+1 == y_to and x_from == x_to:
+            return MoveEnum.DOWN
+        elif y_from+1 == y_to and x_from+1 == x_to:
+            return MoveEnum.DOWN_RIGHT
+        return None
 
 class MoveEnum(Enum):
     UP_LEFT = 1
@@ -270,94 +319,45 @@ class Latrunculi_s(Game):
             else:
                 return True
 
-    def field_player(self, coords):
-            return self.field_player_color(self.field_value(coords))
+    # def field_player(self, coords):
+    #         return self.field_player_color(self.field_value(coords))
 
-    def field_value(self, coords):
-        val = self.board[coords]
-        if val == -2:
-            return FieldEnum.BLACK_TRAPPED
-        elif val == -1:
-            return FieldEnum.BLACK
-        elif val == 0:
-            return FieldEnum.NONE
-        elif val == 1:
-            return FieldEnum.WHITE
-        elif val == 2:
-            return FieldEnum.WHITE_TRAPPED
+    # def field_value(self, coords):
+    #     val = self.board[coords]
+    #     if val == -2:
+    #         return FieldEnum.BLACK_TRAPPED
+    #     elif val == -1:
+    #         return FieldEnum.BLACK
+    #     elif val == 0:
+    #         return FieldEnum.NONE
+    #     elif val == 1:
+    #         return FieldEnum.WHITE
+    #     elif val == 2:
+    #         return FieldEnum.WHITE_TRAPPED
         
-    def field_player_color(self, value):
-        if value == FieldEnum.BLACK_TRAPPED or value == FieldEnum.BLACK:
-            return FieldEnum.BLACK
-        elif value == FieldEnum.WHITE_TRAPPED  or value == FieldEnum.WHITE:
-            return FieldEnum.WHITE
-        else:
-            return FieldEnum.NONE
+    # def field_player_color(self, value):
+    #     if value == FieldEnum.BLACK_TRAPPED or value == FieldEnum.BLACK:
+    #         return FieldEnum.BLACK
+    #     elif value == FieldEnum.WHITE_TRAPPED  or value == FieldEnum.WHITE:
+    #         return FieldEnum.WHITE
+    #     else:
+    #         return FieldEnum.NONE
 
-    def move_coords(self, direction, coords):
-        y, x = coords
-        if direction == MoveEnum.UP_LEFT:
-            return (y-1, x-1)
-        elif direction == MoveEnum.UP:
-            return (y-1, x)
-        elif direction == MoveEnum.UP_RIGHT:
-            return (y-1, x+1)
+    # def player_color(self, value):
+    #     if value == 0:
+    #         return FieldEnum.BLACK
+    #     elif value == 1:
+    #         return FieldEnum.WHITE
+    #     else:
+    #         return None
 
-        elif direction == MoveEnum.LEFT:
-            return (y, x-1)
-        elif direction == MoveEnum.CENTER:
-            return (y, x)
-        elif direction == MoveEnum.RIGHT:
-            return (y, x+1)
-
-        elif direction == MoveEnum.DOWN_LEFT:
-            return (y+1, x-1)
-        elif direction == MoveEnum.DOWN:
-            return (y+1, x)
-        elif direction == MoveEnum.DOWN_RIGHT:
-            return (y+1, x+1)
-        return None
-
-    def get_direction(self, coords_from, coords_to):
-        y_from, x_from = coords_from
-        y_to, x_to = coords_to
-        if y_from-1 == y_to and x_from-1 == x_to:
-            return MoveEnum.UP_LEFT
-        elif y_from-1 == y_to and x_from == x_to:
-            return MoveEnum.UP
-        elif y_from-1 == y_to and x_from+1 == x_to:
-            return MoveEnum.UP_RIGHT
-
-        elif y_from == y_to and x_from-1 == x_to:
-            return MoveEnum.LEFT
-        elif y_from == y_to and x_from == x_to:
-            return MoveEnum.CENTER
-        elif y_from == y_to and x_from+1 == x_to:
-            return MoveEnum.RIGHT
-        
-        elif y_from+1 == y_to and x_from-1 == x_to:
-            return MoveEnum.DOWN_LEFT
-        elif y_from+1 == y_to and x_from == x_to:
-            return MoveEnum.DOWN
-        elif y_from+1 == y_to and x_from+1 == x_to:
-            return MoveEnum.DOWN_RIGHT
-        return None
-
-    def player_color(self, value):
-        if value == 0:
-            return FieldEnum.BLACK
-        elif value == 1:
-            return FieldEnum.WHITE
-        else:
-            return None
-
-    def piece_color(self, value):
-        if value < 0:
-            return FieldEnum.BLACK
-        elif value > 0:
-            return FieldEnum.WHITE
-        else:
-            return FieldEnum.NONE
+    # def piece_color(self, value):
+    #     if value < 0:
+    #         return FieldEnum.BLACK
+    #     elif value > 0:
+    #         return FieldEnum.WHITE
+    #     else:
+    #         return FieldEnum.NONE
 
     def update_up_down(self, workboard, dest, current_player):
         y, x = dest

@@ -96,7 +96,7 @@ class Latrunculi(Game):
                 else:  #if there is no chance for insta capture, create action to empty square
                     actionsList.append(Action((i, j), (i+direction, j)))
             else: # if the north/south square contains a piece (either 1, 2, -1, -2), check for jumps
-                for x in range(i + (2*direction), (self.convert_to_positive_int((self.size * direction))), (2*direction)): #Jump-loop
+                for x in range(i + (2*direction), (self.convert_to_usable_int((self.size * direction))), (2*direction)): #Jump-loop
                     if x >= 0 and x < self.size: #check that x squares north/south is within the bounds of the board 
                         if board[x + (-1*direction)][j] != 0: #check if there is a piece on the odd number square north/south... #this is a double check for the first jump, might want to optimize it...
                             if board[x][j] == 0: #checks for the even number square north/south being empty, if the square before was occupied
@@ -126,7 +126,7 @@ class Latrunculi(Game):
                 else:  #if there is no chance for insta capture, create action to empty square
                     actionsList.append(Action((i, j), (i, j+direction)))
             else: # if the WEST/EAST square contains a piece (either 1, 2, -1, -2), check for jumps
-                for x in range(j + (2*direction), (self.convert_to_positive_int((self.size*direction))), (2*direction)): #Jump-loop
+                for x in range(j + (2*direction), (self.convert_to_usable_int((self.size*direction))), (2*direction)): #Jump-loop
                     if x >= 0 and x < self.size: #check that x squares WEST/EAST is within the bounds of the board
                         if board[i][(x + (-1*direction))] != 0: #check if there is a piece on the odd number square WEST/EAST... #this is a double check for the first jump, might want to optimize it...
                             if board[i][x] == 0: #checks for the even number square WEST/EAST being empty, if the square before was occupied
@@ -214,7 +214,7 @@ class Latrunculi(Game):
     #i needed this quick, but there might be a library method for this, just could not find it
     #this method helps construct a stop value for the range used in jump calculations, it makes any negative integer into -1
     #which should let the range run to 0 inclusive, which is what we want, because the stop value is exclusive
-    def convert_to_positive_int(self, x):
+    def convert_to_usable_int(self, x):
         if x < 0:
             return -1
         else:

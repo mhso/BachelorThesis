@@ -85,25 +85,56 @@ class PlayerUtil:
             return PlayerEnum.NONE
 
     @staticmethod
-    def player_to_value(PlayerEnum):
-        if PlayerEnum == PlayerEnum.BLACK:
+    def player_to_value(playerEnum):
+        if playerEnum == PlayerEnum.BLACK:
             return 0
-        elif PlayerEnum == PlayerEnum.WHITE:
+        elif playerEnum == PlayerEnum.WHITE:
             return 1
         else:
             return -1
     
     @staticmethod
-    def opponent_color(PlayerEnum):
-        if PlayerEnum == PlayerEnum.BLACK:
+    def opponent_color(playerEnum):
+        if playerEnum == PlayerEnum.BLACK:
             return PlayerEnum.WHITE
         else:
             return PlayerEnum.BLACK
-
-def PieceUtil():
-
+    
     @staticmethod
-    def move_coords(self, direction, coords):
+    def player_from_non_trapped_piece(fieldEnum):
+        if fieldEnum == FieldEnum.BLACK:
+            return PlayerEnum.BLACK
+        elif fieldEnum == FieldEnum.WHITE:
+            return PlayerEnum.WHITE
+        else:
+            return PlayerEnum.NONE
+    
+    @staticmethod
+    def player_from_trapped_piece(fieldEnum):
+        if fieldEnum == FieldEnum.BLACK_TRAPPED:
+            return PlayerEnum.BLACK
+        elif fieldEnum == FieldEnum.WHITE_TRAPPED:
+            return PlayerEnum.White
+        else:
+            return PlayerEnum.NONE
+    
+    @staticmethod
+    def player_from_piece_type(fieldEnum):
+        if fieldEnum == FieldEnum.BLACK_TRAPPED:
+            return PlayerEnum.BLACK
+        elif fieldEnum == FieldEnum.BLACK:
+            return PlayerEnum.BLACK
+        elif fieldEnum == FieldEnum.WHITE:
+            return PlayerEnum.WHITE
+        elif fieldEnum == FieldEnum.WHITE_TRAPPED:
+            return PlayerEnum.WHITE
+        else:
+            return PlayerEnum.NONE
+
+
+class MoveUtil:
+    @staticmethod
+    def move_coords(direction, coords):
         y, x = coords
         if direction == MoveEnum.UP_LEFT:
             return (y-1, x-1)
@@ -128,7 +159,7 @@ def PieceUtil():
         return None
 
     @staticmethod
-    def get_direction(self, coords_from, coords_to):
+    def get_direction(coords_from, coords_to):
         y_from, x_from = coords_from
         y_to, x_to = coords_to
         if y_from-1 == y_to and x_from-1 == x_to:
@@ -231,15 +262,6 @@ class Latrunculi_s(Game):
 
     def actions(self, state):
         super.__doc__
-        # current_player = -1
-        # enemy_captured = 2
-        # player_color = FieldEnum.BLACK
-        # opponent_color = FieldEnum.WHITE
-        # if state.player:
-        #     current_player = 1 #White
-        #     enemy_captured = -2 #Black
-        #     player_color = FieldEnum.WHITE
-        #     opponent_color = FieldEnum.BLACK
 
         player_color = PlayerUtil.player_color(state.player)
 
@@ -250,13 +272,11 @@ class Latrunculi_s(Game):
             for x in range(self.board_no_of_cols):
                 if PlayerUtil.player_from_piece(self.board[y, x]) == player_color:
                 
-                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(MoveEnum.UP, (y, x)))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(MoveEnum.LEFT, (y, x)))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(MoveEnum.RIGHT, (y, x)))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), self.move_coords(MoveEnum.DOWN, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
 
-        # if actionsList == []:
-        #     actionsList.append(None)
         return actionsList
 
     def is_within_board(self, coords):
@@ -271,93 +291,42 @@ class Latrunculi_s(Game):
             alist.append(Action(coords_from, coords_to))
     
     def is_suicide_move(self, coords_from, coords_to, player_color):
-        move = self.get_direction(coords_from, coords_to)
+        move = MoveUtil.get_direction(coords_from, coords_to)
         opponent_color = PlayerUtil.opponent_color(player_color)
 
         if move == MoveEnum.UP or move == MoveEnum.DOWN:
-            return not self.valid_left_right(coords_to, player_color, opponent_color)
+            return not self.valid_coords(MoveEnum.LEFT, MoveEnum.RIGHT, coords_to, player_color, opponent_color)
 
         elif move == MoveEnum.LEFT or move == MoveEnum.RIGHT:
-            return not self.valid_up_down(coords_to, player_color, opponent_color)
+            return not self.valid_coords(MoveEnum.UP, MoveEnum.DOWN, coords_to, player_color, opponent_color)
 
         return True
 
-    def valid_left_right(self, coords, player_color, opponent_color):
+    def valid_coords(self, direction1, direction2, coords, player_color, opponent_color):
+        coord1_c = MoveUtil.move_coords(direction1, coords)
+        coord2_c = MoveUtil.move_coords(direction2, coords)
 
-        left = self.move_coords(MoveEnum.LEFT, coords)
-        right = self.move_coords(MoveEnum.RIGHT, coords)
-        if self.is_empty_field(left) or self.is_empty_field(right) or not self.is_within_board(left) or not self.is_within_board(right):
+        if (self.is_empty_field(coord1_c) or not self.is_within_board(coord1_c)
+            or self.is_empty_field(coord2_c) or not self.is_within_board(coord2_c)):
             return True
         else:
-            if self.is_within_board(left) and self.is_within_board(right) and self.field_value(left) == opponent_color and self.field_value(right) == opponent_color:
+            coord1_v = self.board[coord1_c]
+            coord2_v = self.board[coord2_c]
+            if (self.is_within_board(coord1_c) and self.is_within_board(coord2_c)
+                and PlayerUtil.player_from_non_trapped_piece(FieldUtil.piece_type(coord1_v)) == opponent_color
+                and PlayerUtil.player_from_non_trapped_piece(FieldUtil.piece_type(coord2_v)) == opponent_color):
                 
-                left_left = self.move_coords(MoveEnum.LEFT, left)
-                right_right = self.move_coords(MoveEnum.RIGHT, right)
-                if self.is_within_board(left_left) and self.field_player(left_left) == player_color or self.is_within_board(right_right) and self.field_player(right_right) == player_color:
+                coord1_c = MoveUtil.move_coords(direction1, coords)
+                coord2_c = MoveUtil.move_coords(direction2, coords)
+                coord1_v = self.board[coord1_c]
+                coord2_v = self.board[coord2_c]
+                if (self.is_within_board(coord1_c) and self.is_within_board(coord2_c)
+                    and PlayerUtil.player_from_piece_type(FieldUtil.piece_type(coord1_v)) == player_color
+                    and PlayerUtil.player_from_piece_type(FieldUtil.piece_type(coord2_v)) == player_color):
                     return True
                 return False
             else:
                 return True
-
-    def valid_up_down(self, coords, player_color, opponent_color):
-        
-        up = self.move_coords(MoveEnum.UP, coords)
-        down = self.move_coords(MoveEnum.DOWN, coords)
-        up_up = self.move_coords(MoveEnum.UP, up)
-        down_down = self.move_coords(MoveEnum.DOWN, down)
-
-        if self.is_empty_field(up) or self.is_empty_field(down) or not self.is_within_board(up) or not self.is_within_board(down):
-            return True
-        else:           
-            if self.is_within_board(up) and self.is_within_board(down) and self.field_value(up) == opponent_color and self.field_value(down) == opponent_color:
-
-                up_up = self.move_coords(MoveEnum.UP, up)
-                down_down = self.move_coords(MoveEnum.DOWN, down)
-                if self.is_within_board(up_up) and self.field_player(up_up) == player_color or self.is_within_board(down_down) and self.field_player(down_down) == player_color:
-                    return True
-                return False
-            else:
-                return True
-
-    # def field_player(self, coords):
-    #         return self.field_player_color(self.field_value(coords))
-
-    # def field_value(self, coords):
-    #     val = self.board[coords]
-    #     if val == -2:
-    #         return FieldEnum.BLACK_TRAPPED
-    #     elif val == -1:
-    #         return FieldEnum.BLACK
-    #     elif val == 0:
-    #         return FieldEnum.NONE
-    #     elif val == 1:
-    #         return FieldEnum.WHITE
-    #     elif val == 2:
-    #         return FieldEnum.WHITE_TRAPPED
-        
-    # def field_player_color(self, value):
-    #     if value == FieldEnum.BLACK_TRAPPED or value == FieldEnum.BLACK:
-    #         return FieldEnum.BLACK
-    #     elif value == FieldEnum.WHITE_TRAPPED  or value == FieldEnum.WHITE:
-    #         return FieldEnum.WHITE
-    #     else:
-    #         return FieldEnum.NONE
-
-    # def player_color(self, value):
-    #     if value == 0:
-    #         return FieldEnum.BLACK
-    #     elif value == 1:
-    #         return FieldEnum.WHITE
-    #     else:
-    #         return None
-
-    # def piece_color(self, value):
-    #     if value < 0:
-    #         return FieldEnum.BLACK
-    #     elif value > 0:
-    #         return FieldEnum.WHITE
-    #     else:
-    #         return FieldEnum.NONE
 
     def update_up_down(self, workboard, dest, current_player):
         y, x = dest
@@ -396,11 +365,14 @@ class Latrunculi_s(Game):
         return workboard
 
     def board_update(self, board, this_c, next_c1, next_c2, current_player):
-        opponent_player = FieldUtil.player_invers(current_player)
+        opponent_player = PlayerUtil.opponent_color(current_player)
         this_v = board[this_c]
         next_v1 = board[next_c1]
         next_v2 = board[next_c2]
-        if FieldUtil.piece_player_value(this_v) == current_player and FieldUtil.piece_player_value(next_v1) == opponent_player  and FieldUtil.piece_player_value(next_v2) == current_player:
+        if (PlayerUtil.player_from_piece_type(FieldUtil.piece_type(this_v)) == current_player
+            and PlayerUtil.player_from_piece_type(FieldUtil.piece_type(next_v1)) == opponent_player
+            and PlayerUtil.player_from_piece_type(FieldUtil.piece_type(next_v2)) == current_player):
+
             v1 = FieldUtil.norm_value(this_v)
             v2 = FieldUtil.trap_value(next_v1)
             v3 = FieldUtil.norm_value(next_v2)
@@ -440,8 +412,10 @@ class Latrunculi_s(Game):
                 newBoard[source] = 0
                 newBoard[dest] = current_player
                 
-                newBoard = self.update_up_down(newBoard, dest, state.player)
-                newBoard = self.update_left_right(newBoard, dest, state.player)
+                current_player = PlayerUtil.player_color(state.player)
+
+                newBoard = self.update_up_down(newBoard, dest, current_player)
+                newBoard = self.update_left_right(newBoard, dest, current_player)
 
                 print("Lets move the piece")
 

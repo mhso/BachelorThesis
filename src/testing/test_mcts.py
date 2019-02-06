@@ -1,3 +1,4 @@
+from time import time
 from testing import assertion
 from controller.mcts import MCTS, Node
 from controller.latrunculi import Latrunculi
@@ -61,3 +62,29 @@ def run_tests():
 
     # =================================
     # Test simulation/rollout
+
+def run_iteration_tests(log_type=None):
+    print("run iteration timing test MCTS")
+    game = Latrunculi(4, 55)
+    state = game.start_state()
+
+    time_b = time()
+
+    mcts = MCTS(game, 100)
+    mcts.execute_action(state)
+
+    time_taken = time() - time_b
+    print("Time taken to execute MCTS move: {} s".format(time_taken))
+    """
+    if log_type == 'excel':
+        # Appending results to standard excel file "test_results.xlsx"
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi", counter, (time() - time_b))
+        ExcelUtil.excel_append_row(row)
+    elif log_type == 'sql':
+        row = (ExcelUtil.get_datetime_str(), ExcelUtil.get_computer_hostname(), "Latrunculi", counter, (time() - time_b))
+        sql_conn = SqlUtil.connect()
+        SqlUtil.test_iteration_timing_insert_row(sql_conn, row)
+    """
+    return time_taken
+
+

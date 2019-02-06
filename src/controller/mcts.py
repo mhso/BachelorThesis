@@ -24,6 +24,10 @@ class Node():
         self.probability = probability
         self.parent = parent
 
+    def pretty_desc(self):
+        return "Node: a: {}, n: {}, w: {}, m: {}%, p: {}".format(
+                self.action, self.visits, self.wins, int(self.mean_value*100), self.probability)
+
     def __str__(self):
         children = ", ".join([str(c) for c in self.children])
         return ("[Node: turn={}, visits={}, wins={},\nchildren=\n    [{}]]").format(
@@ -44,7 +48,7 @@ class MCTS(GameAI):
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if self.game.size > 3:
-            playout_options = [300, 100, 35, 20, 10, 5, 5]
+            playout_options = [1000, 100, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
@@ -70,6 +74,7 @@ class MCTS(GameAI):
             return node
 
         sim_acc += node.visits
+        acc_sqrt = np.sqrt(sim_acc)
         best_node = node.children[0] # Choose first node if all are equal.
         best_value = 0
         for child in node.children:
@@ -85,7 +90,7 @@ class MCTS(GameAI):
                 # PUTCT formula.
                 val = child.mean_value + (
                     self.EXPLORE_PARAM * child.probability
-                    * np.sqrt(sim_acc) / (1+child.visits)
+                    * acc_sqrt / (1+child.visits)
                 )
 
                 if val > best_value:
@@ -177,6 +182,21 @@ class MCTS(GameAI):
             self.back_propagate(node, value)
 
             node = original_node
+
+        nodes_only_winning = [] # Count how many nodes have 100% win probability.
+        best_prob = 0 # Highest probability of wins / visits.
+        best_node = None
+        for node in original_node.children:
+            log(node.pretty_desc())
+            val = node.mean_value
+            if val > best_prob:
+                best_node = node
+                best_prob = val
+            if val == 1.0:
+                nodes_only_winning.append(node)
+        
+        log("Moves that always win: {}".format(len(nodes_only_winning)))
+        log("Total moves: {}".format(len(original_node.children)))
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 

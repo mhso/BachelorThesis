@@ -164,7 +164,7 @@ class MCTS(GameAI):
         # number of wins are chosen as the best action.
         for _ in range(self.ITERATIONS):
             node = self.select(original_node, 0)
-            if node.visits > 0:
+            if node.visits > 0 and not self.game.terminal_test(node.state):
                 # Expand tree from available actions. Select first expanded node as
                 # new current and simulate an action from this nodes possible actions.
                 actions = self.game.actions(node.state)

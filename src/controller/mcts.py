@@ -176,8 +176,6 @@ class MCTS(GameAI):
             value = self.rollout(original_node.state, node)
             self.back_propagate(node, value)
 
-            node = original_node
-
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
         #highest_visit = max(original_node.children, key=lambda n: n.visits)

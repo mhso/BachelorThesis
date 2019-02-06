@@ -308,6 +308,8 @@ def run_iteration_timing_test(log_type=None):
         actions = game.actions(state)
         action = actions[int(uniform(0, len(actions)))]
         state = game.result(state, action)
+        # print("Count: {}".format(counter))
+        # print(state.board)
         counter += 1
 
     time_taken = time() - time_b

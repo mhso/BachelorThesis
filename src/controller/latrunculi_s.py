@@ -114,7 +114,16 @@ class PlayerUtil:
         if fieldEnum == FieldEnum.BLACK_TRAPPED:
             return PlayerEnum.BLACK
         elif fieldEnum == FieldEnum.WHITE_TRAPPED:
-            return PlayerEnum.White
+            return PlayerEnum.WHITE
+        else:
+            return PlayerEnum.NONE
+    
+    @staticmethod
+    def opponent_from_trapped_piece(fieldEnum):
+        if fieldEnum == FieldEnum.BLACK_TRAPPED:
+            return PlayerEnum.WHITE
+        elif fieldEnum == FieldEnum.WHITE_TRAPPED:
+            return PlayerEnum.BLACK
         else:
             return PlayerEnum.NONE
     
@@ -268,14 +277,19 @@ class Latrunculi_s(Game):
         actionsList = []
 
         self.board = state.board
-        for y in range(self.board_no_of_rows):
-            for x in range(self.board_no_of_cols):
-                if PlayerUtil.player_from_non_trapped_piece(FieldUtil.piece_type(self.board[y, x])) == player_color:
-                
-                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
-                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+
+        it = np.nditer(state.board, flags=["multi_index"])
+        while not it.finished:
+            (y, x) = it.multi_index
+            if PlayerUtil.player_from_non_trapped_piece(FieldUtil.piece_type(self.board[y, x])) == player_color:
+            
+                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+            elif PlayerUtil.opponent_from_trapped_piece(FieldUtil.piece_type(self.board[y, x])) == player_color: # if the current piece, is the opponents captured piece
+                actionsList.append(Action((y, x), (y, x))) # action to remove an opponents captured piece
+            it.iternext()
 
         if actionsList == []:
             actionsList.append(None)

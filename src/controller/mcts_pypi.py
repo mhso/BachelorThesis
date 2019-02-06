@@ -33,7 +33,7 @@ class MCTS_PYPI(GameAI):
     mcts = None
     game = None
     def __init__(self, game, playouts=None):
-        self.mcts = mcts_pypi(timeLimit=2000)
+        self.mcts = mcts_pypi(timeLimit=30000)
         self.game = game
 
     def execute_action(self, state):

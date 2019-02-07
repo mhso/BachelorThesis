@@ -15,6 +15,7 @@ from controller.connect_four import ConnectFour
 from controller.latrunculi_s import Latrunculi_s
 from controller.minimax import Minimax
 from controller.mcts import MCTS
+from controller.mcts_pypi import MCTS_PYPI
 from controller.human import Human
 from controller.random import Random
 from view.log import log
@@ -148,6 +149,8 @@ def get_ai_algorithm(algorithm, game, wildcard, gui=None):
         return Human(game), "Human"
     elif lower == "random":
         return Random(game), "Random"
+    elif lower == "mcts_pypi":
+        return MCTS_PYPI(game), "mcts_pypi"
     return None, "unknown"
 
 # Load arguments for running the program.

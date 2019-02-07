@@ -9,11 +9,8 @@ RESET = "\033[0;37;40m"
 args = sys.argv
 
 test_iterations = int(args[1])
-<<<<<<< HEAD
-=======
 times_l = []
 times_ne = []
->>>>>>> 4d74cdfb9f9e2a6c68153ca80739f1f94e6b8cbb
 
 print("\n{}-=-=-=- LATRUNCULI VS LATRUNCULI_NE GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 for i in range(1, test_iterations+1):

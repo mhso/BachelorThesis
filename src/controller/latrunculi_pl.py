@@ -7,7 +7,7 @@ import numpy as np
 from controller.game import Game
 from model.state import State, Action
 
-class Latrunculi_na(Game):
+class Latrunculi(Game):
     size = 8
     init_state = None
 
@@ -24,11 +24,13 @@ class Latrunculi_na(Game):
             # Populate board with equal amount of white and black pieces
             for i in range(num_pieces):
                 num = squares[i]
-                X = int(num / self.size)
-                Y = int(num % self.size)
+                Y = int(num / self.size)
+                X = int(num % self.size)
                 piece = 1 if i < num_pieces/2 else -1
 
-                board[X][Y] = piece
+                board[Y][X] = piece
+                self.pieces.append((Y, X))
+            self.pieces.sort()
         else:
             # Position pieces as a 'Chess formation'.
             board[:][0:2] = -1
@@ -39,6 +41,7 @@ class Latrunculi_na(Game):
     def __init__(self, size, start_seed=None):
         Game.__init__(self)
         self.size = size
+        self.pieces = []
         self.populate_board(start_seed)
     
     def notify_observers(self, *args, **kwargs):
@@ -64,19 +67,15 @@ class Latrunculi_na(Game):
             current_player = -1 #Black
             enemy_captured = 2
         actionsList = [] #we might have to add a pass option???
-        
-        it = np.nditer(state.board, flags=["multi_index"])
 
-        while not it.finished:
-            (i, j) = it.multi_index
-            if it[0] == current_player: #If the current piece on the board is owned by the current player
-                self.check_North_Or_South_From_Player_Piece(actionsList, i, j, -1, current_player, state.board) #check for actions moving north
-                self.check_North_Or_South_From_Player_Piece(actionsList, i, j, 1, current_player, state.board) #check for actions moving south
-                self.check_West_Or_East_From_Player_Piece(actionsList, i, j, -1, current_player, state.board) #check for actions moving west
-                self.check_West_Or_East_From_Player_Piece(actionsList, i, j, 1, current_player, state.board) #check for actions moving east
-            elif it[0] == enemy_captured: # if the current piece, is the opponents captured piece
+        for i, j in self.pieces:
+            if state.board[i][j] == current_player:
+                actionsList.extend(self.check_North_Or_South_From_Player_Piece(i, j, -1, current_player, state.board)) #check for actions moving north
+                actionsList.extend(self.check_North_Or_South_From_Player_Piece(i, j, 1, current_player, state.board)) #check for actions moving south
+                actionsList.extend(self.check_West_Or_East_From_Player_Piece(i, j, -1, current_player, state.board)) #check for actions moving west
+                actionsList.extend(self.check_West_Or_East_From_Player_Piece(i, j, 1, current_player, state.board)) #check for actions moving east
+            elif state.board[i][j] == enemy_captured: # if the current piece, is the opponents captured piece
                 actionsList.append(Action((i, j), (i, j))) # action to remove an opponents captured piece
-            it.iternext()
 
         if actionsList == []:
             actionsList.append(None)
@@ -86,7 +85,9 @@ class Latrunculi_na(Game):
         pass
 
     # checks the squares north or south of a players piece, and acts accordingly
-    def check_North_Or_South_From_Player_Piece(self, actionsList, i, j, direction, player, board): #perhaps just pass along the board????
+    def check_North_Or_South_From_Player_Piece(self, i, j, direction, player, board): #perhaps just pass along the board????
+        actionsList = []
+        enemy_player = -1*player
         if (i + direction) >= 0 and (i + direction) < self.size: # check for whether 1 square NORTH/SOUTH is within the board
             if board[i + direction][j] == 0: #check for NORTH/SOUTH square being empty
                 if (j - 1) >= 0 and (j + 1) < self.size: #check for whether insta-capture is possible or if we are too close to edge of the board
@@ -114,8 +115,9 @@ class Latrunculi_na(Game):
         return actionsList
 
     # checks the squares west or east of a players piece, and acts accordingly
-    def check_West_Or_East_From_Player_Piece(self, actionsList, i, j, direction, player, board):
+    def check_West_Or_East_From_Player_Piece(self, i, j, direction, player, board):
         actionsList = []
+        enemy_player = -1*player
         if (j + direction) >= 0 and (j + direction) < self.size: # check for whether 1 square WEST/EAST is within the board
             if board[i][j + direction] == 0: #check for WEST/EAST square being empty
                 if (i - 1) >= 0 and (i + 1) < self.size: #check for whether insta-capture is possible or if we are too close to edge of the board
@@ -143,13 +145,40 @@ class Latrunculi_na(Game):
         return actionsList
 
     def check_for_capture_and_suicide_all_directions_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
-        actionsListWE = (self.check_for_capture_and_suicide_west_or_east_of_given_piece(iOrigin, jOrigin, iDest, jDest, player, board)) #check for action WEST/EAST
-        actionsListNS = (self.check_for_capture_and_suicide_north_or_south_of_given_piece(iOrigin, jOrigin, iDest, jDest, player, board)) #check for action NORTH/SOUTH
+        action_list = []
+        boolWE = self.check_for_capture_and_suicide_west_or_east_of_given_piece_bool(iOrigin, jOrigin, iDest, jDest, player, board) #check for insta-capture WEST/EAST
+        boolNS = self.check_for_capture_and_suicide_north_or_south_of_given_piece_bool(iOrigin, jOrigin, iDest, jDest, player, board) #check for insta-capture NORTH/SOUTH
 
-        if actionsListNS != [] and actionsListWE != []: #checks whether any insta capture was found, empty list means that you cant move to this square
-            return actionsListNS #they should result in the same action, so retuning any one of them should be fine
-        else:
-            return []
+        if boolWE and boolNS: #checks whether any insta capture was found, false means that an insta-capture exists on this square
+            action_list.append(Action((iOrigin, jOrigin), (iDest, jDest))) #if the move is legal, create action
+
+        return action_list #return the actions_list which is empty if no legal move was found.
+
+    #returns false if there is an insta-capture and no suicide option, true if there is no insta-capture WE
+    def check_for_capture_and_suicide_west_or_east_of_given_piece_bool(self, iOrigin, jOrigin, iDest, jDest, player, board):
+        enemy_player = -1*player
+        if (jDest - 1) >= 0 and (jDest + 1) < self.size: #check if there is room for a possible insta-capture WEST/EAST
+            if board[iDest][jDest + 1] == enemy_player and board[iDest][jDest - 1] == enemy_player: #check for insta capture
+                if (jDest - 2) >= 0 and board[iDest][jDest - 2] == player and (jDest - 2) != jOrigin: #check for possible suicide action to the west
+                    return True
+                elif (jDest + 2) < self.size and board[iDest][jDest + 2] == player and (jDest + 2) != jOrigin: #check for possible suicide action to the east
+                    return True
+                else:
+                    return False
+        return True
+
+    #returns false if there is an insta-capture and no suicide option, true if there is no insta-capture NS
+    def check_for_capture_and_suicide_north_or_south_of_given_piece_bool(self, iOrigin, jOrigin, iDest, jDest, player, board):
+        enemy_player = -1*player
+        if (iDest - 1) >= 0 and (iDest + 1) < self.size: #check if there is room for a possible insta-capture NORTH/SOUTH
+            if board[iDest + 1][jDest] == enemy_player and board[iDest - 1][jDest] == enemy_player: #check for insta capture
+                if (iDest - 2) >= 0 and board[iDest - 2][jDest] == player and (iDest - 2) != iOrigin: #check for possible suicide action to the north
+                    return True
+                elif (iDest + 2) < self.size and board[iDest + 2][jDest] == player and (iDest + 2) != iOrigin: #check for possible suicide action to the south
+                    return True
+                else:
+                    return False
+        return True
         
     def check_for_capture_and_suicide_west_or_east_of_given_piece(self, iOrigin, jOrigin, iDest, jDest, player, board):
         enemy_player = -1*player
@@ -190,8 +219,19 @@ class Latrunculi_na(Game):
         else:
             return x
 
+    def change_piece(self, y, x, new_y, new_x):
+        if new_y is None:
+            self.pieces.remove((y, x))
+        else:
+            for i, tup in enumerate(self.pieces):
+                py, px = tup
+                if py == y and px == x:
+                    self.pieces[i] = (new_y, new_x)
+                    break
+
     def result(self, state, action):
         super.__doc__
+
         if action is None:
             return State(state.board, (not state.player))
         source = action.source
@@ -210,6 +250,7 @@ class Latrunculi_na(Game):
                 i = dest[0]
                 j = dest[1]
                 newBoard[i][j] = current_player #moves piece to destination (dest)
+                self.change_piece(source[0], source[1], i, j)
                 newBoard[source[0]][source[1]] = 0 #removes piece from source
                 workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
 
@@ -270,6 +311,7 @@ class Latrunculi_na(Game):
         elif state.board[source[0]][source[1]] == (enemy_player*2): #if source is an opponents captured piece
             if source[0] == dest[0] and source[1] == dest[1]: #if source and dest is equal, remove opponents captured piece
                 newBoard[source[0]][source[1]] = 0 #removed captured piece
+                self.change_piece(source[0], source[1], None, None)
             else:
                 raise Exception("you have attempted to move an opponents captured piece...")
         else: #If none of the above, illegal move...

@@ -26,7 +26,7 @@ class Node():
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, w: {}, m: {}%, p: {}".format(
-                self.action, self.visits, self.wins, int(self.mean_value*100), self.probability)
+            self.action, self.visits, self.wins, int(self.mean_value*100), self.probability)
 
     def __str__(self):
         children = ", ".join([str(c) for c in self.children])

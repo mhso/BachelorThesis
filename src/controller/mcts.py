@@ -25,7 +25,7 @@ class Node():
         self.parent = parent
 
     def pretty_desc(self):
-        return "Node: a: {}, n: {}, v: {}, m: {}%, p: {}".format(
+        return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
             self.action, self.visits, self.value, "%.3f" % self.mean_value, "%.3f" % self.probability)
 
     def __str__(self):
@@ -117,14 +117,13 @@ class MCTS(GameAI):
         """
         After a full simulation, propagate result up the tree.
         """
-        new_value = value - 0.0001 if value > 0 else value + 0.0001
         node.visits += 1
-        node.value += new_value
+        node.value += value
         node.mean_value = node.value/node.visits
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, new_value)
+        self.back_propagate(node.parent, value)
 
     def rollout(self, og_state, node):
         """
@@ -184,8 +183,6 @@ class MCTS(GameAI):
 
             node = original_node
 
-        nodes_only_winning = [] # Count how many nodes have 100% win probability.
-        highest_visits = 0
         best_prob = 0 # Highest probability of value / visits.
         best_node = None
         for node in original_node.children:
@@ -194,19 +191,11 @@ class MCTS(GameAI):
             if val > best_prob:
                 best_node = node
                 best_prob = val
-            if val == 1.0 and node.visits > highest_visits:
-                highest_visits = node.visits
-                best_node = node
-
-        log("Moves that always win: {}".format(len(nodes_only_winning)))
-        log("Total moves: {}".format(len(original_node.children)))
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
-        #highest_visit = max(original_node.children, key=lambda n: n.visits)
-        #lowest_visit = min(original_node.children, key=lambda n: n.visits)
-        #log("MCTS lowest visit: {}, highest visit: {}".format(lowest_visit.visits, highest_visit.visits))
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
+
         return best_node.state
 
     def __str__(self):

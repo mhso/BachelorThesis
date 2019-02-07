@@ -2,6 +2,7 @@ from numpy.random import uniform
 from time import time
 from testing import assertion
 from controller.latrunculi import Latrunculi
+from controller.latrunculi_pl import Latrunculi_pl
 from model.state import Action
 from util.excelUtil import ExcelUtil
 from util.sqlUtil import SqlUtil
@@ -74,7 +75,7 @@ def run_tests():
 
     # =================================
     # Test available actions for "random" board.
-    game = Latrunculi(6, 5)
+    game = Latrunculi_pl(6, 5)
     state = game.start_state()
     state.player = not state.player
 

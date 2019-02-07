@@ -13,6 +13,7 @@ from time import sleep, time
 from controller.latrunculi import Latrunculi
 from controller.connect_four import ConnectFour
 from controller.latrunculi_s import Latrunculi_s
+from controller.latrunculi_pl import Latrunculi_pl
 from controller.minimax import Minimax
 from controller.mcts import MCTS
 from controller.mcts_pypi import MCTS_PYPI
@@ -29,6 +30,7 @@ def play_game(game, player_white, player_black, gui=None):
     MAX_ITER = 1000
     counter = 0
     time_game = time()
+    og_game = Latrunculi(4, 67)
 
     while not game.terminal_test(state) and counter < MAX_ITER:
         print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
@@ -135,8 +137,10 @@ def get_game(game_name, size, rand_seed, wildcard):
         return Latrunculi(size, rand_seed), "Latrunculi"
     elif lower == "connect4":
         return ConnectFour(size), "Connect Four"
-    elif lower in ("latrunculi_s", wildcard):
+    elif lower == "latrunculi_s":
         return Latrunculi_s(size, rand_seed), "Latrunculi_s"
+    elif lower == "latrunculi_pl":
+        return Latrunculi_pl(size, rand_seed), "Latrunculi_pl"
     return None, "unknown"
 
 def get_ai_algorithm(algorithm, game, wildcard, gui=None):
@@ -149,8 +153,8 @@ def get_ai_algorithm(algorithm, game, wildcard, gui=None):
         return Human(game), "Human"
     elif lower == "random":
         return Random(game), "Random"
-    elif lower == "mcts_pypi":
-        return MCTS_PYPI(game), "mcts_pypi"
+    #elif lower == "mcts_pypi":
+        #return MCTS_PYPI(game), "mcts_pypi"
     return None, "unknown"
 
 # Load arguments for running the program.

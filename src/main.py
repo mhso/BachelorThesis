@@ -137,6 +137,8 @@ def get_game(game_name, size, rand_seed, wildcard):
         return ConnectFour(size), "Connect Four"
     elif lower in ("latrunculi_s", wildcard):
         return Latrunculi_s(size, rand_seed), "Latrunculi_s"
+    elif lower in ("latrunculi_t", wildcard):
+        return Latrunculi_t(size, rand_seed), "Latrunculi_t"
     return None, "unknown"
 
 def get_ai_algorithm(algorithm, game, wildcard, gui=None):

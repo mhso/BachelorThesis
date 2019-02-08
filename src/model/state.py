@@ -1,10 +1,21 @@
 class State:
     board = []
     player = True
+    pieces = []
 
-    def __init__(self, board, player):
+    def __init__(self, board, player, pieces=None):
         self.board = board
         self.player = player
+        self.pieces = pieces
+
+    def change_piece(self, y, x, new_y, new_x):
+        if new_y is None:
+            self.pieces.remove((y, x))
+        else:
+            for i, (py, px) in enumerate(self.pieces):
+                if py == y and px == x:
+                    self.pieces[i] = (new_y, new_x)
+                    break
 
     def count_pieces(self):
         """

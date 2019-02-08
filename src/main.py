@@ -11,13 +11,7 @@ from os import mkdir
 from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
-from controller.connect_four import ConnectFour
-from controller.latrunculi_s import Latrunculi_s
-from controller.minimax import Minimax
-from controller.mcts import MCTS
-from controller.mcts_pypi import MCTS_PYPI
 from controller.human import Human
-from controller.random import Random
 from view.log import log
 from view.visualize import Gui
 
@@ -29,6 +23,9 @@ def play_game(game, player_white, player_black, gui=None):
     MAX_ITER = 1000
     counter = 0
     time_game = time()
+    if gui is not None:
+        sleep(1)
+        gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
     while not game.terminal_test(state) and counter < MAX_ITER:
         print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
@@ -131,29 +128,23 @@ def load_model(path):
 
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
-    if lower in ("latrunculi", wildcard):
-        return Latrunculi(size, rand_seed), "Latrunculi"
-    elif lower == "connect4":
-        return ConnectFour(size), "Connect Four"
-    elif lower in ("latrunculi_s", wildcard):
-        return Latrunculi_s(size, rand_seed), "Latrunculi_s"
-    elif lower in ("latrunculi_t", wildcard):
-        return Latrunculi_t(size, rand_seed), "Latrunculi_t"
-    return None, "unknown"
+    try:
+        module = __import__("controller.{}".format(lower), fromlist=["{}".format(game_name)])
+        algo_class = getattr(module, "{}".format(game_name))
+        return algo_class(size, rand_seed)
+    except ImportError:
+        print("Unknown game, name must equal name of game class.")
+        return None, "unknown"
 
 def get_ai_algorithm(algorithm, game, wildcard, gui=None):
     lower = algorithm.lower()
-    if lower in ("mcts", wildcard):
-        return MCTS(game), "MCTS"
-    elif lower == "minimax":
-        return Minimax(game), "Minimax"
-    elif lower == "human":
-        return Human(game), "Human"
-    elif lower == "random":
-        return Random(game), "Random"
-    elif lower == "mcts_pypi":
-        return MCTS_PYPI(game), "mcts_pypi"
-    return None, "unknown"
+    try:
+        module = __import__("controller.{}".format(lower), fromlist=["{}".format(algorithm)])
+        algo_class = getattr(module, "{}".format(algorithm))
+        return algo_class(game)
+    except ImportError:
+        print("Unknown AI algorithm, name must equal name of AI class.")
+        return None, "unknown"
 
 # Load arguments for running the program.
 # The args, in order, correspond to the variables below.
@@ -164,7 +155,7 @@ board_size = 8
 rand_seed = None
 
 wildcard = "."
-option_list = ["-s", "-l", "-v", "-t", "-g"]
+option_list = ["-s", "-l", "-v", "-t", "-g", "-p"]
 options = []
 args = []
 # Seperate arguments from options.
@@ -179,8 +170,8 @@ if argc > 1:
     if args[1] in ("-help", "-h"):
         print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [options...]".format(args[0]))
         print("Write '{}' in place of any argument to use default value".format(wildcard))
-        print("Options: -v (verbose), -t (time operations), -s (save models), -l (load models), -g (use GUI)")
-        print("Fx. 'python {} minimax . latrunculi 8 42 -g'".format(args[0]))
+        print("Options: -v (verbose), -t (time operations), -s (save models), -l (load models), -g (use GUI), -p (plot data)")
+        print("Fx. 'python {} Minimax MCTS Latrunculi . 42 -g'".format(args[0]))
         exit(0)
     player1 = args[1] # Algorithm playing as player 1.
 
@@ -200,11 +191,11 @@ if argc > 1:
                 if argc > 5 and args[5] != wildcard:
                     rand_seed = int(args[5])
 
-game, name = get_game(game_name, board_size, rand_seed, wildcard)
-p_white, player1 = get_ai_algorithm(player1, game, wildcard)
-p_black, player2 = get_ai_algorithm(player2, game, wildcard)
+game = get_game(game_name, board_size, rand_seed, wildcard)
+p_white = get_ai_algorithm(player1, game, wildcard)
+p_black = get_ai_algorithm(player2, game, wildcard)
 
-print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(name, board_size, board_size, player1, player2))
+print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
 player1 = player1.lower()
 player2 = player2.lower()
 
@@ -226,4 +217,4 @@ if "-g" in options or player1 == "human" or player2 == "human":
     if player2 == "human":
         p_black.gui = gui
 
-train(game, p_white, p_black, player1, player2, 1, "-s" in options, gui)
+train(game, p_white, p_black, player1, player2, 3, "-s" in options, gui)

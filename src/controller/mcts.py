@@ -13,7 +13,7 @@ class Node():
     children = None
     parent = None
     visits = 0
-    wins = 0
+    value = 0
     mean_value = 0
     probability = 0
 
@@ -25,13 +25,13 @@ class Node():
         self.parent = parent
 
     def pretty_desc(self):
-        return "Node: a: {}, n: {}, w: {}, m: {}%, p: {}".format(
-            self.action, self.visits, self.wins, int(self.mean_value*100), self.probability)
+        return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
+            self.action, self.visits, self.value, "%.3f" % self.mean_value, "%.3f" % self.probability)
 
     def __str__(self):
         children = ", ".join([str(c) for c in self.children])
-        return ("[Node: turn={}, visits={}, wins={},\nchildren=\n    [{}]]").format(
-            self.state.player, self.visits, self.wins, children.replace("\n", "\n    "))
+        return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
+            self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
 
 class MCTS(GameAI):
     """
@@ -61,14 +61,15 @@ class MCTS(GameAI):
         """
         Select a node to run simulations from.
         Nodes are chosen according to how they maximize
-        the UCB1 formula = w(i)/n(i) + c * sqrt (ln N(i) / n(i))).
+        the PUCT formula = Q(i) + c * P(i) * sqrt (N(i) / (1 + n(i))
         Where
-            - w(i) = wins of current node.
-            - n(i) = times current node was visited.
+            - Q(i) = mean value of node (node value / node visits).
             - c = exploration constant, 2 usually.
+            - P(i) = probability of selecting action in node (i).
             - N(i) = accummulated visits of all parents of current node.
+            - n(i) = times current node was visited.
         This assures a balance between exploring new nodes,
-        and exploiting nodes that are known to result in good outcomes.
+        and exploiting nodes, that are known to result in good outcomes.
         """
         if node.children == []: # Node is a leaf.
             return node
@@ -83,11 +84,7 @@ class MCTS(GameAI):
                 best_node = child
                 break
             else:
-                # UCB1 formula (split up, for readability).
-                #exploit = child.wins/child.visits + self.EXPLORE_PARAM
-                #val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
-
-                # PUTCT formula.
+                # PUCT formula.
                 val = child.mean_value + (
                     self.EXPLORE_PARAM * child.probability
                     * acc_sqrt / (1+child.visits)
@@ -121,8 +118,8 @@ class MCTS(GameAI):
         After a full simulation, propagate result up the tree.
         """
         node.visits += 1
-        node.wins += value
-        node.mean_value = node.wins/node.visits
+        node.value += value
+        node.mean_value = node.value/node.visits
 
         if node.parent is None:
             return
@@ -140,6 +137,9 @@ class MCTS(GameAI):
         while not self.game.terminal_test(state) and counter < self.MAX_MOVES:
             actions = self.game.actions(state)
             state = self.simulate(state, actions)
+            #if counter % 25 == 0:
+                #print("MOVE {}, BOARD: {}".format(counter, state.board))
+                #print("MOVE {}, PIECES: {}".format(counter, state.pieces))
             counter += 1
 
         #log("Iterations spent on rollout: {}".format(counter))
@@ -166,7 +166,7 @@ class MCTS(GameAI):
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
-        # number of wins are chosen as the best action.
+        # number of mean value (value/visits) are chosen as the best action.
         for _ in range(self.ITERATIONS):
             node = self.select(original_node, 0)
             if node.visits > 0 and not self.game.terminal_test(node.state):
@@ -183,8 +183,7 @@ class MCTS(GameAI):
 
             node = original_node
 
-        nodes_only_winning = [] # Count how many nodes have 100% win probability.
-        best_prob = 0 # Highest probability of wins / visits.
+        best_prob = 0 # Highest probability of value / visits.
         best_node = None
         for node in original_node.children:
             log(node.pretty_desc())
@@ -192,18 +191,11 @@ class MCTS(GameAI):
             if val > best_prob:
                 best_node = node
                 best_prob = val
-            if val == 1.0:
-                nodes_only_winning.append(node)
-        
-        log("Moves that always win: {}".format(len(nodes_only_winning)))
-        log("Total moves: {}".format(len(original_node.children)))
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
-        #highest_visit = max(original_node.children, key=lambda n: n.visits)
-        #lowest_visit = min(original_node.children, key=lambda n: n.visits)
-        #log("MCTS lowest visit: {}, highest visit: {}".format(lowest_visit.visits, highest_visit.visits))
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
+
         return best_node.state
 
     def __str__(self):

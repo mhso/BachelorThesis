@@ -7,13 +7,14 @@ import numpy as np
 from controller.game import Game
 from model.state import State, Action
 
-class Latrunculi(Game):
+class Latrunculi_pl(Game):
     size = 8
     init_state = None
 
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')
         num_pieces = int((self.size * self.size) / 2)
+        pieces = []
 
         if seed is not None:
             # Generate random positions for pieces
@@ -29,19 +30,18 @@ class Latrunculi(Game):
                 piece = 1 if i < num_pieces/2 else -1
 
                 board[Y][X] = piece
-                self.pieces.append((Y, X))
-            self.pieces.sort()
+                pieces.append((Y, X))
+            pieces.sort()
         else:
             # Position pieces as a 'Chess formation'.
             board[:][0:2] = -1
             board[:][-2:] = 1
 
-        self.init_state = State(board, True)
+        self.init_state = State(board, True, pieces=pieces)
 
     def __init__(self, size, start_seed=None):
         Game.__init__(self)
         self.size = size
-        self.pieces = []
         self.populate_board(start_seed)
     
     def notify_observers(self, *args, **kwargs):
@@ -68,7 +68,7 @@ class Latrunculi(Game):
             enemy_captured = 2
         actionsList = [] #we might have to add a pass option???
 
-        for i, j in self.pieces:
+        for i, j in state.pieces:
             if state.board[i][j] == current_player:
                 actionsList.extend(self.check_North_Or_South_From_Player_Piece(i, j, -1, current_player, state.board)) #check for actions moving north
                 actionsList.extend(self.check_North_Or_South_From_Player_Piece(i, j, 1, current_player, state.board)) #check for actions moving south
@@ -219,21 +219,11 @@ class Latrunculi(Game):
         else:
             return x
 
-    def change_piece(self, y, x, new_y, new_x):
-        if new_y is None:
-            self.pieces.remove((y, x))
-        else:
-            for i, tup in enumerate(self.pieces):
-                py, px = tup
-                if py == y and px == x:
-                    self.pieces[i] = (new_y, new_x)
-                    break
-
     def result(self, state, action):
         super.__doc__
 
         if action is None:
-            return State(state.board, (not state.player))
+            return State(state.board, (not state.player), pieces=[p for p in state.pieces])
         source = action.source
         dest = action.dest
         current_player = 0
@@ -245,12 +235,13 @@ class Latrunculi(Game):
             current_player = -1 #Black
             enemy_player = 1
         newBoard = np.copy(state.board) #newBoard is the one that will be returned
+        new_state = State(newBoard, not state.player, [p for p in state.pieces])
         if state.board[source[0]][source[1]] == current_player: #if source is a piece owned by the current player
             if source[0] != dest[0] or source[1] != dest[1]: #check if source and dest are different
                 i = dest[0]
                 j = dest[1]
                 newBoard[i][j] = current_player #moves piece to destination (dest)
-                self.change_piece(source[0], source[1], i, j)
+                new_state.change_piece(source[0], source[1], i, j)
                 newBoard[source[0]][source[1]] = 0 #removes piece from source
                 workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
 
@@ -311,12 +302,12 @@ class Latrunculi(Game):
         elif state.board[source[0]][source[1]] == (enemy_player*2): #if source is an opponents captured piece
             if source[0] == dest[0] and source[1] == dest[1]: #if source and dest is equal, remove opponents captured piece
                 newBoard[source[0]][source[1]] = 0 #removed captured piece
-                self.change_piece(source[0], source[1], None, None)
+                new_state.change_piece(source[0], source[1], None, None)
             else:
                 raise Exception("you have attempted to move an opponents captured piece...")
         else: #If none of the above, illegal move...
             raise Exception("you have attempted to move a piece that you do not own...")
-        return State(newBoard, (not state.player))
+        return new_state
 
     #checks whether moving a piece from its source, causes an enemys piece to be freed
     def check_For_Freeing_Due_To_Move(self, i, j, board, enemy):

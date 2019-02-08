@@ -86,7 +86,6 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
     we save the model for later use. If 'load' is true,
     we load these MCTS models.
     """
-    print(threading.active_count())
     if iteration == 0:
         return
     try:
@@ -156,7 +155,7 @@ board_size = 8
 rand_seed = None
 
 wildcard = "."
-option_list = ["-s", "-l", "-v", "-t", "-g"]
+option_list = ["-s", "-l", "-v", "-t", "-g", "-p"]
 options = []
 args = []
 # Seperate arguments from options.
@@ -171,8 +170,8 @@ if argc > 1:
     if args[1] in ("-help", "-h"):
         print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [options...]".format(args[0]))
         print("Write '{}' in place of any argument to use default value".format(wildcard))
-        print("Options: -v (verbose), -t (time operations), -s (save models), -l (load models), -g (use GUI)")
-        print("Fx. 'python {} minimax . latrunculi 8 42 -g'".format(args[0]))
+        print("Options: -v (verbose), -t (time operations), -s (save models), -l (load models), -g (use GUI), -p (plot data)")
+        print("Fx. 'python {} Minimax MCTS Latrunculi . 42 -g'".format(args[0]))
         exit(0)
     player1 = args[1] # Algorithm playing as player 1.
 

@@ -296,16 +296,16 @@ def run_tests():
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test Latrunculi")
-    game = Latrunculi(8, 42)
+    game = Latrunculi_pl(8, 42)
     state = game.start_state()
 
     time_b = time()
 
     counter = 0
-    while not game.terminal_test(state) and counter < 5000:
+    while counter < 5000:
         actions = game.actions(state)
         action = actions[int(uniform(0, len(actions)))]
-        state = game.result(state, action)
+        result = game.result(state, action)
         counter += 1
 
     time_taken = time() - time_b

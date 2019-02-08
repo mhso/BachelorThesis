@@ -23,7 +23,9 @@ def play_game(game, player_white, player_black, gui=None):
     MAX_ITER = 1000
     counter = 0
     time_game = time()
-    og_game = Latrunculi(4, 67)
+    if gui is not None:
+        sleep(1)
+        gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
     while not game.terminal_test(state) and counter < MAX_ITER:
         print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
@@ -84,6 +86,7 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
     we save the model for later use. If 'load' is true,
     we load these MCTS models.
     """
+    print(threading.active_count())
     if iteration == 0:
         return
     try:
@@ -215,4 +218,4 @@ if "-g" in options or player1 == "human" or player2 == "human":
     if player2 == "human":
         p_black.gui = gui
 
-train(game, p_white, p_black, player1, player2, 1, "-s" in options, gui)
+train(game, p_white, p_black, player1, player2, 3, "-s" in options, gui)

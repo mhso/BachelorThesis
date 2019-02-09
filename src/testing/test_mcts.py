@@ -2,12 +2,11 @@ from time import time
 from testing import assertion
 from controller.mcts import MCTS, Node
 from controller.latrunculi import Latrunculi
-from controller.latrunculi_pl import Latrunculi_pl
 
 def run_tests():
     # Test selection.
     # Test first selection.
-    game = Latrunculi_pl(8)
+    game = Latrunculi(8)
     mcts = MCTS(game)
     state = game.start_state()
 

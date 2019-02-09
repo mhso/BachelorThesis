@@ -11,7 +11,7 @@ from os import mkdir
 from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
-from controller.human import Human
+from controller.mcts import MCTS
 from view.log import log
 from view.visualize import Gui
 
@@ -43,9 +43,9 @@ def play_game(game, player_white, player_black, gui=None):
             log("Move took: {} s".format(time() - time_turn))
 
         if gui is not None:
-            if type(player_white) != type(Human) and not state.player:
+            if type(player_white).__name__ != "Human" and not state.player:
                 sleep(0.5)
-            elif type(player_black) != type(Human) and state.player:
+            elif type(player_black).__name__ != "Human" and state.player:
                 sleep(0.5)
             gui.update(state)
         else:
@@ -76,10 +76,10 @@ class SupportThread(threading.Thread):
         self.args = args
 
     def run(self):
-        play_game(self.args[0], self.args[1], self.args[2], self.args[7])
-        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6], self.args[7])
+        play_game(self.args[0], self.args[1], self.args[2], self.args[5])
+        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5])
 
-def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
+def train(game, p1, p2, iteration, save=False, gui=None):
     """
     Run a given number of game iterations with a given AI.
     After each game iteration, if the model is MCTS,
@@ -92,12 +92,12 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
         if gui is not None:
             # If GUI is used, (and if a non-human is playing),
             # create seperate thread to run the AI game logic in.
-            game_thread = SupportThread((game, p1, p2, type1, type2, iteration-1, save, gui))
+            game_thread = SupportThread((game, p1, p2, iteration-1, save, gui))
             game_thread.start() # Start game logic thread.
             gui.run() # Start GUI on main thread.
         else:
             play_game(game, p1, p2)
-            train(game, p1, p2, type1, type2, iteration-1, save, gui)
+            train(game, p1, p2, iteration-1, save, gui)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
         if gui is not None:
@@ -105,7 +105,9 @@ def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
         exit(0)
     finally:
         if save:
-            if type1 == "mcts" or type2 == "mcts":
+            type1 = type(p1).__name__
+            type2 = type(p2).__name__
+            if type1 == "MCTS" or type2 == "MCTS":
                 state_map = None
                 if type1 == "mcts":
                     state_map = p1.state_map
@@ -128,6 +130,8 @@ def load_model(path):
 
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
+    if lower == wildcard:
+        return Latrunculi(size, rand_seed)
     try:
         module = __import__("controller.{}".format(lower), fromlist=["{}".format(game_name)])
         algo_class = getattr(module, "{}".format(game_name))
@@ -138,6 +142,8 @@ def get_game(game_name, size, rand_seed, wildcard):
 
 def get_ai_algorithm(algorithm, game, wildcard, gui=None):
     lower = algorithm.lower()
+    if lower == wildcard:
+        return MCTS(game)
     try:
         module = __import__("controller.{}".format(lower), fromlist=["{}".format(algorithm)])
         algo_class = getattr(module, "{}".format(algorithm))
@@ -217,4 +223,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
     if player2 == "human":
         p_black.gui = gui
 
-train(game, p_white, p_black, player1, player2, 3, "-s" in options, gui)
+plot = None
+
+
+train(game, player1, player2, 3, "-s" in options, gui)

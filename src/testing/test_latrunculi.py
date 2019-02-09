@@ -2,7 +2,6 @@ from numpy.random import uniform
 from time import time
 from testing import assertion
 from controller.latrunculi import Latrunculi
-from controller.latrunculi_pl import Latrunculi_pl
 from model.state import Action
 from util.excelUtil import ExcelUtil
 from util.sqlUtil import SqlUtil
@@ -296,7 +295,7 @@ def run_tests():
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test Latrunculi")
-    game = Latrunculi_pl(8, 42)
+    game = Latrunculi(8, 42)
     state = game.start_state()
 
     time_b = time()

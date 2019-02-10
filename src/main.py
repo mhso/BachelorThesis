@@ -16,6 +16,9 @@ from view.log import log
 from view.visualize import Gui
 from view.graph import Graph
 
+def force_quit(gui):
+    return gui is not None and not gui.active or Graph.stop_event.is_set()
+
 def play_game(game, player_white, player_black, gui=None):
     """
     Play a game to the end, and return the reward for each player.
@@ -42,6 +45,10 @@ def play_game(game, player_white, player_black, gui=None):
 
         if "-t" in argv:
             log("Move took: {} s".format(time() - time_turn))
+
+        if force_quit(gui):
+            print("Forcing exit...")
+            exit(0)
 
         if gui is not None:
             if type(player_white).__name__ != "Human" and not state.player:

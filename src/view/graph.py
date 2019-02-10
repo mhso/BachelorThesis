@@ -6,6 +6,7 @@ graph: Construct graphs and stuff from data and stuff.
 import tkinter as tk
 import matplotlib as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from threading import Event
 
 class Graph:
     canvas = None
@@ -16,6 +17,7 @@ class Graph:
     changed_plots = dict()
     color_options = ["r", "b", "g", "y"]
     colors = dict()
+    stop_event = Event()
 
     @staticmethod
     def check_change():
@@ -42,25 +44,25 @@ class Graph:
     def run(gui_parent=None):
         Graph.parent = gui_parent
         Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
-        frame = tk.Frame(Graph.root)
+        window = Graph.root if gui_parent is None else tk.Toplevel(Graph.root)
+        window.title("Graphs")
 
         figure = plt.figure.Figure()
         Graph.ax = figure.add_subplot(111)
 
-        Graph.canvas = FigureCanvasTkAgg(figure, master=frame)
+        Graph.canvas = FigureCanvasTkAgg(figure, master=window)
         Graph.canvas.draw()
         Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         Graph.root.after(200, Graph.check_change)
 
         if gui_parent is None:
-            frame.pack()
-            Graph.root.bind("<Destroy>", lambda e: exit(0))
+            Graph.root.geometry("800x600")
+            Graph.root.bind("<Destroy>", lambda e: Graph.close())
             tk.mainloop()
 
     @staticmethod
     def plot_data(X, Y, label, x_label, y_label):
-        print("Added data", flush=True)
         # Create the figure we desire to add to an existing canvas
         p_x, p_y = None, None
         try:
@@ -84,3 +86,4 @@ class Graph:
     @staticmethod
     def close():
         Graph.root.destroy()
+        Graph.stop_event.set()

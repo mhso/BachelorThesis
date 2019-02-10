@@ -63,6 +63,8 @@ class Graph:
 
     @staticmethod
     def plot_data(X, Y, label, x_label, y_label):
+        if Graph.root is None: # Graph window has not been initialized.
+            return
         # Create the figure we desire to add to an existing canvas
         p_x, p_y = None, None
         try:

@@ -5,39 +5,78 @@ graph: Construct graphs and stuff from data and stuff.
 """
 import tkinter as tk
 import matplotlib as plt
-from matplotlib.backends import tkagg
-from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class Graph:
     canvas = None
+    parent = None
+    root = None
+    ax = None
+    data = dict()
+    changed_plots = dict()
+    color_options = ["r", "b", "g", "y"]
+    colors = dict()
 
-    def __init__(self, gui_parent=None):
-        self.parent = gui_parent
+    @staticmethod
+    def check_change():
+        changed_label = None
+        for label in Graph.changed_plots:
+            if Graph.changed_plots[label]:
+                changed_label = label
+                break
 
-    def draw_to_canvas(self, figure, loc):
-        fcagg = FigureCanvasAgg(figure)
-        fcagg.draw()
-        x, y, w, h = figure.bbox.bounds()
-        w, h = int(w), int(h)
-        img = tk.PhotoImage(master=self.canvas, width=w, height=h)
+        Graph.root.after(100, Graph.check_change)
 
-        self.canvas.create_image(loc[0] + (w/2), loc[1] + (h/2), image=img)
+        if changed_label is None:
+            return
 
-        tkagg.blit(img, fcagg.get_renderer()._renderer, colormode=2)
+        p_x, p_y = Graph.data[changed_label]
 
-        return img
+        Graph.ax.plot(p_x, p_y, Graph.colors[changed_label])
 
-    def start(self):
-        window = tk.Toplevel() if self.parent else tk.Tk()
-        window.title("Graph stuff")
-        self.canvas = tk.Canvas(window, width=500, height=350)
-        self.canvas.pack()
+        Graph.canvas.draw()
+        Graph.changed_plots[changed_label] = False
 
-    def plot(self, X, Y):
+    @staticmethod
+    def run(gui_parent=None):
+        Graph.parent = gui_parent
+        Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
+        frame = tk.Frame(Graph.root)
+
+        figure = plt.figure.Figure()
+        Graph.ax = figure.add_subplot(111)
+
+        Graph.canvas = FigureCanvasTkAgg(figure, master=frame)
+        Graph.canvas.draw()
+        Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        frame.pack()
+
+        Graph.root.after(200, Graph.check_change)
+
+        if gui_parent is None:
+            Graph.root.bind("<Destroy>", lambda e: exit(0))
+            tk.mainloop()
+
+    @staticmethod
+    def plot_data(X, Y, label):
+        print("Added data", flush=True)
         # Create the figure we desire to add to an existing canvas
-        fig = plt.figure.Figure(figsize=(2, 1))
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.plot(X, Y)
+        p_x, p_y = None, None
+        try:
+            p_x, p_y = Graph.data[label]
+            if X is None:
+                X = p_x[-1] + 1
+            p_x.append(X)
+            p_y.append(Y)
+        except KeyError:
+            if X is None:
+                X = 1
+            p_x, p_y = [X], [Y]
+            Graph.colors[label] = Graph.color_options[len(Graph.data)]
+            Graph.data[label] = p_x, p_y
 
-        fig_x, fig_y = 10, 10
-        fig_img = self.draw_to_canvas(fig, (fig_x, fig_y))
+        Graph.changed_plots[label] = True
+
+    @staticmethod
+    def close():
+        Graph.root.destroy()

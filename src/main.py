@@ -14,20 +14,21 @@ from controller.latrunculi import Latrunculi
 from controller.mcts import MCTS
 from view.log import log
 from view.visualize import Gui
+from view.graph import Graph
 
 def play_game(game, player_white, player_black, gui=None):
     """
     Play a game to the end, and return the reward for each player.
     """
     state = game.start_state()
-    MAX_ITER = 1000
+    max_iter = 1000
     counter = 0
     time_game = time()
+    sleep(1)
     if gui is not None:
-        sleep(1)
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
-    while not game.terminal_test(state) and counter < MAX_ITER:
+    while not game.terminal_test(state) and counter < max_iter:
         print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
         print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
@@ -77,9 +78,9 @@ class SupportThread(threading.Thread):
 
     def run(self):
         play_game(self.args[0], self.args[1], self.args[2], self.args[5])
-        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5])
+        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6])
 
-def train(game, p1, p2, iteration, save=False, gui=None):
+def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
     """
     Run a given number of game iterations with a given AI.
     After each game iteration, if the model is MCTS,
@@ -89,12 +90,15 @@ def train(game, p1, p2, iteration, save=False, gui=None):
     if iteration == 0:
         return
     try:
-        if gui is not None:
+        if gui is not None or plot_data:
             # If GUI is used, (and if a non-human is playing),
             # create seperate thread to run the AI game logic in.
-            game_thread = SupportThread((game, p1, p2, iteration-1, save, gui))
+            game_thread = SupportThread((game, p1, p2, iteration-1, save, gui, plot_data))
             game_thread.start() # Start game logic thread.
-            gui.run() # Start GUI on main thread.
+            if plot_data:
+                Graph.run(gui) # If we should plot data, start graph window in main thread.
+            if gui is not None:
+                gui.run() # Start GUI on main thread.
         else:
             play_game(game, p1, p2)
             train(game, p1, p2, iteration-1, save, gui)
@@ -102,6 +106,8 @@ def train(game, p1, p2, iteration, save=False, gui=None):
         print("Exiting by interrupt...")
         if gui is not None:
             gui.close()
+        if plot_data:
+            Graph.close()
         exit(0)
     finally:
         if save:
@@ -201,7 +207,7 @@ game = get_game(game_name, board_size, rand_seed, wildcard)
 p_white = get_ai_algorithm(player1, game, wildcard)
 p_black = get_ai_algorithm(player2, game, wildcard)
 
-print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
+print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__))
 player1 = player1.lower()
 player2 = player2.lower()
 
@@ -223,7 +229,4 @@ if "-g" in options or player1 == "human" or player2 == "human":
     if player2 == "human":
         p_black.gui = gui
 
-plot = None
-
-
-train(game, player1, player2, 3, "-s" in options, gui)
+train(game, p_white, p_black, 3, "-s" in options, gui, "-p" in options)

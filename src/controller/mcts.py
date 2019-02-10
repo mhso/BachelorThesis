@@ -6,6 +6,7 @@ mcts: Monte Carlo Tree Search.
 import numpy as np
 from controller.game_ai import GameAI
 from view.log import log
+from view.graph import Graph
 
 class Node():
     action = None
@@ -48,7 +49,7 @@ class MCTS(GameAI):
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if self.game.size > 3:
-            playout_options = [1000, 100, 35, 20, 10, 5, 5]
+            playout_options = [500, 100, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
@@ -193,6 +194,8 @@ class MCTS(GameAI):
                 best_prob = val
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
+
+        Graph.plot_data(None, best_node.mean_value, "MCTS Win Propability {}".format(state.str_player()))
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
 

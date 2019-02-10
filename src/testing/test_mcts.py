@@ -23,10 +23,10 @@ def run_tests():
     # Test exploitation of promising node.
     root.visits = 3
     for child in child_nodes:
-        child.wins = 2
+        child.value = 2
         child.visits = 3
 
-    child_nodes[4].wins = 3
+    child_nodes[4].value = 3
     node = mcts.select(root, 0)
 
     assertion.assert_equal(child_nodes[4], node, "exploitation selection")
@@ -35,10 +35,10 @@ def run_tests():
     # Test exploration of less visited node.
     root.visits = 3
     for child in child_nodes:
-        child.wins = 4
+        child.value = 4
         child.visits = 3
 
-    child_nodes[3].wins = 3
+    child_nodes[3].value = 3
     child_nodes[3].visits = 2
     node = mcts.select(root, 0)
 

@@ -4,7 +4,7 @@ minimax: Implements Minimax with Alpha-Beta pruning for playing a game.
 from controller.game_ai import GameAI
 
 class Minimax(GameAI):
-    def evaluate_board(self, state):
+    def evaluate_board(self, state, depth):
         """
         Very simple heurstic for evaluating worth of board.
         Simply counts the difference in number of pieces of each player.
@@ -17,6 +17,7 @@ class Minimax(GameAI):
         kill_weight = 5
         player_pieces = (state.board == player_piece).sum()
         other_pieces = (state.board == other_piece).sum()
+        bonus = 30*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
 
         captured_enemy = (state.board == other_captured).sum()
         captured_player = (state.board == player_captured).sum()
@@ -24,7 +25,7 @@ class Minimax(GameAI):
         raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
         capture_diff = (captured_enemy - captured_player) * capture_weight
 
-        return raw_diff + capture_diff
+        return raw_diff + capture_diff + bonus
 
     def minimax(self, state, depth, maxing_player, alpha, beta):
         """
@@ -33,7 +34,7 @@ class Minimax(GameAI):
         if depth == 0 or self.game.terminal_test(state):
             if not maxing_player:
                 state.player = not state.player
-            return self.evaluate_board(state)
+            return self.evaluate_board(state, depth)
 
         actions = self.game.actions(state)
 

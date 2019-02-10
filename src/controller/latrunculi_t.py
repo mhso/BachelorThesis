@@ -3,11 +3,44 @@
 latrunculi: Subclass of game. Implements game methods for latrunculi.
 ---------------------------------------------------------------------
 """
+import threading
 import numpy as np
 from controller.game import Game
 from model.state import State, Action
 
-class Latrunculi(Game):
+class myThread (threading.Thread):
+    def __init__(self, threadID, name, counter, threadLock, latrunculi, board_slice, offset, list, current_player, enemy_captured, board):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.counter = counter
+        self.threadLock = threadLock
+
+        it = np.nditer(board_slice, flags=["multi_index"])
+        while not it.finished:
+            (i, j) = it.multi_index
+            i = i+offset
+            if it[0] == current_player: #If the current piece on the board is owned by the current player
+                
+                list.extend(latrunculi.check_North_Or_South_From_Player_Piece(i, j, -1, current_player, board))
+                list.extend(latrunculi.check_North_Or_South_From_Player_Piece(i, j, 1, current_player, board))
+                list.extend(latrunculi.check_West_Or_East_From_Player_Piece(i, j, -1, current_player, board))
+                list.extend(latrunculi.check_West_Or_East_From_Player_Piece(i, j, 1, current_player, board))
+
+            elif it[0] == enemy_captured: # if the current piece, is the opponents captured piece
+                list.append(Action((i, j), (i, j))) # action to remove an opponents captured piece
+            it.iternext()
+                
+
+
+    def run(self):
+        # print("Starting " + self.name)
+        # Get lock to synchronize threads
+        self.threadLock.acquire()
+        # Free lock to release next thread
+        self.threadLock.release()
+
+class Latrunculi_t(Game):
     size = 8
     init_state = None
 
@@ -24,13 +57,11 @@ class Latrunculi(Game):
             # Populate board with equal amount of white and black pieces
             for i in range(num_pieces):
                 num = squares[i]
-                Y = int(num / self.size)
-                X = int(num % self.size)
+                X = int(num / self.size)
+                Y = int(num % self.size)
                 piece = 1 if i < num_pieces/2 else -1
 
-                board[Y][X] = piece
-                self.pieces.append((Y, X))
-            self.pieces.sort()
+                board[X][Y] = piece
         else:
             # Position pieces as a 'Chess formation'.
             board[:][0:2] = -1
@@ -41,7 +72,6 @@ class Latrunculi(Game):
     def __init__(self, size, start_seed=None):
         Game.__init__(self)
         self.size = size
-        self.pieces = []
         self.populate_board(start_seed)
     
     def notify_observers(self, *args, **kwargs):
@@ -68,14 +98,50 @@ class Latrunculi(Game):
             enemy_captured = 2
         actionsList = [] #we might have to add a pass option???
 
-        for i, j in self.pieces:
-            if state.board[i][j] == current_player:
-                actionsList.extend(self.check_North_Or_South_From_Player_Piece(i, j, -1, current_player, state.board)) #check for actions moving north
-                actionsList.extend(self.check_North_Or_South_From_Player_Piece(i, j, 1, current_player, state.board)) #check for actions moving south
-                actionsList.extend(self.check_West_Or_East_From_Player_Piece(i, j, -1, current_player, state.board)) #check for actions moving west
-                actionsList.extend(self.check_West_Or_East_From_Player_Piece(i, j, 1, current_player, state.board)) #check for actions moving east
-            elif state.board[i][j] == enemy_captured: # if the current piece, is the opponents captured piece
-                actionsList.append(Action((i, j), (i, j))) # action to remove an opponents captured piece
+        board_slice1 = state.board[0:int(self.size/2), 0:self.size]
+        board_slice2 = state.board[int(self.size/2):self.size, 0:self.size]
+
+        # print("board_slice1:")
+        # print(board_slice1)
+
+        # print("board_slice2:")
+        # print(board_slice2)
+        
+        list1 = []
+        list2 = []
+
+        threadLock = threading.Lock()
+        threads = []
+
+        # Create new threads
+        thread1 = myThread(1, "Thread-1", 1, threadLock, self, board_slice1, 0, list1, current_player, enemy_captured, state.board)
+        thread2 = myThread(2, "Thread-2", 2, threadLock, self, board_slice2, int(self.size/2), list2, current_player, enemy_captured, state.board)
+
+        # Start new Threads
+        thread1.start()
+        thread2.start()
+
+        # Add threads to thread list
+        threads.append(thread1)
+        threads.append(thread2)
+
+        # Wait for all threads to complete
+        for t in threads:
+            t.join()
+        
+        # print("List 1: ")
+        # for action in list1:
+        #     print(str(action))
+
+        # print("List 2: ")
+        # for action in list2:
+        #     print(str(action))
+
+        actionsList.extend(list1)
+        actionsList.extend(list2)
+
+        # for action in actionsList:
+        #     print(str(action))
 
         if actionsList == []:
             actionsList.append(None)
@@ -219,19 +285,8 @@ class Latrunculi(Game):
         else:
             return x
 
-    def change_piece(self, y, x, new_y, new_x):
-        if new_y is None:
-            self.pieces.remove((y, x))
-        else:
-            for i, tup in enumerate(self.pieces):
-                py, px = tup
-                if py == y and px == x:
-                    self.pieces[i] = (new_y, new_x)
-                    break
-
     def result(self, state, action):
         super.__doc__
-
         if action is None:
             return State(state.board, (not state.player))
         source = action.source
@@ -250,7 +305,6 @@ class Latrunculi(Game):
                 i = dest[0]
                 j = dest[1]
                 newBoard[i][j] = current_player #moves piece to destination (dest)
-                self.change_piece(source[0], source[1], i, j)
                 newBoard[source[0]][source[1]] = 0 #removes piece from source
                 workBoard = np.copy(newBoard) #workBoard is the one that is checked during the method
 
@@ -311,7 +365,6 @@ class Latrunculi(Game):
         elif state.board[source[0]][source[1]] == (enemy_player*2): #if source is an opponents captured piece
             if source[0] == dest[0] and source[1] == dest[1]: #if source and dest is equal, remove opponents captured piece
                 newBoard[source[0]][source[1]] = 0 #removed captured piece
-                self.change_piece(source[0], source[1], None, None)
             else:
                 raise Exception("you have attempted to move an opponents captured piece...")
         else: #If none of the above, illegal move...

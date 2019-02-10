@@ -282,11 +282,45 @@ class Latrunculi_s(Game):
         while not it.finished:
             (y, x) = it.multi_index
             if PlayerUtil.player_from_non_trapped_piece(FieldUtil.piece_type(self.board[y, x])) == player_color:
-            
-                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
-                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
-                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
-                self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+                
+                y_max = self.board_no_of_rows-1
+                x_max = self.board_no_of_cols-1
+
+                if y == 0 and x == 0:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+                elif y == 0 and x == x_max:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+                elif y == y_max and x == x_max:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                elif y == y_max and x == 0:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                elif y == 0 and x > 0 and x < x_max:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+                elif y == y_max and x > 0 and x < x_max:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                elif y > 0 and y < y_max and x == 0:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+                elif y > 0 and y < y_max and x == x_max:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+                else:
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.UP, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.LEFT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.RIGHT, (y, x)))
+                    self.append_list_if_valid(player_color, actionsList, (y, x), MoveUtil.move_coords(MoveEnum.DOWN, (y, x)))
+
+
             elif PlayerUtil.opponent_from_trapped_piece(FieldUtil.piece_type(self.board[y, x])) == player_color: # if the current piece, is the opponents captured piece
                 actionsList.append(Action((y, x), (y, x))) # action to remove an opponents captured piece
             it.iternext()
@@ -303,7 +337,7 @@ class Latrunculi_s(Game):
         return self.is_within_board(coords) and self.board[coords] == 0
     
     def append_list_if_valid(self, player_color, alist, coords_from, coords_to):
-        if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, player_color):
+        if not self.is_suicide_move(coords_from, coords_to, player_color):
             alist.append(Action(coords_from, coords_to))
     
     def is_suicide_move(self, coords_from, coords_to, player_color):

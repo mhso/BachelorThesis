@@ -33,6 +33,7 @@ class Graph:
         p_x, p_y = Graph.data[changed_label]
 
         Graph.ax.plot(p_x, p_y, Graph.colors[changed_label])
+        Graph.ax.legend([l for l in Graph.data])
 
         Graph.canvas.draw()
         Graph.changed_plots[changed_label] = False
@@ -49,16 +50,16 @@ class Graph:
         Graph.canvas = FigureCanvasTkAgg(figure, master=frame)
         Graph.canvas.draw()
         Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        frame.pack()
 
         Graph.root.after(200, Graph.check_change)
 
         if gui_parent is None:
+            frame.pack()
             Graph.root.bind("<Destroy>", lambda e: exit(0))
             tk.mainloop()
 
     @staticmethod
-    def plot_data(X, Y, label):
+    def plot_data(X, Y, label, x_label, y_label):
         print("Added data", flush=True)
         # Create the figure we desire to add to an existing canvas
         p_x, p_y = None, None
@@ -74,6 +75,9 @@ class Graph:
             p_x, p_y = [X], [Y]
             Graph.colors[label] = Graph.color_options[len(Graph.data)]
             Graph.data[label] = p_x, p_y
+
+        Graph.ax.set_xlabel(x_label)
+        Graph.ax.set_ylabel(y_label)
 
         Graph.changed_plots[label] = True
 

@@ -19,6 +19,12 @@ from view.graph import Graph
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()
 
+def plot_game_result(game, result, p_white, p_black):
+    white_win = game.utility(result, p_white)
+    black_win = game.utility(result, p_black)
+    draw = not white_win and not black_win
+    Graph.plot_data() # SOMETHING
+
 def play_game(game, player_white, player_black, gui=None):
     """
     Play a game to the end, and return the reward for each player.
@@ -65,8 +71,8 @@ def play_game(game, player_white, player_black, gui=None):
     print(state.board, flush=True)
     if "-t" in argv:
         print("Game took {} s.".format(time() - time_game), flush=True)
-    # Return reward/punishment for player1 and player2.
-    return game.utility(state, player1), game.utility(state, player2)
+    # Return resulting state of game.
+    return state
 
 def leading_zeros(num):
     result = str(num)
@@ -102,8 +108,6 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
             # create seperate thread to run the AI game logic in.
             game_thread = SupportThread((game, p1, p2, iteration-1, save, gui, plot_data))
             game_thread.start() # Start game logic thread.
-            if plot_data:
-                Graph.run(gui) # If we should plot data, start graph window in main thread.
             if gui is not None:
                 gui.run() # Start GUI on main thread.
         else:
@@ -235,5 +239,8 @@ if "-g" in options or player1 == "human" or player2 == "human":
         p_white.gui = gui
     if player2 == "human":
         p_black.gui = gui
+
+if "-p" in options:
+    Graph.run(gui) # If we should plot data, start graph window in main thread.
 
 train(game, p_white, p_black, 3, "-s" in options, gui, "-p" in options)

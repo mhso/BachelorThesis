@@ -337,7 +337,7 @@ class Gui():
         the new state.
         """
         log("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
-        self.draw_status_text("{} moved from {} to {}".format(self.player_color(state.player), source, dest))        
+        self.draw_status_text("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
 
         result = self.game.result(state, Action(source, dest))
         self.state = result

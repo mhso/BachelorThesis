@@ -19,11 +19,11 @@ from view.graph import Graph
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()
 
-def plot_game_result(game, result, p_white, p_black):
+def plot_game_result(game, result, player, other):
     white_win = game.utility(result, p_white)
     black_win = game.utility(result, p_black)
     draw = not white_win and not black_win
-    Graph.plot_data() # SOMETHING
+    Graph.plot_data("Versus {}".format(other), None, result, "Training Iteration", "Winrate") # SOMETHING
 
 def play_game(game, player_white, player_black, gui=None):
     """
@@ -104,10 +104,12 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
         return
     try:
         if gui is not None or plot_data:
-            # If GUI is used, (and if a non-human is playing),
+            # If GUI is used, (or if a non-human is playing),
             # create seperate thread to run the AI game logic in.
             game_thread = SupportThread((game, p1, p2, iteration-1, save, gui, plot_data))
             game_thread.start() # Start game logic thread.
+            if plot_data:
+                Graph.run(gui, "MCTS Confidence") # Start graph window in main thread.
             if gui is not None:
                 gui.run() # Start GUI on main thread.
         else:
@@ -239,8 +241,5 @@ if "-g" in options or player1 == "human" or player2 == "human":
         p_white.gui = gui
     if player2 == "human":
         p_black.gui = gui
-
-if "-p" in options:
-    Graph.run(gui) # If we should plot data, start graph window in main thread.
 
 train(game, p_white, p_black, 3, "-s" in options, gui, "-p" in options)

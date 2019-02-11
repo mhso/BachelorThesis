@@ -195,7 +195,7 @@ class MCTS(GameAI):
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
-        Graph.plot_data(None, best_node.mean_value, "Player {}".format(state.str_player()), "Turn", "Win Probability")
+        Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
 

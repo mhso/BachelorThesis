@@ -13,6 +13,7 @@ class Graph:
     parent = None
     root = None
     ax = None
+    persist = False
     data = dict()
     changed_plots = dict()
     color_options = ["r", "b", "g", "y"]
@@ -43,11 +44,6 @@ class Graph:
 
     @staticmethod
     def run(gui_parent=None, title=None):
-        # Reset plot values.
-        Graph.data = dict()
-        Graph.changed_plots = dict()
-        Graph.colors = dict()
-
         Graph.parent = gui_parent
         Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
         window = Graph.root if gui_parent is None else tk.Toplevel(Graph.root)
@@ -63,11 +59,21 @@ class Graph:
         Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         Graph.root.after(200, Graph.check_change)
+        Graph.persist = True # Set to False if graph should reset between every game.
 
         if gui_parent is None:
             Graph.root.geometry("800x600")
-            Graph.root.bind("<Destroy>", lambda e: Graph.close())
+            Graph.root.protocol("WM_DELETE_WINDOW", lambda: Graph.close())
             tk.mainloop()
+
+    @staticmethod
+    def clear():
+        # Reset graph window.
+        Graph.data = dict()
+        Graph.changed_plots = dict()
+        Graph.colors = dict()
+
+        Graph.ax.clear()
 
     @staticmethod
     def plot_data(graph_name, X, Y, x_label, y_label):

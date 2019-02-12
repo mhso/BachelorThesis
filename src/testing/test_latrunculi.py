@@ -28,6 +28,17 @@ def run_tests():
     assertion.assert_equal(16, num_white, "number of white pieces chess formation")
 
     # =================================
+    # Test piece list is correct.
+    pieces_board = []
+    it = np.nditer(state.board, flags=["multi_index"])
+    while not it.finished:
+        y, x = it.multi_index
+        if it[0] == 1 or it[0] == -1:
+            pieces_board.append((y, x))
+        it.iternext()
+
+    assertion.assert_all_equal(pieces_board, state.pieces, "correct pieces in piece list")
+
     # Random distribution.
     # Test number of white and black pieces are equal, and is the correct amount.
     game = Latrunculi(8, 432)
@@ -74,7 +85,7 @@ def run_tests():
 
     # =================================
     # Test available actions for "random" board.
-    game = Latrunculi_pl(6, 5)
+    game = Latrunculi(6, 5)
     state = game.start_state()
     state.player = not state.player
 

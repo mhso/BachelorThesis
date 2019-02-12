@@ -8,17 +8,18 @@ from model.state import State, Action
 from scipy.signal import convolve2d
 import numpy as np
 
-class ConnectFour(Game):
+class Connect_Four(Game):
     __observers = []
-    terminal_kernels = [
-        np.array([[1, 1, 1, 1]]),
-        np.array([[1], [1], [1], [1]]),
-        np.eye(4, 4),
-        np.fliplr(np.eye(4, 4))
-    ]
+    
 
-    def __init__(self, size):
+    def __init__(self, size, rand_seed=None):
         self.size = size
+        self.terminal_kernels = [
+            np.array([[1, 1, 1, 1]]),
+            np.array([[1], [1], [1], [1]]),
+            np.eye(4, 4),
+            np.fliplr(np.eye(4, 4))
+        ]
 
     def start_state(self):
         super.__doc__

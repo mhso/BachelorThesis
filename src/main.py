@@ -15,33 +15,30 @@ from controller.mcts import MCTS
 from view.log import log
 from view.visualize import Gui
 from view.graph import Graph
+import constants
 
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()
 
-def plot_game_result(game, result, player, other):
-    white_win = game.utility(result, p_white)
-    black_win = game.utility(result, p_black)
-    draw = not white_win and not black_win
-    Graph.plot_data("Versus {}".format(other), None, result, "Training Iteration", "Winrate") # SOMETHING
+def plot_game_result(result, other):
+    Graph.plot_data("Versus {}".format(other), None, result, "Training Iteration", "Winrate")
 
 def play_game(game, player_white, player_black, gui=None):
     """
-    Play a game to the end, and return the reward for each player.
+    Play a game to the end, and return the resulting state.
     """
     state = game.start_state()
-    max_iter = 1000
     counter = 0
     time_game = time()
-    sleep(1)
     if gui is not None:
+        sleep(1)
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
-    while not game.terminal_test(state) and counter < max_iter:
-        print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-        print("Player: {}".format(state.str_player()), flush=True)
+    while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
+        #print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
+        #print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
-        print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
+        #print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
         time_turn = time()
 
         if game.player(state):
@@ -62,15 +59,14 @@ def play_game(game, player_white, player_black, gui=None):
             elif type(player_black).__name__ != "Human" and state.player:
                 sleep(0.5)
             gui.update(state)
-        else:
-            print(state.board, flush=True)
         counter += 1
 
     winner = "Black" if state.player else "White"
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner), flush=True)
-    print(state.board, flush=True)
     if "-t" in argv:
         print("Game took {} s.".format(time() - time_game), flush=True)
+    #print(state.board, flush=True)
+
     # Return resulting state of game.
     return state
 
@@ -84,6 +80,49 @@ def leading_zeros(num):
         result = "0" + result
     return result
 
+def evaluate_against_ai(game, player, other, num_games, gui=None):
+    """
+    Evaluate MCTS/NN model against a given AI algorithm.
+    Plays out a given number of games and returns
+    the ratio of games won by MCTS in the range
+    -1 to 1, -1 meaning losing all games, 0 meaning
+    all games were draws and 1 being winning all games.
+    """
+    wins = 0
+    for _ in range(num_games):
+        result = play_game(game, player, other, gui)
+        wins += game.utility(result, player)
+    return wins/num_games # Return ratio of games won.
+
+def evaluate_model(game, player, gui=None, show_plot=False):
+    """
+    Evaluate MCTS/NN model against three different AI
+    algorithms. Print/plot result of evaluation.
+    """
+    eval_minimax = evaluate_against_ai(game, player,
+                                       get_ai_algorithm(
+                                           "Minimax" if type(game).__name__ == "Latrunculi"
+                                           else "Minimax_CF", game, ".", gui),
+                                       constants.EVAL_ITERATIONS, gui)
+
+    print("Evaluation against Minimax: {}".format(eval_minimax))
+
+    eval_random = evaluate_against_ai(game, player,
+                                      get_ai_algorithm("Random", game, ".", gui),
+                                      constants.EVAL_ITERATIONS, gui)
+
+    print("Evaluation against Random: {}".format(eval_minimax))
+
+    eval_mcts = evaluate_against_ai(game, player,
+                                    get_ai_algorithm("MCTS", game, ".", gui),
+                                    constants.EVAL_ITERATIONS, gui)
+
+    print("Evaluation against MCTS: {}".format(eval_mcts))
+    if show_plot:
+        plot_game_result(eval_minimax, "Minimax")
+        plot_game_result(eval_random, "Random")
+        plot_game_result(eval_mcts, "Basic MCTS")
+
 class SupportThread(threading.Thread):
     def __init__(self, args):
         threading.Thread.__init__(self)
@@ -91,6 +130,8 @@ class SupportThread(threading.Thread):
 
     def run(self):
         play_game(self.args[0], self.args[1], self.args[2], self.args[5])
+        if not self.args[3] % constants.EVAL_CHECKPOINT: # Evaluate performance of trained model.
+            evaluate_model(self.args[0], self.args[1], self.args[5], self.args[6])
         train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6])
 
 def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
@@ -109,11 +150,16 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
             game_thread = SupportThread((game, p1, p2, iteration-1, save, gui, plot_data))
             game_thread.start() # Start game logic thread.
             if plot_data:
-                Graph.run(gui, "MCTS Confidence") # Start graph window in main thread.
+                if Graph.root is None:
+                    Graph.run(gui, "Training Evaluation") # Start graph window in main thread.
+                elif not Graph.persist:
+                    Graph.clear()
             if gui is not None:
                 gui.run() # Start GUI on main thread.
         else:
             play_game(game, p1, p2)
+            if not iteration % constants.EVAL_CHECKPOINT: # Evaluate performance of trained model.
+                evaluate_model(game, p1, gui, plot_data)
             train(game, p1, p2, iteration-1, save, gui)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
@@ -242,4 +288,9 @@ if "-g" in options or player1 == "human" or player2 == "human":
     if player2 == "human":
         p_black.gui = gui
 
-train(game, p_white, p_black, 3, "-s" in options, gui, "-p" in options)
+TIME_TRAINING = time()
+
+train(game, p_white, p_black, 20, "-s" in options, gui, "-p" in options)
+
+if "-t" in options:
+    print("Training took: {} s".format(time() - TIME_TRAINING))

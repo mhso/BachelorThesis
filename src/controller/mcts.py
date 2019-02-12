@@ -46,7 +46,7 @@ class MCTS(GameAI):
     ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
 
-    def __init__(self, game, playouts=None):
+    def __init__(self, game, playouts):
         super().__init__(game)
         if self.game.size > 3:
             playout_options = [1000, 100, 35, 20, 10, 5, 5]
@@ -195,7 +195,7 @@ class MCTS(GameAI):
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
-        Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
+        #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
 

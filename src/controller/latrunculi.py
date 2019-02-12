@@ -36,6 +36,10 @@ class Latrunculi(Game):
             # Position pieces as a 'Chess formation'.
             board[:][0:2] = -1
             board[:][-2:] = 1
+            pieces.extend([(0, x) for x in range(self.size)])
+            pieces.extend([(1, x) for x in range(self.size)])
+            pieces.extend([(self.size-2, x) for x in range(self.size)])
+            pieces.extend([(self.size-1, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
 

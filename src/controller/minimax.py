@@ -2,6 +2,7 @@
 minimax: Implements Minimax with Alpha-Beta pruning for playing a game.
 """
 from controller.game_ai import GameAI
+from view.log import log
 
 class Minimax(GameAI):
     def evaluate_board(self, state, depth):
@@ -67,7 +68,7 @@ class Minimax(GameAI):
                 highest_value = value
                 best_action = action
 
-        print("Minimax action: {} worth: {}".format(best_action, highest_value))
+        log("Minimax action: {} worth: {}".format(best_action, highest_value))
         return self.game.result(state, best_action)
 
     def __str__(self):

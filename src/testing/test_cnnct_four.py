@@ -1,5 +1,5 @@
 from testing import assertion
-from controller.connect_four import ConnectFour
+from controller.connect_four import Connect_Four
 from model.state import Action
 from time import time
 from util.excelUtil import ExcelUtil
@@ -9,7 +9,7 @@ from numpy.random import uniform
 def run_tests():
     # Test possible initial actions.
     test_size = 7
-    game = ConnectFour(test_size)
+    game = Connect_Four(test_size)
     state = game.start_state()
 
     expected_actions = [
@@ -49,7 +49,7 @@ def run_tests():
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test ConnectFour")
-    game = ConnectFour(7)
+    game = Connect_Four(7)
     state = game.start_state()
 
     time_b = time()

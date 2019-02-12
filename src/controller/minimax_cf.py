@@ -1,10 +1,22 @@
 from scipy.signal import convolve2d
 from controller.minimax import Minimax
+from numpy import nditer
 
 class Minimax_CF(Minimax):
     def has_connection(self, conv, num_connected):
-        # Also evaluate connectedness of other player.
         return(conv == num_connected).sum() > 0
+
+    def analyze_convolution(self, kernel, conv, player):
+        it = nditer(conv, flags=["multi_index"])
+        offsets_x = -1, 1
+        offsets_y = -1, 1
+        if kernel == 0:
+            offsets_y = 0, 0
+        elif kernel == 1:
+            offsets_x = 0, 0
+        while not it.finished:
+            y, x = it.multi_index
+            it.iternext()
 
     def evaluate_board(self, state, depth):
         val = 0

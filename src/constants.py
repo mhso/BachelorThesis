@@ -1,6 +1,15 @@
 """
 Constants for days.
 """
+# Default AI algorithm.
+DEFAULT_AI = "MCTS"
+
+# Default Game to play.
+DEFAULT_GAME = "Latrunculi"
+
+# Default board size.
+DEFAULT_BOARD_SIZE = 8
+
 # Max number of moves in Latrunculi before a draw
 # is assigned.
 LATRUNCULI_MAX_MOVES = 200

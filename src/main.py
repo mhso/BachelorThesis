@@ -196,7 +196,8 @@ def load_model(path):
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
     if lower == wildcard:
-        return Latrunculi(size, rand_seed)
+        game_name = constants.DEFAULT_GAME
+        lower = game_name.lower()
     try:
         module = __import__("controller.{}".format(lower), fromlist=["{}".format(game_name)])
         algo_class = getattr(module, "{}".format(game_name))
@@ -208,7 +209,8 @@ def get_game(game_name, size, rand_seed, wildcard):
 def get_ai_algorithm(algorithm, game, wildcard, gui=None):
     lower = algorithm.lower()
     if lower == wildcard:
-        return MCTS(game)
+        algorithm = constants.DEFAULT_AI
+        lower = algorithm.lower()
     try:
         module = __import__("controller.{}".format(lower), fromlist=["{}".format(algorithm)])
         algo_class = getattr(module, "{}".format(algorithm))
@@ -222,7 +224,7 @@ def get_ai_algorithm(algorithm, game, wildcard, gui=None):
 player1 = "."
 player2 = "."
 game_name = "."
-board_size = 8
+board_size = constants.DEFAULT_BOARD_SIZE
 rand_seed = None
 
 wildcard = "."

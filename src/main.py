@@ -34,10 +34,10 @@ def play_game(game, player_white, player_black, gui=None):
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
     while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
-        print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-        print("Player: {}".format(state.str_player()), flush=True)
+        #print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
+        #print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
-        print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
+        #print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
         time_turn = time()
 
         if game.player(state):
@@ -138,10 +138,12 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
     we load these MCTS models.
     """
     if iteration == 0:
+        print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
         play_game(game, p1, p2, gui)
-        if constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT: # Evaluate performance of trained model.
+        if constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT:
+            # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, gui, plot_data)
         train(game, p1, p2, iteration-1, save, gui, plot_data)
     except KeyboardInterrupt:
@@ -176,12 +178,11 @@ def prepare_training(game, p1, p2, iterations, save=False, gui=None, plot_data=F
         if constants.GAME_THREADS > 1:
             # Don't use plot/GUI if several games are played.
             gui = None
-            plot_data = False
 
         for i in range(constants.GAME_THREADS):
             if i > 0: # Make copies of game and players.
                 copy_game = get_game(type(game).__name__, game.size, None, ".")
-                copy_game.init_state = game.init_state
+                copy_game.init_state = game.start_state()
                 game = copy_game
                 p1 = get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = get_ai_algorithm(type(p2).__name__, game, ".")
@@ -302,7 +303,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
 
 TIME_TRAINING = time()
 
-prepare_training(game, p_white, p_black, 3, "-s" in options, gui, "-p" in options)
+prepare_training(game, p_white, p_black, 9, "-s" in options, gui, "-p" in options)
 
 if "-t" in options:
     print("Training took: {} s".format(time() - TIME_TRAINING))

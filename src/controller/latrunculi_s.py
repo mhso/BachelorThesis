@@ -637,3 +637,6 @@ class Latrunculi_s(Game):
         # Player plays as black.
         return 0 if (state.board == -1).sum() == 1 else 1
         
+    def structure_data(self, state):
+        super.__doc__
+        return []

@@ -374,4 +374,9 @@ class Latrunculi(Game):
 
     def structure_data(self, state):
         super.__doc__
-        return []
+        data = state.board if state.player else -state.board
+
+        pos_pieces = np.where(data > 0, data, np.zeros((self.size, self.size), dtype='b'))
+        neg_pieces = np.where(data < 0, data, np.zeros((self.size, self.size), dtype='b'))
+
+        return np.array([pos_pieces, neg_pieces])

@@ -16,11 +16,11 @@ LATRUNCULI_MAX_MOVES = 200
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 1
+GAME_THREADS = 4
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 0
+EVAL_CHECKPOINT = 3
 
 # How many games to play against base AI's while
 # evaluating model performance.

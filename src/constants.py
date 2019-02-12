@@ -20,4 +20,4 @@ EVAL_CHECKPOINT = 5
 
 # How many games to play against base AI's while
 # evaluating model performance.
-EVAL_ITERATIONS = 3
+EVAL_ITERATIONS = 5

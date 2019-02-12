@@ -44,6 +44,7 @@ class Graph:
 
     @staticmethod
     def run(gui_parent=None, title=None):
+        Graph.persist = True # Set to False if graph should reset between every game.
         Graph.parent = gui_parent
         Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
         window = Graph.root if gui_parent is None else tk.Toplevel(Graph.root)
@@ -59,7 +60,6 @@ class Graph:
         Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         Graph.root.after(200, Graph.check_change)
-        Graph.persist = True # Set to False if graph should reset between every game.
 
         if gui_parent is None:
             Graph.root.geometry("800x600")

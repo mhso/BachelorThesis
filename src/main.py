@@ -35,10 +35,10 @@ def play_game(game, player_white, player_black, gui=None):
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
     while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
-        #print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-        #print("Player: {}".format(state.str_player()), flush=True)
+        print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
+        print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
-        #print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
+        print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
         time_turn = time()
 
         if game.player(state):
@@ -65,7 +65,7 @@ def play_game(game, player_white, player_black, gui=None):
     print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner), flush=True)
     if "-t" in argv:
         print("Game took {} s.".format(time() - time_game), flush=True)
-    #print(state.board, flush=True)
+    print(state.board, flush=True)
 
     # Return resulting state of game.
     return state

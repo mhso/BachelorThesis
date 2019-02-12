@@ -10,7 +10,6 @@ import numpy as np
 
 class Connect_Four(Game):
     __observers = []
-    
 
     def __init__(self, size, rand_seed=None):
         self.size = size
@@ -66,3 +65,7 @@ class Connect_Four(Game):
             elif (conv == -4).sum() > 0:
                 return -1
         return 0
+
+    def structure_data(self, state):
+        super.__doc__
+        return []

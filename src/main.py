@@ -90,7 +90,7 @@ def evaluate_against_ai(game, player, other, num_games, gui=None):
     wins = 0
     for _ in range(num_games):
         result = play_game(game, player, other, gui)
-        wins += game.utility(result, player)
+        wins += game.utility(result, True)
     return wins/num_games # Return ratio of games won.
 
 def evaluate_model(game, player, gui=None, show_plot=False):
@@ -279,7 +279,8 @@ game = get_game(game_name, board_size, rand_seed, wildcard)
 p_white = get_ai_algorithm(player1, game, wildcard)
 p_black = get_ai_algorithm(player2, game, wildcard)
 
-print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__))
+print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
+    type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__))
 player1 = player1.lower()
 player2 = player2.lower()
 

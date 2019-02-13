@@ -12,4 +12,4 @@ class MCTS_Aggro(MCTS):
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, new_value)
+        self.back_propagate(node.parent, 1-new_value)

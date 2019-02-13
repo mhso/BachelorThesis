@@ -367,10 +367,19 @@ class Latrunculi(Game):
 
     def utility(self, state, player):
         super.__doc__
+        white_won = (state.board == -1).sum() < 2
+        black_won = (state.board == 1).sum() < 2
         if player: # Player plays as white.
-            return 0 if (state.board == 1).sum() == 1 else 1
-        # Player plays as black.
-        return 0 if (state.board == -1).sum() == 1 else 1
+            if white_won:
+                return 1
+            elif black_won:
+                return 0
+        else: # Player plays as white.
+            if black_won:
+                return 1
+            elif white_won:
+                return 0
+        return 0.5
 
     def structure_data(self, state):
         super.__doc__

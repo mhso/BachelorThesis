@@ -303,7 +303,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
 
 TIME_TRAINING = time()
 
-prepare_training(game, p_white, p_black, 9, "-s" in options, gui, "-p" in options)
+prepare_training(game, p_white, p_black, constants.TRAINING_ITERATIONS, "-s" in options, gui, "-p" in options)
 
 if "-t" in options:
     print("Training took: {} s".format(time() - TIME_TRAINING))

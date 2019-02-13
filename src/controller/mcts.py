@@ -117,14 +117,16 @@ class MCTS(GameAI):
     def back_propagate(self, node, value):
         """
         After a full simulation, propagate result up the tree.
+        Invert value at every node, to align 'perspective' to
+        the current player of that node.
         """
         node.visits += 1
         node.value += value
-        node.mean_value = node.value/node.visits
+        node.mean_value = node.value / node.visits
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, value)
+        self.back_propagate(node.parent, 1-value)
 
     def rollout(self, og_state, node):
         """
@@ -180,24 +182,17 @@ class MCTS(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(original_node.state, node)
-            self.back_propagate(node, value)
+            self.back_propagate(node, 1-value if node.state.player == original_node.state.player else value)
 
             node = original_node
 
-        best_prob = 0 # Highest probability of value / visits.
-        best_node = None
         for node in original_node.children:
             log(node.pretty_desc())
-            val = node.mean_value
-            if val > best_prob:
-                best_node = node
-                best_prob = val
 
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
-
-        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int(best_node.mean_value * 100)))
+        log("MCTS action: {}, confidence of win: {}%".format(best_node.action, int(best_node.mean_value*100)))
 
         return best_node.state
 

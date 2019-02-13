@@ -304,7 +304,8 @@ def run_iteration_timing_test(log_type=None):
     time_b = time()
 
     counter = 0
-    while not game.terminal_test(state):
+    while counter < 3000:
+        if game.terminal_test(state): break
         actions = game.actions(state)
         action = actions[int(uniform(0, len(actions)))]
         state = game.result(state, action)

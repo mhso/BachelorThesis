@@ -295,7 +295,7 @@ def run_tests():
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test Latrunculi_ne")
-    game = Latrunculi_ne(8, 55)
+    game = Latrunculi_ne(8, 42)
     state = game.start_state()
 
     time_b = time()

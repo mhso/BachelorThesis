@@ -8,92 +8,6 @@ from controller.game import Game
 from model.state import State, Action
 from enum import Enum
 
-class FieldUtil:
-    @staticmethod
-    def norm_value(value):
-        if value > 0:
-            return 1
-        elif value < 0:
-            return -1
-        else:
-            return 0
-
-    @staticmethod
-    def trap_value(value):
-        if value > 0:
-            return 2
-        elif value < 0:
-            return -2
-        else:
-            return 0
-
-    @staticmethod
-    def invers_trap_norm(value):
-        if value == -2:
-            return -1
-        elif value == -1:
-            return -2
-        elif value == 1:
-            return 2
-        elif value == 2:
-            return 1
-        else:
-            return 0
-
-
-
-class MoveUtil:
-    @staticmethod
-    def move_coords(direction, coords):
-        y, x = coords
-        # if direction == 1: # UP LEFT
-        #     return (y-1, x-1)
-        if direction == 2: # UP
-            return (y-1, x)
-        # elif direction == 3: # UP RIGHT
-        #     return (y-1, x+1)
-
-        elif direction == 4: # LEFT
-            return (y, x-1)
-        elif direction == 5: # CENTER
-            return (y, x)
-        elif direction == 6: # RIGHT
-            return (y, x+1)
-
-        # elif direction == 7: # DOWN LEFT
-        #     return (y+1, x-1)
-        elif direction == 8: # DOWN
-            return (y+1, x)
-        # elif direction == 9: # DOWN RIGHT
-        #     return (y+1, x+1)
-        return None
-
-    @staticmethod
-    def get_direction(coords_from, coords_to):
-        y_from, x_from = coords_from
-        y_to, x_to = coords_to
-        # if y_from-1 == y_to and x_from-1 == x_to:
-        #     return 1 # UP LEFT
-        if y_from-1 == y_to and x_from == x_to:
-            return 2 # UP
-        # elif y_from-1 == y_to and x_from+1 == x_to:
-        #     return 3 # UP RIGHT
-
-        elif y_from == y_to and x_from-1 == x_to:
-            return 4  # LEFT
-        elif y_from == y_to and x_from == x_to:
-            return 5  # CENTER
-        elif y_from == y_to and x_from+1 == x_to:
-            return 6  # RIGHT
-        
-        # elif y_from+1 == y_to and x_from-1 == x_to:
-        #     return 7  # DOWN LEFT
-        elif y_from+1 == y_to and x_from == x_to:
-            return 8  # DOWN
-        # elif y_from+1 == y_to and x_from+1 == x_to:
-        #     return 9  # DOWN RIGHT
-        return None
-
 class Latrunculi_s(Game):
     size = 8
     init_state = None
@@ -166,46 +80,51 @@ class Latrunculi_s(Game):
                 x_max = self.board_no_of_cols-1
 
                 if y == 0 and x == 0:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(6, (y, x))) # RIGHT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(8, (y, x))) # DOWN
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(6, (y, x))) # RIGHT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(8, (y, x))) # DOWN
                 elif y == 0 and x == x_max:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(4, (y, x))) # LEFT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(8, (y, x))) # DOWN
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(4, (y, x))) # LEFT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(8, (y, x))) # DOWN
                 elif y == y_max and x == x_max:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(2, (y, x))) # UP
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(4, (y, x))) # LEFT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(2, (y, x))) # UP
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(4, (y, x))) # LEFT
                 elif y == y_max and x == 0:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(2, (y, x))) # UP
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(6, (y, x))) # RIGHT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(2, (y, x))) # UP
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(6, (y, x))) # RIGHT
                 elif y == 0 and x > 0 and x < x_max:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(4, (y, x))) # LEFT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(6, (y, x))) # RIGHT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(8, (y, x))) # DOWN
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(4, (y, x))) # LEFT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(6, (y, x))) # RIGHT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(8, (y, x))) # DOWN
                 elif y == y_max and x > 0 and x < x_max:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(2, (y, x))) # UP
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(4, (y, x))) # LEFT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(6, (y, x))) # RIGHT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(2, (y, x))) # UP
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(4, (y, x))) # LEFT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(6, (y, x))) # RIGHT
                 elif y > 0 and y < y_max and x == 0:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(2, (y, x))) # UP
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(6, (y, x))) # RIGHT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(8, (y, x))) # DOWN
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(2, (y, x))) # UP
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(6, (y, x))) # RIGHT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(8, (y, x))) # DOWN
                 elif y > 0 and y < y_max and x == x_max:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(2, (y, x))) # UP
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(4, (y, x))) # LEFT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(8, (y, x))) # DOWN
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(2, (y, x))) # UP
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(4, (y, x))) # LEFT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(8, (y, x))) # DOWN
                 else:
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(2, (y, x))) # UP
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(4, (y, x))) # LEFT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(6, (y, x))) # RIGHT
-                    self.append_list_if_valid(current_player, actionsList, (y, x), MoveUtil.move_coords(8, (y, x))) # DOWN
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(2, (y, x))) # UP
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(4, (y, x))) # LEFT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(6, (y, x))) # RIGHT
+                    self.append_list_if_valid(current_player, actionsList, (y, x), self.move_coords(8, (y, x))) # DOWN
 
-            elif FieldUtil.trap_value(self.board[y, x]) == -1*current_player: # if the current piece, is the opponents captured piece
+            val = self.board[y, x]
+            trap_val = 0
+            if val == -2: trap_val = -1
+            elif val == 2 : trap_val = 1
+
+            if trap_val == -1*current_player: # if the current piece, is the opponents captured piece
                 actionsList.append(Action((y, x), (y, x))) # action to remove an opponents captured piece
             it.iternext()
 
         if actionsList == []:
             actionsList.append(None)
-            
+
         return actionsList
 
     def is_within_board(self, coords):
@@ -214,13 +133,42 @@ class Latrunculi_s(Game):
     
     def is_empty_field(self, coords):
         return self.is_within_board(coords) and self.board[coords] == 0
-    
+
+    def move_coords(self, direction, coords):
+        y, x = coords
+        if direction == 2: # UP
+            return (y-1, x)
+        elif direction == 4: # LEFT
+            return (y, x-1)
+        elif direction == 5: # CENTER
+            return (y, x)
+        elif direction == 6: # RIGHT
+            return (y, x+1)
+        elif direction == 8: # DOWN
+            return (y+1, x)
+        return None
+
+    def get_direction(self, coords_from, coords_to):
+        y_from, x_from = coords_from
+        y_to, x_to = coords_to
+        if y_from-1 == y_to and x_from == x_to:
+            return 2 # UP
+        elif y_from == y_to and x_from-1 == x_to:
+            return 4  # LEFT
+        elif y_from == y_to and x_from == x_to:
+            return 5  # CENTER
+        elif y_from == y_to and x_from+1 == x_to:
+            return 6  # RIGHT
+        elif y_from+1 == y_to and x_from == x_to:
+            return 8  # DOWN
+        return None
+
     def append_list_if_valid(self, current_player, alist, coords_from, coords_to):
         if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, current_player):
             alist.append(Action(coords_from, coords_to))
     
     def is_suicide_move(self, coords_from, coords_to, current_player):
-        move = MoveUtil.get_direction(coords_from, coords_to)
+        move = self.get_direction(coords_from, coords_to)
 
         if move == 2 or move == 8: # UP or DOWN
             return not self.valid_coords(4, 6, coords_to, current_player)
@@ -230,8 +178,8 @@ class Latrunculi_s(Game):
             return True
 
     def valid_coords(self, direction1, direction2, coords, current_player):
-        coord1_c = MoveUtil.move_coords(direction1, coords)
-        coord2_c = MoveUtil.move_coords(direction2, coords)
+        coord1_c = self.move_coords(direction1, coords)
+        coord2_c = self.move_coords(direction2, coords)
         opponent_player = -1*current_player
         if (self.is_empty_field(coord1_c) or not self.is_within_board(coord1_c)
             or self.is_empty_field(coord2_c) or not self.is_within_board(coord2_c)):
@@ -241,8 +189,8 @@ class Latrunculi_s(Game):
                 and self.board[coord1_c] == opponent_player
                 and self.board[coord2_c] == opponent_player):
                 
-                coord1_c = MoveUtil.move_coords(direction1, coord1_c)
-                coord2_c = MoveUtil.move_coords(direction2, coord2_c)
+                coord1_c = self.move_coords(direction1, coord1_c)
+                coord2_c = self.move_coords(direction2, coord2_c)
                 if ((self.is_within_board(coord1_c) and self.board[coord1_c] == current_player)
                     or (self.is_within_board(coord2_c) and self.board[coord2_c] == current_player)):
                     return True

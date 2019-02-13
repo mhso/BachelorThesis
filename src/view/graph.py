@@ -4,7 +4,7 @@ graph: Construct graphs and stuff from data and stuff.
 ----------------------------------------
 """
 import tkinter as tk
-from threading import Event
+from threading import Event, Lock
 import matplotlib as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -37,13 +37,13 @@ class Graph:
 
         Graph.ax.plot(p_x, p_y, Graph.colors[changed_label])
         Graph.ax.legend([l for l in Graph.data])
-        Graph.ax.text(2, 2, "test123")
 
         Graph.canvas.draw()
         Graph.changed_plots[changed_label] = False
 
     @staticmethod
     def run(gui_parent=None, title=None):
+        Graph.persist = True # Set to False if graph should reset between every game.
         Graph.parent = gui_parent
         Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
         window = Graph.root if gui_parent is None else tk.Toplevel(Graph.root)
@@ -59,7 +59,6 @@ class Graph:
         Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         Graph.root.after(200, Graph.check_change)
-        Graph.persist = True # Set to False if graph should reset between every game.
 
         if gui_parent is None:
             Graph.root.geometry("800x600")
@@ -89,9 +88,8 @@ class Graph:
         @param x_label - Label for x-axis.
         @param y_label - Label for y-axis.
         """
-        if Graph.root is None: # Graph window has not been initialized.
-            return
-        # Create the figure we desire to add to an existing canvas
+        lock = Lock() # Use a lock (mutex) to ensure thread safety.
+        lock.acquire()
         p_x, p_y = None, None
         try:
             p_x, p_y = Graph.data[graph_name]
@@ -114,6 +112,7 @@ class Graph:
         Graph.ax.set_ylabel(y_label)
 
         Graph.changed_plots[graph_name] = True
+        lock.release()
 
     @staticmethod
     def close():

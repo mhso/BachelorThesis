@@ -53,6 +53,14 @@ class Game(ABC):
         """
         pass
 
+    @abstractmethod
+    def structure_data(self, state):
+        """
+        Return a structuring of the data in the given state,
+        so that the Neural Network can accept and work with it.
+        """
+        pass
+
     def register_observer(self, observer):
         """
         Registere observers

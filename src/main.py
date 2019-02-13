@@ -11,7 +11,6 @@ from os import mkdir
 from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
-from controller.mcts import MCTS
 from view.log import log
 from view.visualize import Gui
 from view.graph import Graph
@@ -62,7 +61,7 @@ def play_game(game, player_white, player_black, gui=None):
         counter += 1
 
     winner = "Black" if state.player else "White"
-    print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner), flush=True)
+    print("Game finished on thread {}, winner: {}".format(threading.current_thread().name, winner))
     if "-t" in argv:
         print("Game took {} s.".format(time() - time_game), flush=True)
     #print(state.board, flush=True)
@@ -129,9 +128,6 @@ class SupportThread(threading.Thread):
         self.args = args
 
     def run(self):
-        play_game(self.args[0], self.args[1], self.args[2], self.args[5])
-        if not self.args[3] % constants.EVAL_CHECKPOINT: # Evaluate performance of trained model.
-            evaluate_model(self.args[0], self.args[1], self.args[5], self.args[6])
         train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6])
 
 def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
@@ -142,25 +138,14 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
     we load these MCTS models.
     """
     if iteration == 0:
+        print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
-        if gui is not None or plot_data:
-            # If GUI is used, (or if a non-human is playing),
-            # create seperate thread to run the AI game logic in.
-            game_thread = SupportThread((game, p1, p2, iteration-1, save, gui, plot_data))
-            game_thread.start() # Start game logic thread.
-            if plot_data:
-                if Graph.root is None:
-                    Graph.run(gui, "Training Evaluation") # Start graph window in main thread.
-                elif not Graph.persist:
-                    Graph.clear()
-            if gui is not None:
-                gui.run() # Start GUI on main thread.
-        else:
-            play_game(game, p1, p2)
-            if not iteration % constants.EVAL_CHECKPOINT: # Evaluate performance of trained model.
-                evaluate_model(game, p1, gui, plot_data)
-            train(game, p1, p2, iteration-1, save, gui)
+        play_game(game, p1, p2, gui)
+        if constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT:
+            # Evaluate performance of trained model against other AIs.
+            evaluate_model(game, p1, gui, plot_data)
+        train(game, p1, p2, iteration-1, save, gui, plot_data)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
         if gui is not None:
@@ -184,6 +169,32 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
                 if not exists(MCTS_PATH):
                     mkdir(MCTS_PATH)
                 save_models(state_map, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + 1)))
+
+def prepare_training(game, p1, p2, iterations, save=False, gui=None, plot_data=False):
+    if gui is not None or plot_data or constants.GAME_THREADS > 1:
+        # If GUI is used, if a non-human is playing, or if
+        # several games are being played in parallel,
+        # create seperate thread(s) to run the AI game logic in.
+        if constants.GAME_THREADS > 1:
+            # Don't use plot/GUI if several games are played.
+            gui = None
+
+        for i in range(constants.GAME_THREADS):
+            if i > 0: # Make copies of game and players.
+                copy_game = get_game(type(game).__name__, game.size, None, ".")
+                copy_game.init_state = game.start_state()
+                game = copy_game
+                p1 = get_ai_algorithm(type(p1).__name__, game, ".")
+                p2 = get_ai_algorithm(type(p2).__name__, game, ".")
+            game_thread = SupportThread((game, p1, p2, iterations-1, save, gui, plot_data))
+            game_thread.start() # Start game logic thread.
+
+        if plot_data:
+            Graph.run(gui, "Training Evaluation") # Start graph window in main thread.
+        if gui is not None:
+            gui.run() # Start GUI on main thread.
+    else:
+        train(game, p1, p2, iterations-1, save, gui)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)
@@ -292,7 +303,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
 
 TIME_TRAINING = time()
 
-train(game, p_white, p_black, 20, "-s" in options, gui, "-p" in options)
+prepare_training(game, p_white, p_black, 9, "-s" in options, gui, "-p" in options)
 
 if "-t" in options:
     print("Training took: {} s".format(time() - TIME_TRAINING))

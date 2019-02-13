@@ -371,3 +371,12 @@ class Latrunculi(Game):
             return 0 if (state.board == 1).sum() == 1 else 1
         # Player plays as black.
         return 0 if (state.board == -1).sum() == 1 else 1
+
+    def structure_data(self, state):
+        super.__doc__
+        data = state.board if state.player else -state.board
+
+        pos_pieces = np.where(data > 0, data, np.zeros((self.size, self.size), dtype='b'))
+        neg_pieces = np.where(data < 0, data, np.zeros((self.size, self.size), dtype='b'))
+
+        return np.array([pos_pieces, neg_pieces])

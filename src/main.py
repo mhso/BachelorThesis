@@ -171,6 +171,7 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
                 save_models(state_map, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + 1)))
 
 def prepare_training(game, p1, p2, iterations, save=False, gui=None, plot_data=False):
+    
     if gui is not None or plot_data or constants.GAME_THREADS > 1:
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,

@@ -63,8 +63,8 @@ class Connect_Four(Game):
             if (conv == 4).sum() > 0:
                 return 1
             elif (conv == -4).sum() > 0:
-                return 0
-        return 0.5
+                return -1
+        return 0
 
     def structure_data(self, state):
         super.__doc__

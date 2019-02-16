@@ -373,19 +373,21 @@ class Latrunculi(Game):
             if white_won:
                 return 1
             elif black_won:
-                return 0
+                return -1
         else: # Player plays as white.
             if black_won:
                 return 1
             elif white_won:
-                return 0
-        return 0.5
+                return -1
+        return 0
 
     def structure_data(self, state):
         super.__doc__
-        data = state.board if state.player else -state.board
 
-        pos_pieces = np.where(data > 0, data, np.zeros((self.size, self.size), dtype='b'))
-        neg_pieces = np.where(data < 0, data, np.zeros((self.size, self.size), dtype='b'))
+        pos_pieces = np.where(state.board > 0, state.board, np.zeros((self.size, self.size), dtype='b'))
+        neg_pieces = -np.where(state.board < 0, state.board, np.zeros((self.size, self.size), dtype='b'))
 
-        return np.array([pos_pieces, neg_pieces])
+        if state.player:
+            return np.array([pos_pieces, neg_pieces])
+        else:
+            return np.array([neg_pieces, pos_pieces])

@@ -43,9 +43,7 @@ EVAL_ITERATIONS = 5
 BATCH_SIZE = 256
 
 # Learning rate(s).
-LEARNING_RATES = {
-    0: 2e-1
-}
+LEARNING_RATE = 2e-1
 
 # Momentum for SGD optimization.
 MOMENTUM = 0.9

@@ -310,11 +310,6 @@ def run_tests():
 
     data = game.structure_data(state)
 
-    assertion.assert_equal(16, (data[0] == 1).sum(), "nn player data white pieces")
-    assertion.assert_equal(0, (data[0] == -1).sum(), "nn player data black pieces")
-    assertion.assert_equal(16, (data[1] == -1).sum(), "nn opponent data black pieces")
-    assertion.assert_equal(0, (data[1] == 1).sum(), "nn opponent data white pieces")
-
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF
     print("run iteration timing test Latrunculi")

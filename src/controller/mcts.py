@@ -126,7 +126,7 @@ class MCTS(GameAI):
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, 1-value)
+        self.back_propagate(node.parent, -value)
 
     def rollout(self, og_state, node):
         """
@@ -182,7 +182,7 @@ class MCTS(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(original_node.state, node)
-            self.back_propagate(node, 1-value if node.state.player == original_node.state.player else value)
+            self.back_propagate(node, -value if node.state.player == original_node.state.player else value)
 
             node = original_node
 
@@ -192,7 +192,7 @@ class MCTS(GameAI):
         best_node = max(original_node.children, key=lambda n: n.mean_value)
 
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
-        log("MCTS action: {}, confidence of win: {}%".format(best_node.action, int(best_node.mean_value*100)))
+        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
 
         return best_node.state
 

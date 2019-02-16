@@ -1,6 +1,9 @@
 """
 Constants for days.
 """
+# |***********************************|
+# |          CMD ARG OPTIONS          |
+# |***********************************|
 # Default AI algorithm.
 DEFAULT_AI = "MCTS"
 
@@ -10,6 +13,9 @@ DEFAULT_GAME = "Latrunculi"
 # Default board size.
 DEFAULT_BOARD_SIZE = 8
 
+# |***********************************|
+# |    TRAINING/GAME LOOP OPTIONS     |
+# |***********************************|
 # Max number of moves in Latrunculi before a draw
 # is assigned.
 LATRUNCULI_MAX_MOVES = 200
@@ -29,3 +35,20 @@ EVAL_CHECKPOINT = 0
 # How many games to play against base AI's while
 # evaluating model performance.
 EVAL_ITERATIONS = 5
+
+# |***********************************|
+# |      NEURAL NETWORK OPTIONS       |
+# |***********************************|
+# Batch size for neural network input.
+BATCH_SIZE = 256
+
+# Learning rate(s).
+LEARNING_RATES = {
+    0: 2e-1
+}
+
+# Momentum for SGD optimization.
+MOMENTUM = 0.9
+
+# Weight decay.
+WEIGHT_DECAY = 1e-4

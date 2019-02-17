@@ -56,10 +56,17 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def structure_data(self, state):
+    def structure_data(self, state_index):
         """
-        Return a structuring of the data in the given state,
+        Return a structuring of the data in the given state at index,
         so that the Neural Network can accept and work with it.
+        """
+        pass
+
+    def make_target(self, state_index):
+        """
+        Return current player for given state at index, as well as
+        total
         """
         pass
 

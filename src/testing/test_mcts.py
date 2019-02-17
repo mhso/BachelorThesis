@@ -87,4 +87,3 @@ def run_iteration_tests(log_type=None):
     """
     return time_taken
 
-

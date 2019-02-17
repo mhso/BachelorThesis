@@ -8,7 +8,9 @@ from abc import ABC, abstractmethod
 class Game(ABC):
     __observers = []
 
-    def __init(self):
+    def __init__(self, history=None):
+        self.history = history or []
+        self.visit_counts = []
         self.__observers = []
 
     @abstractmethod

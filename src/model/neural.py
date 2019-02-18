@@ -17,9 +17,8 @@ class NeuralNetwork:
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
-
     def __init__(self):
-        inp = Input((4, 4, 2,))
+        inp = Input((4, 4, 2))
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
@@ -68,9 +67,9 @@ class NeuralNetwork:
     def save_as_image(self):
         plot_model(self.model, to_file='../resources/model_graph.png', show_shapes=True)
 
-    def evaluate(self, state):
+    def evaluate(self, inp):
         """
-        Evaluate a given state using the network.
+        Evaluate a given state 'image' using the network.
         @returns (p, z)
         - p: A list of probabilities for each
         available action in state. These values help
@@ -78,7 +77,7 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
-        return None
+        return self.model.predict(inp)
 
     def update_weights(self, inputs, expected_out):
         """
@@ -89,3 +88,4 @@ class NeuralNetwork:
         @param weight_decay - Weight decay from constants.
         """
         result = self.model.train_on_batch(inputs, expected_out)
+        print(result)

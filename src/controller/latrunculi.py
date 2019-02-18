@@ -10,7 +10,6 @@ from model.state import State, Action
 class Latrunculi(Game):
     size = 8
     init_state = None
-    num_actions = 512 # 32 (possible destinations for moves for 8 pieces) * 16 (board size)
 
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')
@@ -49,6 +48,7 @@ class Latrunculi(Game):
         Game.__init__(self)
         self.size = size
         self.populate_board(start_seed)
+        self.num_actions = 512 # 32 (possible destinations for moves for 8 pieces) * 16 (board size)
 
     def notify_observers(self, *args, **kwargs):
         for observer in self.__observers:
@@ -383,14 +383,14 @@ class Latrunculi(Game):
                 return -1
         return 0
 
-    def structure_data(self, state_index):
+    def structure_data(self, state):
         super.__doc__
-        state = self.history[state_index]
 
         pos_pieces = np.where(state.board > 0, state.board, np.zeros((self.size, self.size), dtype='b'))
         neg_pieces = -np.where(state.board < 0, state.board, np.zeros((self.size, self.size), dtype='b'))
 
+        # Structure data as a 4x4x2 stack.
         if state.player:
-            return np.array([pos_pieces, neg_pieces])
+            return np.array([pos_pieces, neg_pieces]).reshape((4, 4, -1))
         else:
-            return np.array([neg_pieces, pos_pieces])
+            return np.array([neg_pieces, pos_pieces]).reshape((4, 4, -1))

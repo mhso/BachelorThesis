@@ -42,7 +42,7 @@ class ReplayStorage:
         targets = []
         # Create input/expected output data for neural network training.
         for game, index in state_indices:
-            images.append(game.structure_data(index))
+            images.append(game.structure_data(game.history[index]))
             targets.append(game.make_target(index))
         return np.array(images), np.array(targets)
 

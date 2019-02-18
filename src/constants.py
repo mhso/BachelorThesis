@@ -53,3 +53,21 @@ MOMENTUM = 0.9
 
 # Weight decay.
 WEIGHT_DECAY = 1e-4
+
+# |***********************************|
+# |           MCTS OPTIONS            |
+# |***********************************|
+# Base exploration constant. This basically defines how much the visit
+# count for a node in MCTS should count towards it's UCB score. Lowering
+# this number means that when the visit count of a node increases, it's
+# UCB score increases faster.
+EXPLORE_BASE = 19652
+
+# Base value for the exploration parameter described above.
+EXPLORE_INIT = 1.25
+
+# When selecting a final action in MCTS, if the game has had less than
+# this amount of moves, we select a random available action, weighted by
+# visit count for the node associated with that action. Otherwise we select
+# the action associated with the node with most visits.
+NUM_SAMPLING_MOVES = 30

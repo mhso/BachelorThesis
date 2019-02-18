@@ -10,6 +10,7 @@ from model.state import State, Action
 class Latrunculi(Game):
     size = 8
     init_state = None
+    num_actions = 512 # 32 (possible destinations for moves for 8 pieces) * 16 (board size)
 
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')
@@ -47,7 +48,7 @@ class Latrunculi(Game):
         Game.__init__(self)
         self.size = size
         self.populate_board(start_seed)
-    
+
     def notify_observers(self, *args, **kwargs):
         for observer in self.__observers:
             observer.notify(self, *args, **kwargs)

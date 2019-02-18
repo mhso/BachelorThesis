@@ -281,7 +281,7 @@ p_white = get_ai_algorithm(player1, game, wildcard)
 p_black = get_ai_algorithm(player2, game, wildcard)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
-    type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__))
+    type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__), flush=True)
 player1 = player1.lower()
 player2 = player2.lower()
 

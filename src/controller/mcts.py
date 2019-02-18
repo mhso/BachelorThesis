@@ -11,26 +11,24 @@ from view.graph import Graph
 class Node():
     action = None
     state = None
-    children = None
-    parent = None
+    children = {}
     visits = 0
     value = 0
     mean_value = 0
     probability = 0
 
-    def __init__(self, state, action, children, probability=1, parent=None):
+    def __init__(self, state, action, probability=1, parent=None):
         self.state = state
         self.action = action
-        self.children = children
-        self.probability = probability
         self.parent = parent
+        self.probability = probability
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
             self.action, self.visits, self.value, "%.3f" % self.mean_value, "%.3f" % self.probability)
 
     def __str__(self):
-        children = ", ".join([str(c) for c in self.children])
+        children = ", ".join([str(c) for c in self.children.values()])
         return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
             self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
 
@@ -72,14 +70,14 @@ class MCTS(GameAI):
         This assures a balance between exploring new nodes,
         and exploiting nodes, that are known to result in good outcomes.
         """
-        if node.children == []: # Node is a leaf.
+        if node.children == {}: # Node is a leaf.
             return node
 
         sim_acc += node.visits
         acc_sqrt = np.sqrt(sim_acc)
-        best_node = node.children[0] # Choose first node if all are equal.
-        best_value = 0
-        for child in node.children:
+        best_node = None
+        best_value = -1
+        for child in node.children.values():
             if child.visits == 0:
                 # Node has not been visited. It is chosen immediately.
                 best_node = child
@@ -103,8 +101,7 @@ class MCTS(GameAI):
         taking any possible actions from the current node.
         """
         node_probability = 1/len(actions) # Probability of selecting node.
-        children = [Node(self.game.result(node.state, action), action, [], node_probability, node) for action in actions]
-        node.children = children
+        node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
 
     def simulate(self, state, actions):
         """
@@ -177,7 +174,7 @@ class MCTS(GameAI):
                 # new current and simulate an action from this nodes possible actions.
                 actions = self.game.actions(node.state)
                 self.expand(node, actions)
-                node = node.children[0] # Select first child of expanded Node.
+                node = node.children[actions[0]] # Select first child of expanded Node.
             self.state_map[node.state.stringify()] = node
 
             # Perform rollout, simulate till end of game and return outcome.
@@ -186,10 +183,10 @@ class MCTS(GameAI):
 
             node = original_node
 
-        for node in original_node.children:
+        for node in original_node.children.values():
             log(node.pretty_desc())
 
-        best_node = max(original_node.children, key=lambda n: n.mean_value)
+        best_node = max(original_node.children.values(), key=lambda n: n.mean_value)
 
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))

@@ -39,6 +39,9 @@ EVAL_ITERATIONS = 5
 # |***********************************|
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
+# Amount of games stored, at one time, in replay storage.
+MAX_GAME_STORAGE = 100 # Is 1 million in AlphaZero, scale accordingly.
+
 # Batch size for neural network input.
 BATCH_SIZE = 256
 

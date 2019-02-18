@@ -65,10 +65,11 @@ class Game(ABC):
 
     def make_target(self, state_index):
         """
-        Return current player for given state at index, as well as
-        total
+        Return terminal value of given state at index, as well as
+        probability distribution for actions at that state.
         """
-        pass
+        state = self.history[state_index]
+        (self.utility(state, state.player), self.visit_counts[state_index])
 
     def register_observer(self, observer):
         """

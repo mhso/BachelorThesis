@@ -32,14 +32,13 @@ class Node():
         return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
             self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
 
-class MCTS(GameAI):
+class MCTS_Basic(GameAI):
     """
     Implementation of MCTS. This is implemented in terms
     of the four stages of the algorithm: Selection, Expansion,
     Simulation and Backpropagation.
     """
     state_map = dict()
-    network = None
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.

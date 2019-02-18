@@ -69,7 +69,11 @@ class Game(ABC):
         probability distribution for actions at that state.
         """
         state = self.history[state_index]
-        (self.utility(state, state.player), self.visit_counts[state_index])
+        return (self.utility(state, state.player), self.visit_counts[state_index])
+
+    def reset(self):
+        self.history = []
+        self.visit_counts = []
 
     def register_observer(self, observer):
         """

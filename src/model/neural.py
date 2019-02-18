@@ -24,7 +24,7 @@ class NeuralNetwork:
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
         out = Conv2D(256, kernel_size=3, strides=1, kernel_initializer="random_uniform",
-                                                    bias_initializer="random_uniform")(inp)
+                     bias_initializer="random_uniform")(inp)
         out = BatchNormalization()(out)
         out = Activation("relu")(out)
 
@@ -34,37 +34,38 @@ class NeuralNetwork:
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
         policy = Conv2D(256, kernel_size=3, strides=1, padding="same",
-                                                    kernel_initializer="random_uniform",
-                                                    bias_initializer="random_uniform")(out)
+                        kernel_initializer="random_uniform",
+                        bias_initializer="random_uniform")(out)
         policy = BatchNormalization()(policy)
         policy = Activation("relu")(policy)
 
         policy = Conv2D(32, kernel_size=3, strides=1, padding="same",
-                                                    kernel_initializer="random_uniform",
-                                                    bias_initializer="random_uniform")(policy) # 32 = action space.
+                        kernel_initializer="random_uniform",
+                        bias_initializer="random_uniform")(policy) # 32 = action space.
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
         value = Conv2D(1, kernel_size=1, strides=1, kernel_initializer="random_uniform",
-                                                    bias_initializer="random_uniform")(out)
+                       bias_initializer="random_uniform")(out)
         value = BatchNormalization()(value)
         value = Activation("relu")(value)
 
         value = Flatten()(value)
-        value = Dense(256)(value, kernel_initializer="random_uniform", 
-                                  bias_initializer="random_uniform") # Linear layer.
+        value = Dense(256, kernel_initializer="random_uniform",
+                      bias_initializer="random_uniform")(value) # Linear layer.
         value = Activation("relu")(value)
 
         # Final value layer. Outputs probability of win/loss/draw as value between -1 and 1.
-        value = Dense(1)(value, kernel_initializer="random_uniform", 
-                                bias_initializer="random_uniform")
+        value = Dense(1, kernel_initializer="random_uniform",
+                      bias_initializer="random_uniform")(value)
         value = Activation("tanh")(value)
 
         self.model = Model(inputs=inp, outputs=[policy, value])
         self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
-                                    decay=constants.WEIGHT_DECAY,
-                                    momentum=constants.MOMENTUM),
-                                    loss='mean_squared_error')
+                                         decay=constants.WEIGHT_DECAY,
+                                         momentum=constants.MOMENTUM),
+                           loss='mean_squared_error')
 
+    def save_as_image(self):
         plot_model(self.model, to_file='../resources/model_graph.png', show_shapes=True)
 
     def evaluate(self, state):
@@ -78,8 +79,8 @@ class NeuralNetwork:
         the game from the given state.
         """
         return None
-    
-    def update_weights(self, inputs, expected_out, weight_decay):
+
+    def update_weights(self, inputs, expected_out):
         """
         Train the network on a batch of data.
         @param inputs - Numpy array of game 'images', i.e: game states.

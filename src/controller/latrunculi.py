@@ -43,6 +43,7 @@ class Latrunculi(Game):
             pieces.extend([(self.size-1, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
+        self.history.append(self.init_state)
 
     def __init__(self, size, start_seed=None):
         Game.__init__(self)
@@ -382,8 +383,9 @@ class Latrunculi(Game):
                 return -1
         return 0
 
-    def structure_data(self, state):
+    def structure_data(self, state_index):
         super.__doc__
+        state = self.history[state_index]
 
         pos_pieces = np.where(state.board > 0, state.board, np.zeros((self.size, self.size), dtype='b'))
         neg_pieces = -np.where(state.board < 0, state.board, np.zeros((self.size, self.size), dtype='b'))

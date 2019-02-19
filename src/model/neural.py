@@ -10,6 +10,7 @@ from keras.models import Sequential
 from keras.models import save_model, Model
 from keras.utils.vis_utils import plot_model
 from model.residual import Residual
+from numpy import array
 import constants
 
 class NeuralNetwork:
@@ -22,7 +23,8 @@ class NeuralNetwork:
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
-        out = Conv2D(256, kernel_size=3, strides=1, kernel_initializer="random_uniform",
+        out = Conv2D(256, kernel_size=3, strides=1, padding="same",
+                     kernel_initializer="random_uniform",
                      bias_initializer="random_uniform")(inp)
         out = BatchNormalization()(out)
         out = Activation("relu")(out)
@@ -38,9 +40,16 @@ class NeuralNetwork:
         policy = BatchNormalization()(policy)
         policy = Activation("relu")(policy)
 
-        policy = Conv2D(32, kernel_size=3, strides=1, padding="same", # 32 = action space.
-                        kernel_initializer="random_uniform",
-                        bias_initializer="random_uniform")(policy)
+        # Split into...
+        # ...move policies.
+        policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same", # 4 = action space.
+                              kernel_initializer="random_uniform",
+                              bias_initializer="random_uniform")(policy)
+
+        # ...delete captured pieces policy.
+        policy_actions = Conv2D(1, kernel_size=3, strides=1, padding="same",
+                               kernel_initializer="random_uniform",
+                               bias_initializer="random_uniform")(policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
         value = Conv2D(1, kernel_size=1, strides=1, kernel_initializer="random_uniform",
@@ -58,7 +67,7 @@ class NeuralNetwork:
                       bias_initializer="random_uniform")(value)
         value = Activation("tanh")(value)
 
-        self.model = Model(inputs=inp, outputs=[policy, value])
+        self.model = Model(inputs=inp, outputs=[policy_moves, policy_actions, value])
         self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
                                          decay=constants.WEIGHT_DECAY,
                                          momentum=constants.MOMENTUM),
@@ -77,7 +86,10 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
-        return self.model.predict(inp)
+        if len(inp.shape) < 4:
+            inp = array([inp]).reshape((-1, 4, 4, 2))
+        output = self.model.predict(inp)
+        return ((output[0], output[1]), output[2])
 
     def update_weights(self, inputs, expected_out):
         """

@@ -48,7 +48,7 @@ class Latrunculi(Game):
         Game.__init__(self)
         self.size = size
         self.populate_board(start_seed)
-        self.num_actions = 512 # 32 (possible destinations for moves for 8 pieces) * 16 (board size)
+        self.num_actions = 68 # 4 (possible destinations for any piece) * 16 (board size) + 4 (remove enemy piece)
 
     def notify_observers(self, *args, **kwargs):
         for observer in self.__observers:
@@ -394,3 +394,11 @@ class Latrunculi(Game):
             return np.array([pos_pieces, neg_pieces]).reshape((4, 4, -1))
         else:
             return np.array([neg_pieces, pos_pieces]).reshape((4, 4, -1))
+
+    def map_logits(self, actions, logits):
+        """
+        Map actions to neural network output 
+        policy logits. Set all other logits
+        to 0, since they represent illegal actions.
+        """
+        

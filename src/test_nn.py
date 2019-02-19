@@ -8,6 +8,7 @@ state2 = game.result(state1, game.actions(state1)[0])
 
 network = NeuralNetwork()
 network.save_as_image()
-predict = network.evaluate(np.array([game.structure_data(state1), game.structure_data(state2)]))
+predict = network.evaluate(game.structure_data(state1))
 
 print(predict)
+print(predict[0].shape)

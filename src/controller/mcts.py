@@ -135,8 +135,10 @@ class MCTS(GameAI):
         of available actions, from the current state.
         """
         state = node.state
+        actions = self.game.actions(state)
         # How do we structure policy logits??
-        value, policy_logits = self.network.evaluate(self.game.structure_data(state))
+        policy_logits, value = self.network.evaluate(self.game.structure_data(state))
+        logit_map = self.game.map_logits(actions, policy_logits[0])
 
         # Expand node.
         policy = {a: np.exp(policy_logits[a]) for a in self.game.actions(state)}

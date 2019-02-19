@@ -52,13 +52,13 @@ class NetworkStorage:
     The network periodically saves it's model to this class and
     MCTS loads the newest network during self-play.
     """
-    networks = {}
-    curr_network = None
+    def __init__(self):
+        self.networks = {}
+        self.curr_network = None
+        self.save_network(0, NeuralNetwork())
 
     def latest_network(self):
-        if self.networks == {}:
-            return NeuralNetwork()
-        return self.latest_network
+        return self.curr_network
 
     def save_network(self, step, network):
         self.networks[step] = network

@@ -89,7 +89,7 @@ class NeuralNetwork:
         if len(inp.shape) < 4:
             inp = array([inp]).reshape((-1, 4, 4, 2))
         output = self.model.predict(inp)
-        return ((output[0], output[1]), output[2])
+        return ((output[0][0], output[1][0]), output[2][0][0])
 
     def update_weights(self, inputs, expected_out):
         """

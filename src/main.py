@@ -129,9 +129,9 @@ class GameThread(threading.Thread):
         self.args = args
 
     def run(self):
-        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6], self.args[7])
+        play_loop(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6], self.args[7])
 
-def train(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
+def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
     """
     Run a given number of game iterations with a given AI.
     After each game iteration, if the model is MCTS,
@@ -160,7 +160,7 @@ def train(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=No
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, gui, plot_data)
 
-        train(game, p1, p2, iteration-1, gui, plot_data)
+        play_loop(game, p1, p2, iteration-1, gui, plot_data)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
         if gui is not None:
@@ -169,13 +169,22 @@ def train(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=No
             Graph.close()
         exit(0)
 
+def train_network(network_storage, replay_storage, iterations):
+    network = network_storage.latest_network()
+    for i in range(iterations):
+        if i % constants.SAVE_CHECKPOINT:
+            network_storage.save_network(i, network)
+        inputs, expected_out = replay_storage.sample_batch()
+        network.update_weights(inputs, expected_out)
+    network_storage.save_network(iterations, network)
+
 def prepare_training(game, p1, p2, iterations, **kwargs):
     # Extract arguments.
     save = kwargs.get("save", False)
     gui = kwargs.get("gui", None)
     plot_data = kwargs.get("plot_data", False)
-    network_storage = kwargs.get("network", None)
-    replay_storage = kwargs.get("replay", None)
+    network_storage = kwargs.get("network_storage", None)
+    replay_storage = kwargs.get("replay_storage", None)
     if gui is not None or plot_data or constants.GAME_THREADS > 1:
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,
@@ -194,12 +203,15 @@ def prepare_training(game, p1, p2, iterations, **kwargs):
             game_thread = GameThread(game, p1, p2, iterations-1, gui, plot_data, network_storage, replay_storage)
             game_thread.start() # Start game logic thread.
 
+        if network_storage is not None and constants.GAME_THREADS > 1:
+            train_network(network_storage, replay_storage, iterations)
+
         if plot_data:
             Graph.run(gui, "Training Evaluation") # Start graph window in main thread.
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
-        train(game, p1, p2, iterations-1, save, gui)
+        play_loop(game, p1, p2, iterations-1, network_storage=network_storage, replay_storage=replay_storage)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)

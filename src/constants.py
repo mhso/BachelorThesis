@@ -32,6 +32,9 @@ GAME_THREADS = 1
 # during training, default is every 5th training iteration.
 EVAL_CHECKPOINT = 0
 
+# How often to save neural network to shared storage.
+SAVE_CHECKPOINT = 10
+
 # How many games to play against base AI's while
 # evaluating model performance.
 EVAL_ITERATIONS = 5

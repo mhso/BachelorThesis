@@ -12,7 +12,6 @@ from view.graph import Graph
 class Node():
     action = None
     state = None
-    children = {}
     visits = 0
     value = 0
     mean_value = 0
@@ -22,6 +21,7 @@ class Node():
         self.action = action
         self.parent = parent
         self.prior_prob = prior_prob
+        self.children = {}
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
@@ -74,7 +74,7 @@ class MCTS(GameAI):
         if node.children == {}: # Node is a leaf.
             return node
 
-        parent_sqrt = np.sqrt(node)
+        parent_sqrt = np.sqrt(node.visits)
         best_node = None
         best_value = -1
         for child in node.children.values():
@@ -136,28 +136,26 @@ class MCTS(GameAI):
         """
         state = node.state
         actions = self.game.actions(state)
-        # How do we structure policy logits??
         policy_logits, value = self.network.evaluate(self.game.structure_data(state))
-        logit_map = self.game.map_logits(actions, policy_logits[0])
 
         # Expand node.
-        policy = {a: np.exp(policy_logits[a]) for a in self.game.actions(state)}
-        policy_sum = sum(policy.values())
+        logit_map = self.game.map_logits(actions, policy_logits)
+        policy_sum = sum(logit_map.values())
 
-        for a in policy:
-            node.children[a] = Node(self.game.result(state, a), a, policy[a] / policy_sum)
+        for a, p in logit_map.items():
+            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum, node)
 
         return value
 
     def choose_action(self, node):
-        child_nodes = node.children.values()
+        child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
         if len(self.game.history) < constants.NUM_SAMPLING_MOVES:
             # Perform softmax random selection of available actions,
             # based on visit counts.
             sum_visits = sum(visit_counts)
             return np.random.choice(child_nodes,
-                                    p=[visits/sum_visits for visits in visit_counts])
+                                    p=[v/sum_visits for v in visit_counts])
         # Return node with highest visit count.
         return max(child_nodes, key=lambda n: n.mean_value)
 
@@ -166,6 +164,8 @@ class MCTS(GameAI):
         log("MCTS is calculating the best move...")
 
         original_node = Node(state, None)
+        self.evaluate(original_node)
+        print(original_node.pretty_desc())
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest

@@ -401,4 +401,29 @@ class Latrunculi(Game):
         policy logits. Set all other logits
         to 0, since they represent illegal actions.
         """
-        
+        action_map = dict()
+        move_logits = logits[0]
+        remove_logits = logits[1]
+        policy_sum = 0
+        for action in actions:
+            y1, x1 = action.source
+            y2, x2 = action.dest
+            logit = 0
+            if action.dest == action.source:
+                # Action equals the removal of an enemy piece.
+                logit = remove_logits[y1, x1]
+            else:
+                # Action equals a piece being moved.
+                plane = move_logits[y1, x1]
+                index = 0 if y1>y2 else 1
+                if x1 != x2:
+                    index = 2 if x1>x2 else 3
+
+                logit = plane[index]
+            action_map[action] = logit
+            policy_sum += logit
+
+        for action, policy in action_map.items():
+            action_map[action] = np.exp(policy/policy_sum)
+
+        return action_map

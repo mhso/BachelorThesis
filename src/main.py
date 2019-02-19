@@ -114,7 +114,7 @@ def evaluate_model(game, player, gui=None, show_plot=False):
     print("Evaluation against Random: {}".format(eval_minimax))
 
     eval_mcts = evaluate_against_ai(game, player,
-                                    get_ai_algorithm("MCTS", game, "."),
+                                    get_ai_algorithm("MCTS_Basic", game, "."),
                                     constants.EVAL_ITERATIONS, gui)
 
     print("Evaluation against MCTS: {}".format(eval_mcts))

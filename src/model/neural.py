@@ -32,15 +32,15 @@ class NeuralNetwork:
             out = Residual(256, 256, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = Conv2D(256, kernel_size=3, strides=1, padding="same",
+        policy = Conv2D(2, kernel_size=1, strides=1, padding="same",
                         kernel_initializer="random_uniform",
                         bias_initializer="random_uniform")(out)
         policy = BatchNormalization()(policy)
         policy = Activation("relu")(policy)
 
-        policy = Conv2D(32, kernel_size=3, strides=1, padding="same",
+        policy = Conv2D(32, kernel_size=3, strides=1, padding="same", # 32 = action space.
                         kernel_initializer="random_uniform",
-                        bias_initializer="random_uniform")(policy) # 32 = action space.
+                        bias_initializer="random_uniform")(policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
         value = Conv2D(1, kernel_size=1, strides=1, kernel_initializer="random_uniform",

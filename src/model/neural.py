@@ -18,8 +18,10 @@ class NeuralNetwork:
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
+    INPUT_SHAPE = (4, 4, 4)
+
     def __init__(self):
-        inp = Input((4, 4, 2))
+        inp = Input(self.INPUT_SHAPE)
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
@@ -47,7 +49,7 @@ class NeuralNetwork:
                               bias_initializer="random_uniform")(policy)
 
         # ...delete captured pieces policy.
-        policy_actions = Conv2D(1, kernel_size=3, strides=1, padding="same",
+        policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
                                kernel_initializer="random_uniform",
                                bias_initializer="random_uniform")(policy)
 
@@ -67,7 +69,7 @@ class NeuralNetwork:
                       bias_initializer="random_uniform")(value)
         value = Activation("tanh")(value)
 
-        self.model = Model(inputs=inp, outputs=[policy_moves, policy_actions, value])
+        self.model = Model(inputs=inp, outputs=[policy_moves, policy_delete, value])
         self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
                                          decay=constants.WEIGHT_DECAY,
                                          momentum=constants.MOMENTUM),

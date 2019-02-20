@@ -1,6 +1,6 @@
-from controller.mcts import MCTS
+from controller.mcts_basic import MCTS_Basic
 
-class MCTS_Aggro(MCTS):
+class MCTS_Aggro(MCTS_Basic):
     def back_propagate(self, node, value):
         """
         After a full simulation, propagate result up the tree.
@@ -12,4 +12,4 @@ class MCTS_Aggro(MCTS):
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, 1-new_value)
+        self.back_propagate(node.parent, -new_value)

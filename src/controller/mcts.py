@@ -73,7 +73,6 @@ class MCTS(GameAI):
         """
         if node.children == {}: # Node is a leaf.
             return node
-
         parent_sqrt = np.sqrt(node.visits)
         best_node = None
         best_value = -1
@@ -86,7 +85,8 @@ class MCTS(GameAI):
                 # PUCT formula.
                 e_base = constants.EXPLORE_BASE
                 e_init = constants.EXPLORE_INIT
-                explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
+                #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
+                explore_val = 1.27 # TODO: Maybe change later.
                 val = child.mean_value + (
                     explore_val * child.prior_prob
                     * parent_sqrt / (1+child.visits)
@@ -165,7 +165,6 @@ class MCTS(GameAI):
 
         original_node = Node(state, None)
         self.evaluate(original_node)
-        print(original_node.pretty_desc())
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest

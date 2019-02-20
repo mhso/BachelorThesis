@@ -33,7 +33,7 @@ if test_l:
     for i in range(1, test_iterations+1):
         print("Test iteration {}/{} ".format(i, test_iterations))
         time_taken = test_latrunculi.run_iteration_timing_test()
-        times_l.append(time_taken)
+        if i > 1: times_l.append(time_taken)
 if test_ls:
     print("\n{}-=-=-=- LATRUNCULI_S GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
     for i in range(1, test_iterations+1):

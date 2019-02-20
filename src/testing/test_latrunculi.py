@@ -66,7 +66,7 @@ def run_tests():
     # =================================
     # Test utility function.
 
-    assertion.assert_equal(0, game.utility(state, True), "utility white")
+    assertion.assert_equal(-1, game.utility(state, True), "utility white")
     assertion.assert_equal(1, game.utility(state, False), "utility black")
 
     # =================================
@@ -302,13 +302,10 @@ def run_tests():
 
     # =================================
     # Test chump jain being broken, by potential capture.
-
-    # =================================
-    # Test structure of state for Neural Network.
-    game = Latrunculi(8, 42)
-    state = game.start_state()
-
-    data = game.structure_data(state)
+    new_state = game.result(state, Action((1, 2), (3, 2)))
+    print(state)
+    print(new_state)
+    print(new_state.board - state.board)
 
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF

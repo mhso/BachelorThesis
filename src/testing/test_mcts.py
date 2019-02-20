@@ -1,19 +1,19 @@
 from time import time
 from testing import assertion
-from controller.mcts import MCTS, Node
+from controller.mcts_basic import MCTS_Basic, Node
 from controller.latrunculi import Latrunculi
 
 def run_tests():
     # Test selection.
     # Test first selection.
     game = Latrunculi(8)
-    mcts = MCTS(game)
+    mcts = MCTS_Basic(game)
     state = game.start_state()
 
     actions = game.actions(state)
     root = Node(state, None, [])
     probability = 1/len(actions)
-    child_nodes = [Node(game.result(state, action), action, [], probability, root) for action in actions]
+    child_nodes = [Node(game.result(state, action), action, probability, root) for action in actions]
     root.children = child_nodes
     node = mcts.select(root, 0)
 
@@ -47,7 +47,7 @@ def run_tests():
     # =================================
     # Test expansion.
     # Test correct number of children.
-    root = Node(state, None, [])
+    root = Node(state, None)
     mcts.expand(root, actions)
 
     assertion.assert_equal(16, len(root.children), "expansion correct num of children")
@@ -70,7 +70,7 @@ def run_iteration_tests(log_type=None):
 
     time_b = time()
 
-    mcts = MCTS(game, 100)
+    mcts = MCTS_Basic(game, 100)
     mcts.execute_action(state)
 
     time_taken = time() - time_b

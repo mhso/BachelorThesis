@@ -113,7 +113,7 @@ def check_for_capture_and_suicide_north_or_south_of_given_piece_bool(size, iOrig
             else:
                 return False
     return True
-    
+
 @jit(nopython=True)
 def check_for_capture_and_suicide_west_or_east_of_given_piece(size, iOrigin, jOrigin, iDest, jDest, player, board):
     enemy_player = -1*player
@@ -240,7 +240,7 @@ class Latrunculi(Game):
         Game.__init__(self)
         self.size = size
         self.populate_board(start_seed)
-        self.num_actions = 68 # 4 (possible destinations for any piece) * 16 (board size) + 4 (remove enemy piece)
+        self.num_actions = 80 # 4 (possible destinations for any piece) * 16 (board size) + 16 (remove enemy piece)
 
     def notify_observers(self, *args, **kwargs):
         for observer in self.__observers:

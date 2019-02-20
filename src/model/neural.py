@@ -10,7 +10,7 @@ from keras.models import Sequential
 from keras.models import save_model, Model
 from keras.utils.vis_utils import plot_model
 from model.residual import Residual
-from numpy import array
+import numpy as np
 import constants
 
 class NeuralNetwork:
@@ -47,6 +47,7 @@ class NeuralNetwork:
         policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same", # 4 = action space.
                               kernel_initializer="random_uniform",
                               bias_initializer="random_uniform")(policy)
+        policy_moves = BatchNormalization()(policy_moves)
 
         # ...delete captured pieces policy.
         policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
@@ -81,25 +82,34 @@ class NeuralNetwork:
     def evaluate(self, inp):
         """
         Evaluate a given state 'image' using the network.
+        @param inp - Image/structured data for a state.
         @returns (p, z)
-        - p: A list of probabilities for each
+        - p: A 4D array of probabilities for each
         available action in state. These values help
         guide the MCTS search.
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
         if len(inp.shape) < 4:
-            inp = array([inp]).reshape((-1, 4, 4, 2))
+            inp = np.array([inp]).reshape((-1, 4, 4, 4))
         output = self.model.predict(inp)
-        return ((output[0][0], output[1][0]), output[2][0][0])
 
-    def update_weights(self, inputs, expected_out):
+        policy_moves = output[0][0]
+        policy_moves -= np.min(policy_moves)
+        policy_moves /= np.ptp(policy_moves)
+
+        policy_delete = output[1][0]
+        policy_delete -= np.min(policy_delete)
+        policy_delete /= np.ptp(policy_delete)
+
+        return ((policy_moves, policy_delete), output[2][0][0])
+
+    def train(self, inputs, expected_out):
         """
         Train the network on a batch of data.
         @param inputs - Numpy array of game 'images', i.e: game states.
         @param expected_out - Numpy array of tuples with (terminal values
         of inputted states, action/move probability distribution of inputted states).
-        @param weight_decay - Weight decay from constants.
         """
         result = self.model.train_on_batch(inputs, expected_out)
         print(result)

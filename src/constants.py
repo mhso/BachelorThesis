@@ -74,3 +74,8 @@ EXPLORE_INIT = 1.25
 # visit count for the node associated with that action. Otherwise we select
 # the action associated with the node with most visits.
 NUM_SAMPLING_MOVES = 30
+
+# Exploration noise to encourage exploring new nodes.
+NOISE_BASE = 0.3
+
+NOISE_FRACTION = 0.25

@@ -11,6 +11,7 @@ from os import mkdir
 from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
+from model.storage import ReplayStorage, NetworkStorage
 from view.log import log
 from view.visualize import Gui
 from view.graph import Graph
@@ -101,19 +102,19 @@ def evaluate_model(game, player, gui=None, show_plot=False):
     eval_minimax = evaluate_against_ai(game, player,
                                        get_ai_algorithm(
                                            "Minimax" if type(game).__name__ == "Latrunculi"
-                                           else "Minimax_CF", game, ".", gui),
+                                           else "Minimax_CF", game, "."),
                                        constants.EVAL_ITERATIONS, gui)
 
     print("Evaluation against Minimax: {}".format(eval_minimax))
 
     eval_random = evaluate_against_ai(game, player,
-                                      get_ai_algorithm("Random", game, ".", gui),
+                                      get_ai_algorithm("Random", game, "."),
                                       constants.EVAL_ITERATIONS, gui)
 
     print("Evaluation against Random: {}".format(eval_minimax))
 
     eval_mcts = evaluate_against_ai(game, player,
-                                    get_ai_algorithm("MCTS", game, ".", gui),
+                                    get_ai_algorithm("MCTS_Basic", game, "."),
                                     constants.EVAL_ITERATIONS, gui)
 
     print("Evaluation against MCTS: {}".format(eval_mcts))
@@ -122,15 +123,15 @@ def evaluate_model(game, player, gui=None, show_plot=False):
         plot_game_result(eval_random, "Random")
         plot_game_result(eval_mcts, "Basic MCTS")
 
-class SupportThread(threading.Thread):
-    def __init__(self, args):
+class GameThread(threading.Thread):
+    def __init__(self, *args):
         threading.Thread.__init__(self)
         self.args = args
 
     def run(self):
-        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6])
+        play_loop(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6], self.args[7])
 
-def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
+def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
     """
     Run a given number of game iterations with a given AI.
     After each game iteration, if the model is MCTS,
@@ -141,11 +142,25 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
         print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
+        if network_storage:
+            # Set MCTS AI's newest network, if present.
+            network = network_storage.latest_network()
+            if type(p1).__name__ == "MCTS":
+                p1.network = network
+            if type(p2).__name__ == "MCTS":
+                p2.network = network
+
         play_game(game, p1, p2, gui)
+
+        if replay_storage:
+            # Save game to be used for neural network training.
+            replay_storage.save_game(game)
+        game.reset() # Reset game history.
         if constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT:
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, gui, plot_data)
-        train(game, p1, p2, iteration-1, save, gui, plot_data)
+
+        play_loop(game, p1, p2, iteration-1, gui, plot_data)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
         if gui is not None:
@@ -153,25 +168,23 @@ def train(game, p1, p2, iteration, save=False, gui=None, plot_data=False):
         if plot_data:
             Graph.close()
         exit(0)
-    finally:
-        if save:
-            type1 = type(p1).__name__
-            type2 = type(p2).__name__
-            if type1 == "MCTS" or type2 == "MCTS":
-                state_map = None
-                if type1 == "mcts":
-                    state_map = p1.state_map
-                    if type2 == "mcts":
-                        state_map = state_map.update(p2.state_map)
-                else:
-                    state_map = p2.state_map
 
-                if not exists(MCTS_PATH):
-                    mkdir(MCTS_PATH)
-                save_models(state_map, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + 1)))
+def train_network(network_storage, replay_storage, iterations):
+    network = network_storage.latest_network()
+    for i in range(iterations):
+        if i % constants.SAVE_CHECKPOINT:
+            network_storage.save_network(i, network)
+        inputs, expected_out = replay_storage.sample_batch()
+        network.update_weights(inputs, expected_out)
+    network_storage.save_network(iterations, network)
 
-def prepare_training(game, p1, p2, iterations, save=False, gui=None, plot_data=False):
-    
+def prepare_training(game, p1, p2, iterations, **kwargs):
+    # Extract arguments.
+    save = kwargs.get("save", False)
+    gui = kwargs.get("gui", None)
+    plot_data = kwargs.get("plot_data", False)
+    network_storage = kwargs.get("network_storage", None)
+    replay_storage = kwargs.get("replay_storage", None)
     if gui is not None or plot_data or constants.GAME_THREADS > 1:
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,
@@ -187,15 +200,18 @@ def prepare_training(game, p1, p2, iterations, save=False, gui=None, plot_data=F
                 game = copy_game
                 p1 = get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = get_ai_algorithm(type(p2).__name__, game, ".")
-            game_thread = SupportThread((game, p1, p2, iterations-1, save, gui, plot_data))
+            game_thread = GameThread(game, p1, p2, iterations-1, gui, plot_data, network_storage, replay_storage)
             game_thread.start() # Start game logic thread.
+
+        if network_storage is not None and constants.GAME_THREADS > 1:
+            train_network(network_storage, replay_storage, iterations)
 
         if plot_data:
             Graph.run(gui, "Training Evaluation") # Start graph window in main thread.
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
-        train(game, p1, p2, iterations-1, save, gui)
+        play_loop(game, p1, p2, iterations-1, network_storage=network_storage, replay_storage=replay_storage)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)
@@ -218,7 +234,7 @@ def get_game(game_name, size, rand_seed, wildcard):
         print("Unknown game, name must equal name of game class.")
         return None, "unknown"
 
-def get_ai_algorithm(algorithm, game, wildcard, gui=None):
+def get_ai_algorithm(algorithm, game, wildcard):
     lower = algorithm.lower()
     if lower == wildcard:
         algorithm = constants.DEFAULT_AI
@@ -303,9 +319,20 @@ if "-g" in options or player1 == "human" or player2 == "human":
     if player2 == "human":
         p_black.gui = gui
 
+NETWORK_STORAGE = None
+REPLAY_STORAGE = None
+if player1 == "mcts" or player2 == "mcts":
+    NETWORK_STORAGE = NetworkStorage()
+    REPLAY_STORAGE = ReplayStorage()
+
 TIME_TRAINING = time()
 
-prepare_training(game, p_white, p_black, constants.TRAINING_ITERATIONS, "-s" in options, gui, "-p" in options)
+prepare_training(game, p_white, p_black, constants.TRAINING_ITERATIONS,
+                 save="-s" in options,
+                 gui=gui,
+                 plot_data="-p" in options,
+                 network_storage=NETWORK_STORAGE,
+                 replay_storage=REPLAY_STORAGE)
 
 if "-t" in options:
     print("Training took: {} s".format(time() - TIME_TRAINING))

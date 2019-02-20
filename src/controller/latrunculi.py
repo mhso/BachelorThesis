@@ -10,7 +10,6 @@ from model.state import State, Action
 class Latrunculi(Game):
     size = 8
     init_state = None
-    num_actions = 512 # 32 (possible destinations for moves for 8 pieces) * 16 (board size)
 
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')
@@ -43,11 +42,13 @@ class Latrunculi(Game):
             pieces.extend([(self.size-1, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
+        self.history.append(self.init_state)
 
     def __init__(self, size, start_seed=None):
         Game.__init__(self)
         self.size = size
         self.populate_board(start_seed)
+        self.num_actions = 68 # 4 (possible destinations for any piece) * 16 (board size) + 4 (remove enemy piece)
 
     def notify_observers(self, *args, **kwargs):
         for observer in self.__observers:
@@ -388,7 +389,41 @@ class Latrunculi(Game):
         pos_pieces = np.where(state.board > 0, state.board, np.zeros((self.size, self.size), dtype='b'))
         neg_pieces = -np.where(state.board < 0, state.board, np.zeros((self.size, self.size), dtype='b'))
 
+        # Structure data as a 4x4x2 stack.
         if state.player:
-            return np.array([pos_pieces, neg_pieces])
+            return np.array([pos_pieces, neg_pieces]).reshape((4, 4, -1))
         else:
-            return np.array([neg_pieces, pos_pieces])
+            return np.array([neg_pieces, pos_pieces]).reshape((4, 4, -1))
+
+    def map_logits(self, actions, logits):
+        """
+        Map actions to neural network output 
+        policy logits. Set all other logits
+        to 0, since they represent illegal actions.
+        """
+        action_map = dict()
+        move_logits = logits[0]
+        remove_logits = logits[1]
+        policy_sum = 0
+        for action in actions:
+            y1, x1 = action.source
+            y2, x2 = action.dest
+            logit = 0
+            if action.dest == action.source:
+                # Action equals the removal of an enemy piece.
+                logit = remove_logits[y1, x1]
+            else:
+                # Action equals a piece being moved.
+                plane = move_logits[y1, x1]
+                index = 0 if y1>y2 else 1
+                if x1 != x2:
+                    index = 2 if x1>x2 else 3
+
+                logit = plane[index]
+            action_map[action] = logit
+            policy_sum += logit
+
+        for action, policy in action_map.items():
+            action_map[action] = np.exp(policy/policy_sum)
+
+        return action_map

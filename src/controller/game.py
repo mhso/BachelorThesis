@@ -11,6 +11,7 @@ class Game(ABC):
     def __init__(self, history=None):
         self.history = history or []
         self.visit_counts = []
+        self.num_actions = 0 # Overriden in subclasses.
         self.__observers = []
 
     @abstractmethod
@@ -56,7 +57,7 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def structure_data(self, state_index):
+    def structure_data(self, state):
         """
         Return a structuring of the data in the given state at index,
         so that the Neural Network can accept and work with it.
@@ -65,10 +66,22 @@ class Game(ABC):
 
     def make_target(self, state_index):
         """
-        Return current player for given state at index, as well as
-        total
+        Return terminal value of given state at index, as well as
+        probability distribution for actions at that state.
         """
-        pass
+        state = self.history[state_index]
+        return (self.utility(state, state.player), self.visit_counts[state_index])
+
+    def store_search_statistics(self, node):
+        sum_visits = sum(child.visits for child in node.children.values())
+        self.visit_counts.append([
+            node.children[a].visit_count / sum_visits if a in node.children else 0
+            for a in range(self.num_actions)
+        ])
+
+    def reset(self):
+        self.history = []
+        self.visit_counts = []
 
     def register_observer(self, observer):
         """

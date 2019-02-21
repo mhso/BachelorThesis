@@ -423,7 +423,11 @@ class Latrunculi(Game):
         move_logits = logits[0]
         remove_logits = logits[1]
         policy_sum = 0
+        if actions == [None]:
+            return action_map
         for action in actions:
+            if action is None:
+                continue
             y1, x1 = action.source
             y2, x2 = action.dest
             logit = 0

@@ -3,6 +3,8 @@
 neural: Neural Network stuff.
 -----------------------------
 """
+from tensorflow import Session, ConfigProto
+from keras.backend.tensorflow_backend import set_session
 from keras.layers import Dense, Dropout, Conv2D, BatchNormalization, Input, Flatten
 from keras.layers.core import Activation
 from keras.optimizers import SGD
@@ -21,6 +23,12 @@ class NeuralNetwork:
     INPUT_SHAPE = (4, 4, 4)
 
     def __init__(self):
+        # Config options, to stop TF from eating all GPU memory.
+        config = ConfigProto()
+        config.gpu_options.per_process_gpu_memory_fraction = 0.7
+        config.gpu_options.visible_device_list = "0"
+        set_session(Session(config=config))
+
         inp = Input(self.INPUT_SHAPE)
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-

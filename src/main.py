@@ -35,7 +35,7 @@ def play_game(game, player_white, player_black, gui=None):
         #print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
         #print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
-        #print("Num of pieces, White: {} Black: {}".format(num_white, num_black), flush=True)
+        log("Num of pieces, White: {} Black: {}".format(num_white, num_black))
         time_turn = time()
 
         if game.player(state):

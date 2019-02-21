@@ -199,6 +199,22 @@ def check_For_Freeing(size, i, j, board):
             return True
     return False
 
+@jit(nopython=True)
+def fast_utility(board, player):
+    white_won = (board == -1).sum() < 2
+    black_won = (board == 1).sum() < 2
+    if player: # Player plays as white.
+        if white_won:
+            return 1
+        elif black_won:
+            return -1
+    else: # Player plays as white.
+        if black_won:
+            return 1
+        elif white_won:
+            return -1
+    return 0
+
 class Latrunculi(Game):
     size = 8
     init_state = None
@@ -381,19 +397,7 @@ class Latrunculi(Game):
 
     def utility(self, state, player):
         super.__doc__
-        white_won = (state.board == -1).sum() < 2
-        black_won = (state.board == 1).sum() < 2
-        if player: # Player plays as white.
-            if white_won:
-                return 1
-            elif black_won:
-                return -1
-        else: # Player plays as white.
-            if black_won:
-                return 1
-            elif white_won:
-                return -1
-        return 0
+        return fast_utility(state.board, player)
 
     def structure_data(self, state):
         super.__doc__

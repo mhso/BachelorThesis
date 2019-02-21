@@ -20,9 +20,6 @@ import constants
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()
 
-def plot_game_result(result, other):
-    Graph.plot_data("Versus {}".format(other), None, result, "Training Iteration", "Winrate")
-
 def play_game(game, player_white, player_black, gui=None):
     """
     Play a game to the end, and return the resulting state.
@@ -164,7 +161,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, replay_storage, plot_data)
 
-        play_loop(game, p1, p2, iteration-1, gui, plot_data)
+        play_loop(game, p1, p2, iteration-1, gui, plot_data, network_storage, replay_storage)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
         if gui is not None:
@@ -184,7 +181,6 @@ def train_network(network_storage, replay_storage, iterations):
 
 def prepare_training(game, p1, p2, iterations, **kwargs):
     # Extract arguments.
-    save = kwargs.get("save", False)
     gui = kwargs.get("gui", None)
     plot_data = kwargs.get("plot_data", False)
     network_storage = kwargs.get("network_storage", None)
@@ -325,14 +321,13 @@ if "-g" in options or player1 == "human" or player2 == "human":
 
 NETWORK_STORAGE = None
 REPLAY_STORAGE = None
-if player1 == "mcts" or player2 == "mcts":
+if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
     NETWORK_STORAGE = NetworkStorage()
     REPLAY_STORAGE = ReplayStorage()
 
 TIME_TRAINING = time()
 
 prepare_training(game, p_white, p_black, constants.TRAINING_ITERATIONS,
-                 save="-s" in options,
                  gui=gui,
                  plot_data="-p" in options,
                  network_storage=NETWORK_STORAGE,

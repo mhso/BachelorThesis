@@ -3,10 +3,9 @@
 game: Super class for game. Implements actions, evaluations, terminal tests, etc.
 ---------------------------------------------------------------------------------
 """
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
-class Game():
-    __metaclass__ = ABCMeta
+class Game(ABC):
     __observers = []
 
     def __init__(self, history=None):

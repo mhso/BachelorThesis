@@ -11,7 +11,7 @@ DEFAULT_AI = "MCTS"
 DEFAULT_GAME = "Latrunculi"
 
 # Default board size.
-DEFAULT_BOARD_SIZE = 8
+DEFAULT_BOARD_SIZE = 4
 
 # |***********************************|
 # |    TRAINING/GAME LOOP OPTIONS     |

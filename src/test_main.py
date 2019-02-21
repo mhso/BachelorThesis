@@ -13,7 +13,7 @@ RESET = "\033[0;37;40m"
 
 print("{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 test_latrunculi.run_tests()
-print("{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
+print("{}-=-=-=- LATRUNCULI_NE GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 test_latrunculi_ne.run_tests()
 print("{}-=-=-=-=- CONNECT FOUR TESTS -=-=-=-=-{}".format(YELLOW, RESET))
 test_cnnct_four.run_tests()

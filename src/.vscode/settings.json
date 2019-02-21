@@ -1,4 +1,4 @@
 {
     "python.linting.pylintEnabled": true,
-    "python.pythonPath": "C:\\Users\\Guellen\\AppData\\Local\\Programs\\Python\\Python36\\python.exe"
+    "python.pythonPath": "C:\\Users\\Guellen\\Miniconda3\\envs\\tens_gpu\\python.exe"
 }

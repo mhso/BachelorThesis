@@ -288,7 +288,7 @@ class Latrunculi(Game):
                     actionsList.extend(check_North_Or_South_From_Player_Piece(self.size, i, j, -1, current_player, state.board)) #check for actions moving north
                 if i+1 < self.size:
                     actionsList.extend(check_North_Or_South_From_Player_Piece(self.size, i, j, 1, current_player, state.board)) #check for actions moving south
-                if j > 0: 
+                if j > 0:
                     actionsList.extend(check_West_Or_East_From_Player_Piece(self.size, i, j, -1, current_player, state.board)) #check for actions moving west
                 if j+1 < self.size:
                     actionsList.extend(check_West_Or_East_From_Player_Piece(self.size, i, j, 1, current_player, state.board)) #check for actions moving east
@@ -407,7 +407,7 @@ class Latrunculi(Game):
         neg_pieces = -np.where(state.board == -1, state.board, np.zeros((self.size, self.size), dtype='b'))
         neg_captured = -np.where(state.board == -2, state.board, np.zeros((self.size, self.size), dtype='b'))
 
-        # Structure data as a 4x4x2 stack.
+        # Structure data as a 4x4x4 stack.
         if state.player:
             return np.array([pos_pieces, pos_captured, neg_pieces, neg_captured]).reshape((4, 4, -1))
         else:

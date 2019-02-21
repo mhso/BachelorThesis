@@ -25,7 +25,7 @@ class NeuralNetwork:
     def __init__(self):
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
-        config.gpu_options.per_process_gpu_memory_fraction = 0.7
+        config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION
         config.gpu_options.visible_device_list = "0"
         set_session(Session(config=config))
 

@@ -32,16 +32,16 @@ GAME_THREADS = 1
 # during training, default is every 5th training iteration.
 EVAL_CHECKPOINT = 0
 
-# How often to save neural network to shared storage.
-SAVE_CHECKPOINT = 10
-
 # How many games to play against base AI's while
-# evaluating model performance.
+# evaluating model performance (per thread).
 EVAL_ITERATIONS = 5
 
 # |***********************************|
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
+# How often to save neural network to shared storage.
+SAVE_CHECKPOINT = 10
+
 # Amount of games stored, at one time, in replay storage.
 MAX_GAME_STORAGE = 100 # Is 1 million in AlphaZero, scale accordingly.
 

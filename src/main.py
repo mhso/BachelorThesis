@@ -80,7 +80,7 @@ def leading_zeros(num):
         result = "0" + result
     return result
 
-def evaluate_against_ai(game, player, other, num_games, gui=None):
+def evaluate_against_ai(game, player, other, num_games, step):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -94,34 +94,38 @@ def evaluate_against_ai(game, player, other, num_games, gui=None):
         wins += game.utility(result, True)
     return wins/num_games # Return ratio of games won.
 
-def evaluate_model(game, player, gui=None, show_plot=False):
+def evaluate_model(game, player, storage, show_plot=False):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
+    step = player.network.curr_step
     eval_minimax = evaluate_against_ai(game, player,
                                        get_ai_algorithm(
                                            "Minimax" if type(game).__name__ == "Latrunculi"
                                            else "Minimax_CF", game, "."),
-                                       constants.EVAL_ITERATIONS, gui)
+                                       constants.EVAL_ITERATIONS, step)
 
     print("Evaluation against Minimax: {}".format(eval_minimax))
 
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
-                                      constants.EVAL_ITERATIONS, gui)
+                                      constants.EVAL_ITERATIONS, step)
 
     print("Evaluation against Random: {}".format(eval_minimax))
 
     eval_mcts = evaluate_against_ai(game, player,
                                     get_ai_algorithm("MCTS_Basic", game, "."),
-                                    constants.EVAL_ITERATIONS, gui)
+                                    constants.EVAL_ITERATIONS, step)
+
+    storage.save_perform_eval_data([eval_minimax, eval_random, eval_mcts])    
 
     print("Evaluation against MCTS: {}".format(eval_mcts))
-    if show_plot:
-        plot_game_result(eval_minimax, "Minimax")
-        plot_game_result(eval_random, "Random")
-        plot_game_result(eval_mcts, "Basic MCTS")
+    if show_plot and storage.eval_performance():
+        data = storage.reset_perform_data()
+        Graph.plot_data("Versus Minimax", step, data[0], "Training Iteration", "Winrate")
+        Graph.plot_data("Versus Random", step, data[1], "Training Iteration", "Winrate")
+        Graph.plot_data("Versus Basic MCTS", step, data[2], "Training Iteration", "Winrate")
 
 class GameThread(threading.Thread):
     def __init__(self, *args):
@@ -158,7 +162,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
         game.reset() # Reset game history.
         if constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT:
             # Evaluate performance of trained model against other AIs.
-            evaluate_model(game, p1, gui, plot_data)
+            evaluate_model(game, p1, replay_storage, plot_data)
 
         play_loop(game, p1, p2, iteration-1, gui, plot_data)
     except KeyboardInterrupt:

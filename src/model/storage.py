@@ -14,6 +14,7 @@ class ReplayStorage:
         self.max_games = constants.MAX_GAME_STORAGE
         self.batch_size = constants.BATCH_SIZE
         self.buffer = []
+        self.perform_eval_buffer = []
 
     def save_game(self, game):
         if len(self.buffer) > self.max_games:
@@ -46,6 +47,18 @@ class ReplayStorage:
             targets.append(game.make_target(index))
         return np.array(images), np.array(targets)
 
+    def save_perform_eval_data(self, data):
+        buff = self.perform_eval_buffer
+        buff.append(data)
+
+    def eval_performance(self):
+        return len(self.perform_eval_buffer) >= constants.EVAL_ITERATIONS * constants.GAME_THREADS
+
+    def reset_perform_data(self):
+        data = self.perform_eval_buffer
+        self.perform_eval_buffer = []
+        return data
+
 class NetworkStorage:
     """
     This class manages the saving/loading of neural networks.
@@ -54,12 +67,12 @@ class NetworkStorage:
     """
     def __init__(self):
         self.networks = {}
-        self.curr_network = None
+        self.curr_step = 0
         self.save_network(0, NeuralNetwork())
 
     def latest_network(self):
-        return self.curr_network
+        return self.networks[self.curr_step]
 
     def save_network(self, step, network):
         self.networks[step] = network
-        self.curr_network = network
+        self.curr_step = network

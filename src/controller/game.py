@@ -3,9 +3,10 @@
 game: Super class for game. Implements actions, evaluations, terminal tests, etc.
 ---------------------------------------------------------------------------------
 """
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
-class Game(ABC):
+class Game():
+    __metaclass__ = ABCMeta
     __observers = []
 
     def __init__(self, history=None):
@@ -24,7 +25,7 @@ class Game(ABC):
     @abstractmethod
     def player(self, state):
         """
-        Returns who’s turn it is given a state. True for white, False for black.
+        Returns who's turn it is given a state. True for white, False for black.
         """
         pass
 

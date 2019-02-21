@@ -5,12 +5,12 @@ def conv_block(feat_maps_out, prev):
     prev = Conv2D(feat_maps_out, kernel_size=3, strides=1, padding='same',
                                                            kernel_initializer="random_uniform", 
                                                            bias_initializer="random_uniform")(prev)
-    prev = BatchNormalization(axis=1)(prev) # Specifying the axis and mode allows for later merging
+    prev = BatchNormalization()(prev) # Specifying the axis and mode allows for later merging
     prev = Activation('relu')(prev)
     prev = Conv2D(feat_maps_out, kernel_size=3, strides=1, padding='same',
                                                            kernel_initializer="random_uniform", 
                                                            bias_initializer="random_uniform")(prev)
-    prev = BatchNormalization(axis=1)(prev) # Specifying the axis and mode allows for later merging
+    prev = BatchNormalization()(prev) # Specifying the axis and mode allows for later merging
     prev = Activation('relu')(prev)
     return prev
 

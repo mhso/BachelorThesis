@@ -204,6 +204,7 @@ def prepare_training(game, p1, p2, iterations, **kwargs):
             game_thread.start() # Start game logic thread.
 
         if network_storage is not None and constants.GAME_THREADS > 1:
+            # Run the network training iterations.
             train_network(network_storage, replay_storage, iterations)
 
         if plot_data:

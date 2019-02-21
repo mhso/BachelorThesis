@@ -75,4 +75,4 @@ class NetworkStorage:
 
     def save_network(self, step, network):
         self.networks[step] = network
-        self.curr_step = network
+        self.curr_step = step

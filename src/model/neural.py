@@ -75,6 +75,7 @@ class NeuralNetwork:
                                          decay=constants.WEIGHT_DECAY,
                                          momentum=constants.MOMENTUM),
                            loss='mean_squared_error')
+        self.model._make_predict_function()
 
     def save_as_image(self):
         plot_model(self.model, to_file='../resources/model_graph.png', show_shapes=True)

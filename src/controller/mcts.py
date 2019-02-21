@@ -73,7 +73,6 @@ class MCTS(GameAI):
         """
         if node.children == {}: # Node is a leaf.
             return node
-
         parent_sqrt = np.sqrt(node.visits)
         best_node = None
         best_value = -1
@@ -84,9 +83,10 @@ class MCTS(GameAI):
                 break
             else:
                 # PUCT formula.
-                e_base = constants.EXPLORE_BASE
-                e_init = constants.EXPLORE_INIT
-                explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
+                #e_base = constants.EXPLORE_BASE
+                #e_init = constants.EXPLORE_INIT
+                #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
+                explore_val = 1.27 # TODO: Maybe change later.
                 val = child.mean_value + (
                     explore_val * child.prior_prob
                     * parent_sqrt / (1+child.visits)
@@ -157,7 +157,18 @@ class MCTS(GameAI):
             return np.random.choice(child_nodes,
                                     p=[v/sum_visits for v in visit_counts])
         # Return node with highest visit count.
-        return max(child_nodes, key=lambda n: n.mean_value)
+        return max(child_nodes, key=lambda n: n.visits)
+
+    def add_exploration_noise(self, node):
+        """
+        Add noise to prior value of node, to encourage
+        exploration of new nodes. Not currently used.
+        """
+        actions = node.children.keys()
+        noise = np.random.gamma(constants.NOISE_BASE, 1, len(actions))
+        frac = constants.NOISE_FRACTION
+        for a, n in zip(actions, noise):
+            node.children[a].prior_prob *= (1 - frac) + n * frac
 
     def execute_action(self, state):
         super.__doc__
@@ -165,7 +176,6 @@ class MCTS(GameAI):
 
         original_node = Node(state, None)
         self.evaluate(original_node)
-        print(original_node.pretty_desc())
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest

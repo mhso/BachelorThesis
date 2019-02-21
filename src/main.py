@@ -175,7 +175,7 @@ def train_network(network_storage, replay_storage, iterations):
         if i % constants.SAVE_CHECKPOINT:
             network_storage.save_network(i, network)
         inputs, expected_out = replay_storage.sample_batch()
-        network.update_weights(inputs, expected_out)
+        network.train(inputs, expected_out)
     network_storage.save_network(iterations, network)
 
 def prepare_training(game, p1, p2, iterations, **kwargs):

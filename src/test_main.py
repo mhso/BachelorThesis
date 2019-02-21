@@ -20,7 +20,7 @@ test_cnnct_four.run_tests()
 print("{}-=-=-=-=-=- MINIMAX TESTS -=-=-=-=-=-{}".format(YELLOW, RESET))
 test_minimax.run_tests()
 print("{}-=-=-=-=-=-=- MCTS TESTS -=-=-=-=-=-=-{}".format(YELLOW, RESET))
-test_mcts.run_tests()
+#test_mcts.run_tests()
 print("{}-=-=-=-=- MISCELLANEOUS TESTS -=-=-=-{}".format(YELLOW, RESET))
 test_misc.run_tests()
 

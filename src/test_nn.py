@@ -7,7 +7,8 @@ state1 = game.start_state()
 state2 = game.result(state1, game.actions(state1)[0])
 
 network = NeuralNetwork()
-network.save_as_image()
+#network.save_as_image()
+image = game.structure_data(state1)
 policy, value = network.evaluate(game.structure_data(state1))
 
 mapstuff = game.map_logits(game.actions(state1), policy)

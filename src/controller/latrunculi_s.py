@@ -140,8 +140,6 @@ class Latrunculi_s(Game):
             return (y-1, x)
         elif direction == 4: # LEFT
             return (y, x-1)
-        elif direction == 5: # CENTER
-            return (y, x)
         elif direction == 6: # RIGHT
             return (y, x+1)
         elif direction == 8: # DOWN
@@ -155,8 +153,6 @@ class Latrunculi_s(Game):
             return 2 # UP
         elif y_from == y_to and x_from-1 == x_to:
             return 4  # LEFT
-        elif y_from == y_to and x_from == x_to:
-            return 5  # CENTER
         elif y_from == y_to and x_from+1 == x_to:
             return 6  # RIGHT
         elif y_from+1 == y_to and x_from == x_to:

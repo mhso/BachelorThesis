@@ -11,7 +11,6 @@ def conv_block(feat_maps_out, prev):
                                                            kernel_initializer="random_uniform", 
                                                            bias_initializer="random_uniform")(prev)
     prev = BatchNormalization()(prev) # Specifying the axis and mode allows for later merging
-    prev = Activation('relu')(prev)
     return prev
 
 def skip_block(feat_maps_in, feat_maps_out, prev):
@@ -34,4 +33,6 @@ def Residual(feat_maps_in, feat_maps_out, prev_layer):
     skip = skip_block(feat_maps_in, feat_maps_out, prev_layer)
     conv = conv_block(feat_maps_out, prev_layer)
 
-    return add([skip, conv]) # the residual connection
+    merged = add([skip, conv])
+
+    return Activation('relu')(merged) # the residual connection

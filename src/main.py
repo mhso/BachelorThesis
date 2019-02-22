@@ -171,7 +171,16 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
         exit(0)
 
 def train_network(network_storage, replay_storage, iterations):
+    """
+    Run a given number of iterations.
+    For each iteration, sample a batch of data
+    from replay buffer and use the data to train
+    the network.
+    """
     network = network_storage.latest_network()
+    # TODO:
+    # Should we add wait time between iterations,
+    # if no batch data is available or something??
     for i in range(iterations):
         if i % constants.SAVE_CHECKPOINT:
             network_storage.save_network(i, network)
@@ -329,10 +338,10 @@ if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
 TIME_TRAINING = time()
 
 prepare_training(game, p_white, p_black, constants.TRAINING_ITERATIONS,
-                 gui=gui,
-                 plot_data="-p" in options,
-                 network_storage=NETWORK_STORAGE,
-                 replay_storage=REPLAY_STORAGE)
+                gui=gui,
+                plot_data="-p" in options,
+                network_storage=NETWORK_STORAGE,
+                replay_storage=REPLAY_STORAGE)
 
 if "-t" in options:
     print("Training took: {} s".format(time() - TIME_TRAINING))

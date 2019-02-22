@@ -1,6 +1,8 @@
 from testing import assertion
 from model.state import Action, State
+from model.storage import ReplayStorage
 from controller.latrunculi import Latrunculi
+from view.graph import Graph
 
 def run_tests():
     # Test Action ID.
@@ -18,3 +20,21 @@ def run_tests():
     dictionary[state.stringify()] = "wow"
 
     assertion.assert_equal("wow", dictionary[state.stringify()], "state hashing")
+
+    # ==================================
+    # Test performance evalution
+    storage = ReplayStorage()
+    for i in range(10):
+        storage.save_perform_eval_data(i/10)
+    Graph.run(title="Test stuff")
+
+    evaluated = False
+    if storage.eval_performance():
+        evaluated = True
+        data = storage.reset_perform_data()
+        assertion.assert_true(data != [], "Performance data not empty")
+        Graph.plot_data("DATA STUFF", None, data, "Step", "Win ratio")
+        Graph.plot_data("DATA STUFF", None, data, "Step", "Win ratio")
+
+    assertion.assert_true(evaluated, "Performance was evaluated")
+    assertion.assert_equal([], storage.perform_eval_buffer, "Buffer reset")

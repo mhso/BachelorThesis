@@ -8,6 +8,9 @@ from threading import Event, Lock
 import matplotlib as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+def increment_x(X, Y):
+    return [v for v in range(X, len(Y))]
+
 class Graph:
     canvas = None
     parent = None
@@ -93,17 +96,21 @@ class Graph:
         p_x, p_y = None, None
         try:
             p_x, p_y = Graph.data[graph_name]
+            if type(Y) is not list:
+                Y = [Y]
             if X is None:
-                X = p_x[-1] + 1
+                X = [v for v in range(p_x[-1]+1, len(Y))]                
+            elif type(X) is not list:
+                X = [X]
             p_x.append(X)
             p_y.append(Y)
         except KeyError:
-            if X is None:
-                X = [1]
-            elif type(X) is not list:
-                X = [X]
             if type(Y) is not list:
                 Y = [Y]
+            if X is None:
+                X = [v for v in range(1, len(Y))]
+            elif type(X) is not list:
+                X = [X]
             p_x, p_y = X, Y
             Graph.colors[graph_name] = Graph.color_options[len(Graph.data)]
             Graph.data[graph_name] = p_x, p_y

@@ -22,7 +22,7 @@ LATRUNCULI_MAX_MOVES = 200
 
 # Training iterations (for each thread), so total games
 # run will equal GAME_THREADS * TRAINING_ITERATIONS.
-TRAINING_ITERATIONS = 10
+TRAINING_ITERATIONS = 2
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.

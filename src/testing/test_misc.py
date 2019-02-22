@@ -34,7 +34,6 @@ def run_tests():
         data = storage.reset_perform_data()
         assertion.assert_true(data != [], "Performance data not empty")
         Graph.plot_data("DATA STUFF", None, data, "Step", "Win ratio")
-        Graph.plot_data("DATA STUFF", None, data, "Step", "Win ratio")
 
     assertion.assert_true(evaluated, "Performance was evaluated")
     assertion.assert_equal([], storage.perform_eval_buffer, "Buffer reset")

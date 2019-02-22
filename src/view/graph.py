@@ -8,9 +8,6 @@ from threading import Event, Lock
 import matplotlib as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def increment_x(X, Y):
-    return [v for v in range(X, len(Y))]
-
 class Graph:
     canvas = None
     parent = None
@@ -45,7 +42,7 @@ class Graph:
         Graph.changed_plots[changed_label] = False
 
     @staticmethod
-    def run(gui_parent=None, title=None):
+    def run(gui_parent=None, title=None, x_label=None, y_label=None):
         Graph.persist = True # Set to False if graph should reset between every game.
         Graph.parent = gui_parent
         Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
@@ -56,6 +53,10 @@ class Graph:
         Graph.ax = figure.add_subplot(111)
         if title:
             Graph.ax.set_title(title)
+        if x_label:
+            Graph.ax.set_xlabel(x_label)
+        if y_label:
+            Graph.ax.set_ylabel(y_label)
 
         Graph.canvas = FigureCanvasTkAgg(figure, master=window)
         Graph.canvas.draw()
@@ -78,7 +79,7 @@ class Graph:
         Graph.ax.clear()
 
     @staticmethod
-    def plot_data(graph_name, X, Y, x_label, y_label):
+    def plot_data(graph_name, X, Y):
         """
         Plot data for graph with a given name and axes labels.
         @param graph_name - Name of the graph.
@@ -93,30 +94,25 @@ class Graph:
         """
         lock = Lock() # Use a lock (mutex) to ensure thread safety.
         lock.acquire()
-        p_x, p_y = None, None
         try:
             p_x, p_y = Graph.data[graph_name]
-            if type(Y) is not list:
+            if not isinstance(Y, list):
                 Y = [Y]
             if X is None:
-                X = [v for v in range(p_x[-1]+1, len(Y))]                
-            elif type(X) is not list:
+                X = [v for v in range(p_x[-1]+1, p_x[-1]+1+len(Y))]
+            elif not isinstance(X, list):
                 X = [X]
-            p_x.append(X)
-            p_y.append(Y)
+            p_x.extend(X)
+            p_y.extend(Y)
         except KeyError:
-            if type(Y) is not list:
+            if not isinstance(Y, list):
                 Y = [Y]
             if X is None:
-                X = [v for v in range(1, len(Y))]
-            elif type(X) is not list:
+                X = [v for v in range(1, len(Y)+1)]
+            elif not isinstance(X, list):
                 X = [X]
-            p_x, p_y = X, Y
             Graph.colors[graph_name] = Graph.color_options[len(Graph.data)]
-            Graph.data[graph_name] = p_x, p_y
-
-        Graph.ax.set_xlabel(x_label)
-        Graph.ax.set_ylabel(y_label)
+            Graph.data[graph_name] = (X, Y)
 
         Graph.changed_plots[graph_name] = True
         lock.release()

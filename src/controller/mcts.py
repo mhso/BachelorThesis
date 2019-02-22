@@ -195,7 +195,7 @@ class MCTS(GameAI):
 
         best_node = self.choose_action(original_node)
 
-        #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
+        #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value)
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
         self.game.store_search_statistics(best_node)
 

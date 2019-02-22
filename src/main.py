@@ -120,9 +120,9 @@ def evaluate_model(game, player, storage, show_plot=False):
     print("Evaluation against MCTS: {}".format(eval_mcts))
     if show_plot and storage.eval_performance():
         data = storage.reset_perform_data()
-        Graph.plot_data("Versus Minimax", step, data[0], "Training Iteration", "Winrate")
-        Graph.plot_data("Versus Random", step, data[1], "Training Iteration", "Winrate")
-        Graph.plot_data("Versus Basic MCTS", step, data[2], "Training Iteration", "Winrate")
+        Graph.plot_data("Versus Minimax", step, data[0])
+        Graph.plot_data("Versus Random", step, data[1])
+        Graph.plot_data("Versus Basic MCTS", step, data[2])
 
 class GameThread(threading.Thread):
     def __init__(self, *args):
@@ -209,7 +209,7 @@ def prepare_training(game, p1, p2, iterations, **kwargs):
                 game = copy_game
                 p1 = get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = get_ai_algorithm(type(p2).__name__, game, ".")
-            game_thread = GameThread(game, p1, p2, iterations-1, gui, plot_data, network_storage, replay_storage)
+            game_thread = GameThread(game, p1, p2, iterations, gui, plot_data, network_storage, replay_storage)
             game_thread.start() # Start game logic thread.
 
         if network_storage is not None and constants.GAME_THREADS > 1:
@@ -217,11 +217,11 @@ def prepare_training(game, p1, p2, iterations, **kwargs):
             train_network(network_storage, replay_storage, iterations)
 
         if plot_data:
-            Graph.run(gui, "Training Evaluation") # Start graph window in main thread.
+            Graph.run(gui, "Training Evaluation", "Training Iteration", "Winrate") # Start graph window in main thread.
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
-        play_loop(game, p1, p2, iterations-1, network_storage=network_storage, replay_storage=replay_storage)
+        play_loop(game, p1, p2, iterations, network_storage=network_storage, replay_storage=replay_storage)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)
@@ -332,7 +332,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
 NETWORK_STORAGE = None
 REPLAY_STORAGE = None
 if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
-    NETWORK_STORAGE = NetworkStorage()
+    NETWORK_STORAGE = NetworkStorage(game.size, game.num_actions)
     REPLAY_STORAGE = ReplayStorage()
 
 TIME_TRAINING = time()

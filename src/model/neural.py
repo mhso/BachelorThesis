@@ -20,16 +20,14 @@ class NeuralNetwork:
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
-    INPUT_SHAPE = (4, 4, 4)
-
-    def __init__(self):
+    def __init__(self, board_size, action_space):
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION
-        config.gpu_options.visible_device_list = "0"
+        #config.gpu_options.visible_device_list = "0"
         set_session(Session(config=config))
 
-        inp = Input(self.INPUT_SHAPE)
+        inp = Input((board_size, board_size, 4))
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
@@ -52,7 +50,7 @@ class NeuralNetwork:
 
         # Split into...
         # ...move policies.
-        policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same", # 4 = action space.
+        policy_moves = Conv2D(action_space, kernel_size=3, strides=1, padding="same",
                               kernel_initializer="random_uniform",
                               bias_initializer="random_uniform")(policy)
         policy_moves = BatchNormalization()(policy_moves)

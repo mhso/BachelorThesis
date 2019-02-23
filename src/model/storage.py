@@ -17,7 +17,7 @@ class ReplayStorage:
         self.perform_eval_buffer = []
 
     def save_game(self, game):
-        if len(self.buffer) > self.max_games:
+        if len(self.buffer) >= self.max_games:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
         #print("Saved game to buffer. Games: {}".format(len(self.buffer)), flush=True)
@@ -29,14 +29,16 @@ class ReplayStorage:
         the neural network and one with a corresponding list of
         expected outcomes of the game + move probability distribution.
         """
+        # TODO: Add a threading lock instead of copying buffer??
+        copy_buffer = [g for g in self.buffer]
         # Sum up how many moves were made during all games in the buffer.
-        move_sum = float(sum(len(g.history) for g in self.buffer))
+        move_sum = float(sum(len(g.history) for g in copy_buffer))
         # Draw random games, with each game weighed according to the amount
         # of moves made in that game.
         batch = np.random.choice(
-            self.buffer,
+            copy_buffer,
             size=self.batch_size,
-            p=[len(g.history)/move_sum for g in self.buffer]
+            p=[len(g.history)/move_sum for g in copy_buffer]
         )
         # Draw random state index values from all chosen games.
         state_indices = [(g, np.random.randint(0, len(g.history))) for g in batch]

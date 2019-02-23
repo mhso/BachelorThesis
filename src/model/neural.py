@@ -116,7 +116,7 @@ class NeuralNetwork:
 
         policy_delete = output[1][0]
         policy_delete -= np.min(policy_delete)
-        policy_delete /= np.ptp(policy_delete)
+        policy_delete /= np.ptp(policy_delete) # TODO: Fix rare divide-by-zero error.
 
         return ((policy_moves, policy_delete), output[2][0][0])
 
@@ -128,7 +128,7 @@ class NeuralNetwork:
         of inputted states, action/move probability distribution of inputted states).
         """
         result = self.model.train_on_batch(inputs, expected_out)
-        print("Training loss: {}".format(result[0]))
+        return result
 
 class DummyNetwork(NeuralNetwork):
     """

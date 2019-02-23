@@ -192,21 +192,24 @@ def train_network(network_storage, replay_storage, iterations):
     the network.
     """
     network = network_storage.latest_network()
-    print("NETWORK IS WAITING FOR DATA")
+    print("NETWORK IS WAITING FOR DATA...")
     while len(replay_storage.buffer) < constants.BATCH_SIZE:
         sleep(1)
         if force_quit(None):
             return
-    print("NETWORK IS TRAINING", flush=True)
+    print("NETWORK IS TRAINING...", flush=True)
 
     for i in range(iterations):
         if i % constants.SAVE_CHECKPOINT:
             network_storage.save_network(i, network)
         inputs, expected_out = replay_storage.sample_batch()
-        network.train(inputs, expected_out)
+        loss = network.train(inputs, expected_out)
+        Graph.plot_data("Training Evaluation", None, loss[0])
         if force_quit(None):
             break
     network_storage.save_network(iterations, network)
+    if "-t" in options:
+        print("Training took: {} s".format(time() - TIME_TRAINING))
 
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
@@ -242,7 +245,7 @@ def prepare_training(game, p1, p2, **kwargs):
                 train_network(network_storage, replay_storage, constants.TRAINING_STEPS)
 
         if plot_data:
-            Graph.run(gui, "Training Evaluation", "Training Iteration", "Winrate") # Start graph window in main thread.
+            Graph.run(gui, "Training Evaluation", "Training Iteration", "Loss") # Start graph window in main thread.
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
@@ -372,6 +375,3 @@ prepare_training(game, p_white, p_black,
                  plot_data="-p" in options,
                  network_storage=NETWORK_STORAGE,
                  replay_storage=REPLAY_STORAGE)
-
-if "-t" in options:
-    print("Training took: {} s".format(time() - TIME_TRAINING))

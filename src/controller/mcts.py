@@ -55,7 +55,7 @@ class MCTS(GameAI):
         if playouts is not None:
             self.ITERATIONS = playouts
 
-        print("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES), flush=True)
+        log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 
     def select(self, node):
         """

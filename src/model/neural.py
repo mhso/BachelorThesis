@@ -20,14 +20,19 @@ class NeuralNetwork:
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
-    def __init__(self, board_size, action_space):
+    def __init__(self, board_size, action_space=4, train_immediately=True):
+        self.action_space = action_space
+        self.input_size = (board_size, board_size, 4)
+        if not train_immediately:
+            return
+
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION
         #config.gpu_options.visible_device_list = "0"
         set_session(Session(config=config))
 
-        inp = Input((board_size, board_size, 4))
+        inp = Input(self.input_size)
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
@@ -120,3 +125,18 @@ class NeuralNetwork:
         """
         result = self.model.train_on_batch(inputs, expected_out)
         print(result)
+
+class DummyNetwork(NeuralNetwork):
+    """
+    The dummy network is used at the start
+    of training, to save on performance.
+    It simply returns random policies and value.
+    """
+    def __init__(self, board_size, action_space=4):
+        NeuralNetwork.__init__(self, board_size, action_space)
+
+    def evaluate(self, inp):
+        shape = inp.shape
+        policy_moves = np.random.uniform(0, 1, (shape[0], shape[1], self.action_space))
+        policy_remove = np.random.uniform(0, 1, (shape[0], shape[1], 1))
+        return (policy_moves, policy_remove), np.random.uniform()

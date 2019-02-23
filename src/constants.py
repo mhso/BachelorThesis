@@ -20,9 +20,17 @@ DEFAULT_BOARD_SIZE = 4
 # is assigned.
 LATRUNCULI_MAX_MOVES = 200
 
-# Training iterations (for each thread), so total games
-# run will equal GAME_THREADS * TRAINING_ITERATIONS.
-TRAINING_ITERATIONS = 2
+# Number of training steps for the neural network.
+TRAINING_STEPS = 2
+
+# Number of initial random games to produce before
+# beginning network training.
+RANDOM_INITIAL_GAMES = 0
+
+# Number of games to play in self-play (for each thread),
+# so total games run will equal GAME_THREADS * GAME_ITERATIONS.
+# If set to -1, self-play will run indefinitely.
+GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
@@ -30,7 +38,7 @@ GAME_THREADS = 1
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 0
+EVAL_CHECKPOINT = 5
 
 # How many games to play against base AI's while
 # evaluating model performance (per thread).
@@ -40,13 +48,13 @@ EVAL_ITERATIONS = 5
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
 # Fraction of GPU memory TensorFlow is allowed to use.
-MAX_GPU_FRACTION = 0.7
+MAX_GPU_FRACTION = 0.6
 
 # How often to save neural network to shared storage.
 SAVE_CHECKPOINT = 10
 
 # Amount of games stored, at one time, in replay storage.
-MAX_GAME_STORAGE = 100 # Is 1 million in AlphaZero, scale accordingly.
+MAX_GAME_STORAGE = 10000 # Is 1 million in AlphaZero, scale accordingly.
 
 # Batch size for neural network input.
 BATCH_SIZE = 256

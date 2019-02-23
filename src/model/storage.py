@@ -4,7 +4,7 @@ training and self-play, as well as replay buffers generated from self-play.
 """
 import numpy as np
 import constants
-from model.neural import NeuralNetwork
+from model.neural import NeuralNetwork, DummyNetwork
 
 class ReplayStorage:
     """
@@ -20,6 +20,7 @@ class ReplayStorage:
         if len(self.buffer) > self.max_games:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
+        print("Saved game to buffer. Games: {}".format(len(self.buffer)), flush=True)
 
     def sample_batch(self):
         """
@@ -47,6 +48,9 @@ class ReplayStorage:
             targets.append(game.make_target(index))
         return np.array(images), np.array(targets)
 
+    def full_buffer(self):
+        return len(self.buffer) == constants.BATCH_SIZE
+
     def save_perform_eval_data(self, data):
         buff = self.perform_eval_buffer
         buff.append(data)
@@ -65,7 +69,7 @@ class NetworkStorage:
     The network periodically saves it's model to this class and
     MCTS loads the newest network during self-play.
     """
-    def __init__(self, game_size, action_space):
+    def __init__(self, game_size, action_space=4):
         self.networks = {}
         self.curr_step = 0
         self.save_network(0, NeuralNetwork(game_size, action_space))

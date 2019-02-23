@@ -64,6 +64,10 @@ class Game(ABC):
         """
         pass
 
+    @abstractmethod
+    def clone(self):
+        pass
+
     def make_target(self, state_index):
         """
         Return terminal value of given state at index, as well as
@@ -72,12 +76,16 @@ class Game(ABC):
         state = self.history[state_index]
         return (self.utility(state, state.player), self.visit_counts[state_index])
 
+
     def store_search_statistics(self, node):
         sum_visits = sum(child.visits for child in node.children.values())
-        self.visit_counts.append([
-            node.children[a].visit_count / sum_visits if a in node.children else 0
+        self.visit_counts.append({
+            a: node.children[a].visit_count / sum_visits if a in node.children else 0
             for a in range(self.num_actions)
-        ])
+        })
+
+    def store_random_statistics(self, rand_stats):
+        self.visit_counts.append(rand_stats)
 
     def reset(self):
         self.history = []

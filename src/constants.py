@@ -21,11 +21,11 @@ DEFAULT_BOARD_SIZE = 4
 LATRUNCULI_MAX_MOVES = 200
 
 # Number of training steps for the neural network.
-TRAINING_STEPS = 2
+TRAINING_STEPS = 100
 
 # Number of initial random games to produce before
 # beginning network training.
-RANDOM_INITIAL_GAMES = 0
+RANDOM_INITIAL_GAMES = 1024
 
 # Number of games to play in self-play (for each thread),
 # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
@@ -34,7 +34,7 @@ GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 1
+GAME_THREADS = 16
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
@@ -48,7 +48,7 @@ EVAL_ITERATIONS = 5
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
 # Fraction of GPU memory TensorFlow is allowed to use.
-MAX_GPU_FRACTION = 0.6
+MAX_GPU_FRACTION = 0.5
 
 # How often to save neural network to shared storage.
 SAVE_CHECKPOINT = 10

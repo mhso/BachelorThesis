@@ -20,7 +20,7 @@ class ReplayStorage:
         if len(self.buffer) > self.max_games:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
-        print("Saved game to buffer. Games: {}".format(len(self.buffer)), flush=True)
+        #print("Saved game to buffer. Games: {}".format(len(self.buffer)), flush=True)
 
     def sample_batch(self):
         """
@@ -30,23 +30,29 @@ class ReplayStorage:
         expected outcomes of the game + move probability distribution.
         """
         # Sum up how many moves were made during all games in the buffer.
-        move_sum = float(sum(len(g.history()) for g in self.buffer))
+        move_sum = float(sum(len(g.history) for g in self.buffer))
         # Draw random games, with each game weighed according to the amount
         # of moves made in that game.
         batch = np.random.choice(
             self.buffer,
             size=self.batch_size,
-            p=[len(g.history())/move_sum for g in self.buffer]
+            p=[len(g.history)/move_sum for g in self.buffer]
         )
         # Draw random state index values from all chosen games.
-        state_indices = [(g, np.random.randint(0, len(g.history()))) for g in batch]
+        state_indices = [(g, np.random.randint(0, len(g.history))) for g in batch]
         images = []
-        targets = []
+        out1 = []
+        out2 = []
+        out3 = []
         # Create input/expected output data for neural network training.
         for game, index in state_indices:
             images.append(game.structure_data(game.history[index]))
-            targets.append(game.make_target(index))
-        return np.array(images), np.array(targets)
+            target_value, policies = game.make_target(index)
+            target_policy_moves, target_policy_remove = game.map_actions(policies)
+            out1.append(target_policy_moves)
+            out2.append(target_policy_remove)
+            out3.append(target_value)
+        return np.array(images), [np.array(out1), np.array(out2), np.array(out3)]
 
     def full_buffer(self):
         return len(self.buffer) == constants.BATCH_SIZE
@@ -72,9 +78,11 @@ class NetworkStorage:
     def __init__(self, game_size, action_space=4):
         self.networks = {}
         self.curr_step = 0
-        self.save_network(0, NeuralNetwork(game_size, action_space))
+        self.game_size = game_size
 
     def latest_network(self):
+        if self.networks == {}:
+            self.save_network(0, NeuralNetwork(self.game_size))
         return self.networks[self.curr_step]
 
     def save_network(self, step, network):

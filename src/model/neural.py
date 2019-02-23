@@ -3,8 +3,8 @@
 neural: Neural Network stuff.
 -----------------------------
 """
-from tensorflow import Session, ConfigProto
-from keras.backend.tensorflow_backend import set_session
+from tensorflow import Session, ConfigProto, reset_default_graph
+from keras.backend.tensorflow_backend import set_session, clear_session
 from keras.layers import Dense, Dropout, Conv2D, BatchNormalization, Input, Flatten
 from keras.layers.core import Activation
 from keras.optimizers import SGD
@@ -25,6 +25,10 @@ class NeuralNetwork:
         self.input_size = (board_size, board_size, 4)
         if not train_immediately:
             return
+
+        # Clean up from previous TF graphs.
+        reset_default_graph()
+        clear_session()
 
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
@@ -124,7 +128,7 @@ class NeuralNetwork:
         of inputted states, action/move probability distribution of inputted states).
         """
         result = self.model.train_on_batch(inputs, expected_out)
-        print(result)
+        print("Training loss: {}".format(result[0]))
 
 class DummyNetwork(NeuralNetwork):
     """

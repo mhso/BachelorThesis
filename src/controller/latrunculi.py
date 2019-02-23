@@ -250,7 +250,6 @@ class Latrunculi(Game):
             pieces.extend([(self.size-1, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
-        self.history.append(self.init_state)
 
     def __init__(self, size, start_seed=None):
         Game.__init__(self)
@@ -399,6 +398,12 @@ class Latrunculi(Game):
         super.__doc__
         return fast_utility(state.board, player)
 
+    def clone(self):
+        clone = Latrunculi(self.size, None)
+        clone.history = self.history
+        clone.visit_counts = self.visit_counts
+        return clone
+
     def structure_data(self, state):
         super.__doc__
 
@@ -449,3 +454,21 @@ class Latrunculi(Game):
             action_map[action] = np.exp(policy/policy_sum)
 
         return action_map
+
+    def map_actions(self, target_policies):
+        policy_moves = np.zeros((self.size, self.size, 4))
+        policy_remove = np.zeros((self.size, self.size, 1))
+        for a, p in target_policies.items():
+            if a is None:
+                continue
+            y1, x1 = a.source
+            y2, x2 = a.dest
+            if a.dest == a.source:
+                policy_remove[y1, x1] = p
+            else:
+                index = 0 if y1>y2 else 1
+                if x1 != x2:
+                    index = 2 if x1>x2 else 3
+
+                policy_moves[y1, x1, index] = p
+        return policy_moves, policy_remove

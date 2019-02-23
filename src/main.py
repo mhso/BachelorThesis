@@ -43,6 +43,8 @@ def play_game(game, player_white, player_black, gui=None):
         else:
             state = player_black.execute_action(state)
 
+        game.history.append(state)
+
         if "-t" in argv:
             log("Move took: {} s".format(time() - time_turn))
 
@@ -59,7 +61,7 @@ def play_game(game, player_white, player_black, gui=None):
         counter += 1
 
     winner = "Black" if state.player else "White"
-    print("Game finished on thread {}, winner: {}".format(threading.current_thread().name, winner))
+    log("Game finished on thread {}, winner: {}".format(threading.current_thread().name, winner))
     if "-t" in argv:
         print("Game took {} s.".format(time() - time_game), flush=True)
     #print(state.board, flush=True)
@@ -142,7 +144,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
         print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
-        if network_storage:
+        if network_storage and type(p1).__name__ != "Random":
             # Set MCTS AI's newest network, if present.
             network = network_storage.latest_network()
             if type(p1).__name__ == "MCTS":
@@ -154,7 +156,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
 
         if replay_storage:
             # Save game to be used for neural network training.
-            replay_storage.save_game(game)
+            replay_storage.save_game(game.clone())
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
                     and len(replay_storage.buffer) >= constants.RANDOM_INITIAL_GAMES):
                 # We are done with random game generation,
@@ -170,6 +172,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
         if (type(p1).__name__ == "MCTS" and
                 constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT):
             # Evaluate performance of trained model against other AIs.
+            print("Evaluating performance of model on thread {}...".format(threading.current_thread().name), flush=True)
             evaluate_model(game, p1, replay_storage, network_storage.curr_step, plot_data)
 
         play_loop(game, p1, p2, iteration+1, gui, plot_data, network_storage, replay_storage)
@@ -188,6 +191,7 @@ def train_network(network_storage, replay_storage, iterations):
     from replay buffer and use the data to train
     the network.
     """
+    network = network_storage.latest_network()
     print("NETWORK IS WAITING FOR DATA")
     while len(replay_storage.buffer) < constants.BATCH_SIZE:
         sleep(1)
@@ -195,7 +199,6 @@ def train_network(network_storage, replay_storage, iterations):
             return
     print("NETWORK IS TRAINING", flush=True)
 
-    network = network_storage.latest_network()
     for i in range(iterations):
         if i % constants.SAVE_CHECKPOINT:
             network_storage.save_network(i, network)

@@ -47,7 +47,7 @@ class NeuralNetwork:
         out = Activation("relu")(out)
 
         # Residual layers, 19 in total.
-        for _ in range(5):
+        for _ in range(19):
             out = Residual(256, 256, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-

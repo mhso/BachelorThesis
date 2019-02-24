@@ -34,7 +34,7 @@ GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 4
+GAME_THREADS = 1
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.

@@ -48,7 +48,7 @@ class MCTS(GameAI):
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if self.game.size > 3:
-            playout_options = [800, 200, 35, 20, 10, 5, 5]
+            playout_options = [500, 200, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
@@ -56,6 +56,18 @@ class MCTS(GameAI):
             self.ITERATIONS = playouts
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
+
+    def ucb_score(self, node, parent_visits):
+        # PUCT formula.
+        #e_base = constants.EXPLORE_BASE
+        #e_init = constants.EXPLORE_INIT
+        #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
+        explore_val = 1.27 # TODO: Maybe change later.
+        val = node.mean_value + (
+            explore_val * node.prior_prob
+            * parent_visits / (1+node.visits)
+        )
+        return val
 
     def select(self, node):
         """
@@ -74,27 +86,7 @@ class MCTS(GameAI):
         if node.children == {}: # Node is a leaf.
             return node
         parent_sqrt = np.sqrt(node.visits)
-        best_node = None
-        best_value = -1
-        for child in node.children.values():
-            if child.visits == 0:
-                # Node has not been visited. It is chosen immediately.
-                best_node = child
-                break
-            else:
-                # PUCT formula.
-                #e_base = constants.EXPLORE_BASE
-                #e_init = constants.EXPLORE_INIT
-                #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
-                explore_val = 1.27 # TODO: Maybe change later.
-                val = child.mean_value + (
-                    explore_val * child.prior_prob
-                    * parent_sqrt / (1+child.visits)
-                )
-
-                if val > best_value:
-                    best_value = val
-                    best_node = child
+        best_node = max(node.children.values(), key=lambda n: self.ucb_score(n, parent_sqrt))
 
         return self.select(best_node)
 
@@ -143,7 +135,7 @@ class MCTS(GameAI):
         policy_sum = sum(logit_map.values())
 
         for a, p in logit_map.items():
-            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum, node)
+            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
 
         return value
 

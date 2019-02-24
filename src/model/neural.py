@@ -47,7 +47,7 @@ class NeuralNetwork:
         out = Activation("relu")(out)
 
         # Residual layers, 19 in total.
-        for _ in range(19):
+        for _ in range(5):
             out = Residual(256, 256, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
@@ -116,7 +116,9 @@ class NeuralNetwork:
 
         policy_delete = output[1][0]
         policy_delete -= np.min(policy_delete)
-        policy_delete /= np.ptp(policy_delete) # TODO: Fix rare divide-by-zero error.
+        peaks = np.ptp(policy_delete)
+        if peaks:
+            policy_delete /= peaks
 
         return ((policy_moves, policy_delete), output[2][0][0])
 

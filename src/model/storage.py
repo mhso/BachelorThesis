@@ -77,14 +77,11 @@ class NetworkStorage:
     The network periodically saves it's model to this class and
     MCTS loads the newest network during self-play.
     """
-    def __init__(self, game_size, action_space=4):
+    def __init__(self):
         self.networks = {}
         self.curr_step = 0
-        self.game_size = game_size
 
     def latest_network(self):
-        if self.networks == {}:
-            self.save_network(0, NeuralNetwork(self.game_size))
         return self.networks[self.curr_step]
 
     def save_network(self, step, network):

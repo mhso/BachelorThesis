@@ -12,6 +12,7 @@ from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
 from model.storage import ReplayStorage, NetworkStorage
+from model.neural import NeuralNetwork
 from view.log import log
 from view.visualize import Gui
 from view.graph import Graph
@@ -98,6 +99,8 @@ def evaluate_model(game, player, storage, step, show_plot=False):
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
+    print("Evaluating performance of model on thread {}...".format(threading.current_thread().name), flush=True)
+    print("Games in replay buffer: {}".format(len(storage.buffer)))
     eval_minimax = evaluate_against_ai(game, player,
                                        get_ai_algorithm(
                                            "Minimax" if type(game).__name__ == "Latrunculi"
@@ -131,6 +134,10 @@ class GameThread(threading.Thread):
         self.args = args
 
     def run(self):
+        while self.args[5] and self.args[5].networks == {}:
+            # Wait for initial construction/compilation of network.
+            sleep(0.5)
+
         play_loop(self.args[0], self.args[1], self.args[2], 0, self.args[3], self.args[4], self.args[5], self.args[6])
 
 def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
@@ -169,10 +176,9 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
 
         game.reset() # Reset game history.
 
-        if (type(p1).__name__ == "MCTS" and
-                constants.EVAL_CHECKPOINT and not iteration % constants.EVAL_CHECKPOINT):
+        if (type(p1).__name__ == "MCTS" and len(replay_storage.buffer) > constants.BATCH_SIZE
+                and constants.EVAL_CHECKPOINT) and not iteration % constants.EVAL_CHECKPOINT:
             # Evaluate performance of trained model against other AIs.
-            print("Evaluating performance of model on thread {}...".format(threading.current_thread().name), flush=True)
             evaluate_model(game, p1, replay_storage, network_storage.curr_step, plot_data)
 
         play_loop(game, p1, p2, iteration+1, gui, plot_data, network_storage, replay_storage)
@@ -184,14 +190,15 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
             Graph.close()
         exit(0)
 
-def train_network(network_storage, replay_storage, iterations):
+def train_network(network_storage, size, replay_storage, iterations):
     """
     Run a given number of iterations.
     For each iteration, sample a batch of data
     from replay buffer and use the data to train
     the network.
     """
-    network = network_storage.latest_network()
+    network = NeuralNetwork(size)
+    network_storage.save_network(0, network)
     print("NETWORK IS WAITING FOR DATA...")
     while len(replay_storage.buffer) < constants.BATCH_SIZE:
         sleep(1)
@@ -200,10 +207,11 @@ def train_network(network_storage, replay_storage, iterations):
     print("NETWORK IS TRAINING...", flush=True)
 
     for i in range(iterations):
-        if i % constants.SAVE_CHECKPOINT:
-            network_storage.save_network(i, network)
         inputs, expected_out = replay_storage.sample_batch()
         loss = network.train(inputs, expected_out)
+        if not i % constants.SAVE_CHECKPOINT:
+            network_storage.save_network(i, network)
+            print("Loss at iteration {}: {}".format(i, loss[0]))
         #Graph.plot_data("Training Evaluation", None, loss[0])
         if force_quit(None):
             break
@@ -239,10 +247,11 @@ def prepare_training(game, p1, p2, **kwargs):
             # Run the network training iterations.
             if plot_data:
                 train_thread = threading.Thread(target=train_network,
-                                                args=(network_storage, replay_storage, constants.TRAINING_STEPS))
+                                                args=(network_storage, game.size, 
+                                                      replay_storage, constants.TRAINING_STEPS))
                 train_thread.start()
             else:
-                train_network(network_storage, replay_storage, constants.TRAINING_STEPS)
+                train_network(network_storage, game.size, replay_storage, constants.TRAINING_STEPS)
 
         if plot_data:
             Graph.run(gui, "Training Evaluation", "Training Iteration", "Winrate") # Start graph window in main thread.
@@ -360,7 +369,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
 NETWORK_STORAGE = None
 REPLAY_STORAGE = None
 if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
-    NETWORK_STORAGE = NetworkStorage(game.size)
+    NETWORK_STORAGE = NetworkStorage()
     REPLAY_STORAGE = ReplayStorage()
     if constants.RANDOM_INITIAL_GAMES:
         if type(p_white).__name__ == "MCTS":

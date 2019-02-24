@@ -13,7 +13,7 @@ from time import sleep, time
 from controller.latrunculi import Latrunculi
 from model.storage import ReplayStorage, NetworkStorage
 from model.neural import NeuralNetwork
-from view.log import log
+from view.log import log, FancyLogger
 from view.visualize import Gui
 from view.graph import Graph
 import constants
@@ -44,6 +44,7 @@ def play_game(game, player_white, player_black, gui=None):
         else:
             state = player_black.execute_action(state)
 
+        FancyLogger.set_thread_status(threading.current_thread().name, "{}'s turn".format(state.str_player()))
         game.history.append(state)
 
         if "-t" in argv:
@@ -99,8 +100,8 @@ def evaluate_model(game, player, storage, step, show_plot=False):
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
-    print("Evaluating performance of model on thread {}...".format(threading.current_thread().name), flush=True)
-    print("Games in replay buffer: {}".format(len(storage.buffer)))
+    thread_name = threading.current_thread().name
+    FancyLogger.set_thread_status(thread_name, "Evaluating against Minimax")
     eval_minimax = evaluate_against_ai(game, player,
                                        get_ai_algorithm(
                                            "Minimax" if type(game).__name__ == "Latrunculi"
@@ -109,24 +110,27 @@ def evaluate_model(game, player, storage, step, show_plot=False):
 
     print("Evaluation against Minimax: {}".format(eval_minimax))
 
+    FancyLogger.set_thread_status(thread_name, "Evaluating against Random")
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
                                       constants.EVAL_ITERATIONS)
 
     print("Evaluation against Random: {}".format(eval_minimax))
-
+    
+    FancyLogger.set_thread_status(thread_name, "Evaluating against basic MCTS")
     eval_mcts = evaluate_against_ai(game, player,
                                     get_ai_algorithm("MCTS_Basic", game, "."),
                                     constants.EVAL_ITERATIONS)
 
     storage.save_perform_eval_data([eval_minimax, eval_random, eval_mcts])
 
-    print("Evaluation against MCTS: {}".format(eval_mcts))
-    if show_plot and storage.eval_performance():
+    if storage.eval_performance():
         data = storage.reset_perform_data()
-        Graph.plot_data("Versus Minimax", step, data[0])
-        Graph.plot_data("Versus Random", step, data[1])
-        Graph.plot_data("Versus Basic MCTS", step, data[2])
+        FancyLogger.set_performance_values(data)
+        if show_plot:
+            Graph.plot_data("Versus Minimax", step, data[0])
+            Graph.plot_data("Versus Random", step, data[1])
+            Graph.plot_data("Versus Basic MCTS", step, data[2])
 
 class GameThread(threading.Thread):
     def __init__(self, *args):
@@ -164,6 +168,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
         if replay_storage:
             # Save game to be used for neural network training.
             replay_storage.save_game(game.clone())
+            FancyLogger.total_games += 1
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
                     and len(replay_storage.buffer) >= constants.RANDOM_INITIAL_GAMES):
                 # We are done with random game generation,
@@ -199,19 +204,21 @@ def train_network(network_storage, size, replay_storage, iterations):
     """
     network = NeuralNetwork(size)
     network_storage.save_network(0, network)
-    print("NETWORK IS WAITING FOR DATA...")
+    FancyLogger.set_network_status("Waiting for data...")
     while len(replay_storage.buffer) < constants.BATCH_SIZE:
         sleep(1)
         if force_quit(None):
             return
-    print("NETWORK IS TRAINING...", flush=True)
+
+    FancyLogger.set_network_status("Starting training...")
 
     for i in range(iterations):
+        FancyLogger.set_training_step((i+1))
         inputs, expected_out = replay_storage.sample_batch()
         loss = network.train(inputs, expected_out)
         if not i % constants.SAVE_CHECKPOINT:
             network_storage.save_network(i, network)
-            print("Loss at iteration {}: {}".format(i, loss[0]))
+        FancyLogger.set_network_status("Training loss: {}".format(loss))
         #Graph.plot_data("Training Evaluation", None, loss[0])
         if force_quit(None):
             break

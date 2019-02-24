@@ -34,7 +34,7 @@ GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 1
+GAME_THREADS = 4
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
@@ -48,7 +48,7 @@ EVAL_ITERATIONS = 5
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
 # Fraction of GPU memory TensorFlow is allowed to use.
-MAX_GPU_FRACTION = 0.6
+MAX_GPU_FRACTION = 0.4
 
 # How often to save neural network to shared storage.
 SAVE_CHECKPOINT = 50

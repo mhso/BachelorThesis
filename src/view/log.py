@@ -67,8 +67,8 @@ class FancyLogger:
         print(FancyLogger.network_status)
 
         num_symbols = constants.TRAINING_STEPS * FancyLogger.train_ratio
-        progress_str = "O" * num_symbols
-        remain = "-" * (20 - num_symbols)
+        progress_str = "▓" * num_symbols
+        remain = "▒" * (20 - num_symbols)
         print("Training progress: {} {}/{}".format(progress_str + remain, FancyLogger.train_step, constants.TRAINING_STEPS))
         print("")
 

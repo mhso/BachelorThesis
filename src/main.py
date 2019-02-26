@@ -5,6 +5,7 @@ main: Run game iterations and do things.
 """
 import pickle
 import threading
+import multiprocessing
 from glob import glob
 from sys import argv
 from os import mkdir

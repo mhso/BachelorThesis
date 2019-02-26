@@ -1,8 +1,22 @@
+from threading import Thread
+from time import sleep
 from testing import assertion
 from model.state import Action, State
 from model.storage import ReplayStorage
 from controller.latrunculi import Latrunculi
 from view.graph import Graph
+
+def test_graph(storage):
+    sleep(0.5)
+    evaluated = False
+    if storage.eval_performance():
+        evaluated = True
+        data = storage.reset_perform_data()
+        assertion.assert_true(data != [], "Performance data not empty")
+        Graph.plot_data("DATA STUFF", None, data)
+
+    assertion.assert_true(evaluated, "Performance was evaluated")
+    assertion.assert_equal([], storage.perform_eval_buffer, "Buffer reset")
 
 def run_tests():
     # Test Action ID.
@@ -26,14 +40,8 @@ def run_tests():
     storage = ReplayStorage()
     for i in range(10):
         storage.save_perform_eval_data(i/10)
-    Graph.run(title="Test stuff")
 
-    evaluated = False
-    if storage.eval_performance():
-        evaluated = True
-        data = storage.reset_perform_data()
-        assertion.assert_true(data != [], "Performance data not empty")
-        Graph.plot_data("DATA STUFF", None, data, "Step", "Win ratio")
+    test_t = Thread(target=test_graph, args=(storage,))
+    test_t.start()
 
-    assertion.assert_true(evaluated, "Performance was evaluated")
-    assertion.assert_equal([], storage.perform_eval_buffer, "Buffer reset")
+    Graph.run(title="Test stuff", x_label="Step", y_label="Win ratio")

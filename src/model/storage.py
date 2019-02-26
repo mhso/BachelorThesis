@@ -87,3 +87,8 @@ class NetworkStorage:
     def save_network(self, step, network):
         self.networks[step] = network
         self.curr_step = step
+
+    def replace_dummy_network(self):
+        old_network = self.latest_network()
+        network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
+        self.save_network(self.curr_step, network)

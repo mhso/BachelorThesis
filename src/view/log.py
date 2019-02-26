@@ -4,6 +4,8 @@ log: Log stuff, models (neural & mcts) and board to console and/or file.
 ------------------------------------------------------------------------
 """
 from sys import argv
+from time import time
+from threading import Lock
 import constants
 import os
 
@@ -24,6 +26,12 @@ class FancyLogger:
     train_ratio = 0
     performance_values = (0, 0, 0)
     total_games = 0
+    time_started = 0
+    lock = Lock()
+
+    @staticmethod
+    def start_timing():
+        FancyLogger.time_started = time()
 
     @staticmethod
     def set_network_status(status):
@@ -53,6 +61,7 @@ class FancyLogger:
 
     @staticmethod
     def pp():
+        FancyLogger.lock.acquire()
         clear_console()
         print("-=-=- Network status -=-=-")
         print(FancyLogger.network_status)
@@ -73,3 +82,5 @@ class FancyLogger:
             print("{}: {}".format(thread, status))
 
         print("Total games generated: {}".format(FancyLogger.total_games))
+        print("Time spent: {} s".format(time() - FancyLogger.time_started))
+        FancyLogger.lock.release()

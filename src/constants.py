@@ -48,7 +48,7 @@ EVAL_ITERATIONS = 5
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
 # Fraction of GPU memory TensorFlow is allowed to use.
-MAX_GPU_FRACTION = 0.4
+MAX_GPU_FRACTION = 0.6
 
 # How often to save neural network to shared storage.
 SAVE_CHECKPOINT = 50

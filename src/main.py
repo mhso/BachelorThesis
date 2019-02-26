@@ -12,7 +12,7 @@ from os.path import exists
 from time import sleep, time
 from controller.latrunculi import Latrunculi
 from model.storage import ReplayStorage, NetworkStorage
-from model.neural import NeuralNetwork
+from model.neural import NeuralNetwork, DummyNetwork
 from view.log import log, FancyLogger
 from view.visualize import Gui
 from view.graph import Graph
@@ -44,7 +44,9 @@ def play_game(game, player_white, player_black, gui=None):
         else:
             state = player_black.execute_action(state)
 
-        FancyLogger.set_thread_status(threading.current_thread().name, "{}'s turn".format(state.str_player()))
+        FancyLogger.set_thread_status(threading.current_thread().name,
+                                      "Moves: {}. {}'s turn".format(len(game.history),
+                                                                    state.str_player()))
         game.history.append(state)
 
         if "-t" in argv:
@@ -202,6 +204,7 @@ def train_network(network_storage, size, replay_storage, iterations):
     from replay buffer and use the data to train
     the network.
     """
+    FancyLogger.start_timing()
     network = NeuralNetwork(size)
     network_storage.save_network(0, network)
     FancyLogger.set_network_status("Waiting for data...")
@@ -223,8 +226,7 @@ def train_network(network_storage, size, replay_storage, iterations):
         if force_quit(None):
             break
     network_storage.save_network(iterations, network)
-    if "-t" in options:
-        print("Training took: {} s".format(time() - TIME_TRAINING))
+    FancyLogger.set_network_status("Training finished!")
 
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
@@ -254,7 +256,7 @@ def prepare_training(game, p1, p2, **kwargs):
             # Run the network training iterations.
             if plot_data:
                 train_thread = threading.Thread(target=train_network,
-                                                args=(network_storage, game.size, 
+                                                args=(network_storage, game.size,
                                                       replay_storage, constants.TRAINING_STEPS))
                 train_thread.start()
             else:
@@ -383,8 +385,6 @@ if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
             p_white = get_ai_algorithm("Random", game, ".")
         if type(p_black).__name__ == "MCTS":
             p_black = get_ai_algorithm("Random", game, ".")
-
-TIME_TRAINING = time()
 
 prepare_training(game, p_white, p_black,
                  gui=gui,

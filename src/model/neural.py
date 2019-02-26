@@ -3,6 +3,7 @@
 neural: Neural Network stuff.
 -----------------------------
 """
+from threading import Lock
 from tensorflow import Session, ConfigProto, reset_default_graph, get_default_graph
 from keras.backend.tensorflow_backend import set_session, clear_session
 from keras.backend import get_session
@@ -23,7 +24,8 @@ class NeuralNetwork:
     """
     def __init__(self, board_size, action_space=4, train_immediately=True):
         self.action_space = action_space
-        self.input_size = (board_size, board_size, 4)
+        self.board_size = board_size
+        self.lock = Lock()
         if not train_immediately:
             return
 
@@ -34,13 +36,14 @@ class NeuralNetwork:
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION
+        config.gpu_options.allow_growth = True
         #config.gpu_options.visible_device_list = "0"
         set_session(Session(config=config))
 
         session = get_session()
         nn_graph = get_default_graph()
 
-        inp = Input(self.input_size)
+        inp = Input((board_size, board_size, 4))
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
@@ -110,12 +113,11 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
-        session = get_session()
-        nn_graph = get_default_graph()
-
+        self.lock.acquire()
         if len(inp.shape) < 4:
             inp = np.array([inp]).reshape((-1, 4, 4, 4))
         output = self.model.predict(inp)
+        self.lock.release()
 
         policy_moves = output[0][0]
         policy_moves -= np.min(policy_moves)

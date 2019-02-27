@@ -1,5 +1,5 @@
 {
     "python.linting.pylintEnabled": true,
-    "python.pythonPath": "C:\\Users\\Frank\\Miniconda3\\envs\\tf_env\\python.exe",
+    "python.pythonPath": "C:\\Users\\Guellen\\Miniconda3\\envs\\tens_gpu\\python.exe",
     "python.linting.enabled": true
 }

@@ -5,74 +5,18 @@ main: Run game iterations and do things.
 """
 import pickle
 import threading
-import multiprocessing
+from multiprocessing import Queue, Process
 from glob import glob
 from sys import argv
-from os import mkdir
-from os.path import exists
-from time import sleep, time
+from time import sleep
 from controller.latrunculi import Latrunculi
+from controller import self_play
 from model.storage import ReplayStorage, NetworkStorage
 from model.neural import NeuralNetwork, DummyNetwork
 from view.log import log, FancyLogger
 from view.visualize import Gui
 from view.graph import Graph
 import constants
-
-def force_quit(gui):
-    return gui is not None and not gui.active or Graph.stop_event.is_set()
-
-def play_game(game, player_white, player_black, gui=None):
-    """
-    Play a game to the end, and return the resulting state.
-    """
-    state = game.start_state()
-    counter = 0
-    time_game = time()
-    if gui is not None:
-        sleep(1)
-        gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
-
-    while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
-        #print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-        #print("Player: {}".format(state.str_player()), flush=True)
-        num_white, num_black = state.count_pieces()
-        log("Num of pieces, White: {} Black: {}".format(num_white, num_black))
-        time_turn = time()
-
-        if game.player(state):
-            state = player_white.execute_action(state)
-        else:
-            state = player_black.execute_action(state)
-
-        FancyLogger.set_thread_status(threading.current_thread().name,
-                                      "Moves: {}. {}'s turn".format(len(game.history),
-                                                                    state.str_player()))
-        game.history.append(state)
-
-        if "-t" in argv:
-            log("Move took: {} s".format(time() - time_turn))
-
-        if force_quit(gui):
-            print("{}: Forcing exit...".format(threading.current_thread().name))
-            exit(0)
-
-        if gui is not None:
-            if type(player_white).__name__ != "Human" and not state.player:
-                sleep(0.5)
-            elif type(player_black).__name__ != "Human" and state.player:
-                sleep(0.5)
-            gui.update(state)
-        counter += 1
-
-    winner = "Black" if state.player else "White"
-    log("Game finished on thread {}, winner: {}".format(threading.current_thread().name, winner))
-    if "-t" in argv:
-        print("Game took {} s.".format(time() - time_game), flush=True)
-    #print(state.board, flush=True)
-
-    # Return resulting state of game.
-    return state
 
 def leading_zeros(num):
     result = str(num)
@@ -84,120 +28,6 @@ def leading_zeros(num):
         result = "0" + result
     return result
 
-def evaluate_against_ai(game, player, other, num_games):
-    """
-    Evaluate MCTS/NN model against a given AI algorithm.
-    Plays out a given number of games and returns
-    the ratio of games won by MCTS in the range
-    -1 to 1, -1 meaning losing all games, 0 meaning
-    all games were draws and 1 being winning all games.
-    """
-    wins = 0
-    for _ in range(num_games):
-        result = play_game(game, player, other, gui)
-        wins += game.utility(result, True)
-    return wins/num_games # Return ratio of games won.
-
-def evaluate_model(game, player, storage, step, show_plot=False):
-    """
-    Evaluate MCTS/NN model against three different AI
-    algorithms. Print/plot result of evaluation.
-    """
-    thread_name = threading.current_thread().name
-    FancyLogger.set_thread_status(thread_name, "Evaluating against Minimax")
-    eval_minimax = evaluate_against_ai(game, player,
-                                       get_ai_algorithm(
-                                           "Minimax" if type(game).__name__ == "Latrunculi"
-                                           else "Minimax_CF", game, "."),
-                                       constants.EVAL_ITERATIONS)
-
-    print("Evaluation against Minimax: {}".format(eval_minimax))
-
-    FancyLogger.set_thread_status(thread_name, "Evaluating against Random")
-    eval_random = evaluate_against_ai(game, player,
-                                      get_ai_algorithm("Random", game, "."),
-                                      constants.EVAL_ITERATIONS)
-
-    print("Evaluation against Random: {}".format(eval_minimax))
-    
-    FancyLogger.set_thread_status(thread_name, "Evaluating against basic MCTS")
-    eval_mcts = evaluate_against_ai(game, player,
-                                    get_ai_algorithm("MCTS_Basic", game, "."),
-                                    constants.EVAL_ITERATIONS)
-
-    storage.save_perform_eval_data([eval_minimax, eval_random, eval_mcts])
-
-    if storage.eval_performance():
-        data = storage.reset_perform_data()
-        FancyLogger.set_performance_values(data)
-        if show_plot:
-            Graph.plot_data("Versus Minimax", step, data[0])
-            Graph.plot_data("Versus Random", step, data[1])
-            Graph.plot_data("Versus Basic MCTS", step, data[2])
-
-class GameThread(threading.Thread):
-    def __init__(self, *args):
-        threading.Thread.__init__(self)
-        self.args = args
-
-    def run(self):
-        while self.args[5] and self.args[5].networks == {}:
-            # Wait for initial construction/compilation of network.
-            sleep(0.5)
-
-        play_loop(self.args[0], self.args[1], self.args[2], 0, self.args[3], self.args[4], self.args[5], self.args[6])
-
-def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
-    """
-    Run a given number of game iterations with a given AI.
-    After each game iteration, if the model is MCTS,
-    we save the model for later use. If 'load' is true,
-    we load these MCTS models.
-    """
-    if iteration == constants.GAME_ITERATIONS:
-        print("{} is done with training!".format(threading.current_thread().name))
-        return
-    try:
-        if network_storage and type(p1).__name__ != "Random":
-            # Set MCTS AI's newest network, if present.
-            network = network_storage.latest_network()
-            if type(p1).__name__ == "MCTS":
-                p1.network = network
-            if type(p2).__name__ == "MCTS":
-                p2.network = network
-
-        play_game(game, p1, p2, gui)
-
-        if replay_storage:
-            # Save game to be used for neural network training.
-            replay_storage.save_game(game.clone())
-            FancyLogger.total_games += 1
-            if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
-                    and len(replay_storage.buffer) >= constants.RANDOM_INITIAL_GAMES):
-                # We are done with random game generation,
-                # moving on to actual self-play.
-                network = network_storage.latest_network()
-                p1 = get_ai_algorithm("MCTS", game, ".")
-                p1.network = network
-                p2 = get_ai_algorithm("MCTS", game, ".")
-                p2.network = network
-
-        game.reset() # Reset game history.
-
-        if (type(p1).__name__ == "MCTS" and len(replay_storage.buffer) > constants.BATCH_SIZE
-                and constants.EVAL_CHECKPOINT) and not iteration % constants.EVAL_CHECKPOINT:
-            # Evaluate performance of trained model against other AIs.
-            evaluate_model(game, p1, replay_storage, network_storage.curr_step, plot_data)
-
-        play_loop(game, p1, p2, iteration+1, gui, plot_data, network_storage, replay_storage)
-    except KeyboardInterrupt:
-        print("Exiting by interrupt...")
-        if gui is not None:
-            gui.close()
-        if plot_data:
-            Graph.close()
-        exit(0)
-
 def train_network(network_storage, size, replay_storage, iterations):
     """
     Run a given number of iterations.
@@ -207,11 +37,11 @@ def train_network(network_storage, size, replay_storage, iterations):
     """
     FancyLogger.start_timing()
     network = NeuralNetwork(size)
-    network_storage.save_network(0, network)
+    NETWORK_STORAGE.save_network(0, network)
     FancyLogger.set_network_status("Waiting for data...")
-    while len(replay_storage.buffer) < constants.BATCH_SIZE:
+    while replay_storage.buffer.qsize() < constants.BATCH_SIZE:
         sleep(1)
-        if force_quit(None):
+        if self_play.force_quit(None):
             return
 
     FancyLogger.set_network_status("Starting training...")
@@ -224,7 +54,7 @@ def train_network(network_storage, size, replay_storage, iterations):
             network_storage.save_network(i, network)
         FancyLogger.set_network_status("Training loss: {}".format(loss))
         #Graph.plot_data("Training Evaluation", None, loss[0])
-        if force_quit(None):
+        if self_play.force_quit(None):
             break
     network_storage.save_network(iterations, network)
     FancyLogger.set_network_status("Training finished!")
@@ -245,12 +75,13 @@ def prepare_training(game, p1, p2, **kwargs):
 
         for i in range(constants.GAME_THREADS):
             if i > 0: # Make copies of game and players.
-                copy_game = get_game(type(game).__name__, game.size, None, ".")
+                copy_game = self_play.get_game(type(game).__name__, game.size, None, ".")
                 copy_game.init_state = game.start_state()
                 game = copy_game
-                p1 = get_ai_algorithm(type(p1).__name__, game, ".")
-                p2 = get_ai_algorithm(type(p2).__name__, game, ".")
-            game_thread = GameThread(game, p1, p2, gui, plot_data, network_storage, replay_storage)
+                p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
+                p2 = self_play.get_ai_algorithm(type(p2).__name__, game, ".")
+            game_thread = Process(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, network_storage, replay_storage))
+            #game_thread = GameThread(game, p1, p2, gui, plot_data, network_storage, replay_storage)
             game_thread.start() # Start game logic thread.
 
         if network_storage is not None and constants.GAME_THREADS > 1:
@@ -268,7 +99,7 @@ def prepare_training(game, p1, p2, **kwargs):
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
-        play_loop(game, p1, p2, 0, network_storage=network_storage, replay_storage=replay_storage)
+        self_play.play_loop(game, p1, p2, 0, network_storage=network_storage, replay_storage=replay_storage)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)
@@ -277,32 +108,6 @@ def save_models(model, path):
 def load_model(path):
     print("Loading model from file: {}".format(path), flush=True)
     return pickle.load(open(path, "rb"))
-
-def get_game(game_name, size, rand_seed, wildcard):
-    lower = game_name.lower()
-    if lower == wildcard:
-        game_name = constants.DEFAULT_GAME
-        lower = game_name.lower()
-    try:
-        module = __import__("controller.{}".format(lower), fromlist=["{}".format(game_name)])
-        algo_class = getattr(module, "{}".format(game_name))
-        return algo_class(size, rand_seed)
-    except ImportError:
-        print("Unknown game, name must equal name of game class.")
-        return None, "unknown"
-
-def get_ai_algorithm(algorithm, game, wildcard):
-    lower = algorithm.lower()
-    if lower == wildcard:
-        algorithm = constants.DEFAULT_AI
-        lower = algorithm.lower()
-    try:
-        module = __import__("controller.{}".format(lower), fromlist=["{}".format(algorithm)])
-        algo_class = getattr(module, "{}".format(algorithm))
-        return algo_class(game)
-    except ImportError:
-        print("Unknown AI algorithm, name must equal name of AI class.")
-        return None, "unknown"
 
 # Load arguments for running the program.
 # The args, in order, correspond to the variables below.
@@ -349,10 +154,9 @@ if argc > 1:
                 if argc > 5 and args[5] != wildcard:
                     rand_seed = int(args[5])
 
-
-game = get_game(game_name, board_size, rand_seed, wildcard)
-p_white = get_ai_algorithm(player1, game, wildcard)
-p_black = get_ai_algorithm(player2, game, wildcard)
+game = self_play.get_game(game_name, board_size, rand_seed, wildcard)
+p_white = self_play.get_ai_algorithm(player1, game, wildcard)
+p_black = self_play.get_ai_algorithm(player2, game, wildcard)
 
 print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
     type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__), flush=True)
@@ -380,16 +184,18 @@ if "-g" in options or player1 == "human" or player2 == "human":
 NETWORK_STORAGE = None
 REPLAY_STORAGE = None
 if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
-    NETWORK_STORAGE = NetworkStorage()
+    queue = Queue(constants.TRAINING_STEPS // constants.SAVE_CHECKPOINT)
+    NETWORK_STORAGE = NetworkStorage(queue)
     REPLAY_STORAGE = ReplayStorage()
     if constants.RANDOM_INITIAL_GAMES:
         if type(p_white).__name__ == "MCTS":
-            p_white = get_ai_algorithm("Random", game, ".")
+            p_white = self_play.get_ai_algorithm("Random", game, ".")
         if type(p_black).__name__ == "MCTS":
-            p_black = get_ai_algorithm("Random", game, ".")
+            p_black = self_play.get_ai_algorithm("Random", game, ".")
 
-prepare_training(game, p_white, p_black,
-                 gui=gui,
-                 plot_data="-p" in options,
-                 network_storage=NETWORK_STORAGE,
-                 replay_storage=REPLAY_STORAGE)
+if __name__ == "__main__":
+    prepare_training(game, p_white, p_black,
+                     gui=gui,
+                     plot_data="-p" in options,
+                     network_storage=NETWORK_STORAGE,
+                     replay_storage=REPLAY_STORAGE)

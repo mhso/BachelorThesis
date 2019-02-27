@@ -25,10 +25,10 @@ class NeuralNetwork:
     def __init__(self, board_size, action_space=4, train_immediately=True):
         self.action_space = action_space
         self.board_size = board_size
-        self.lock = Lock()
+        #self.lock = Lock()
         if not train_immediately:
             return
-
+        print("CREATING NETWORK")
         # Clean up from previous TF graphs.
         reset_default_graph()
         clear_session()
@@ -113,11 +113,11 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
-        self.lock.acquire()
+        #self.lock.acquire()
         if len(inp.shape) < 4:
             inp = np.array([inp]).reshape((-1, 4, 4, 4))
         output = self.model.predict(inp)
-        self.lock.release()
+        #self.lock.release()
 
         policy_moves = output[0][0]
         policy_moves -= np.min(policy_moves)

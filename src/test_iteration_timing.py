@@ -2,7 +2,6 @@ import sys
 from testing import assertion
 from testing import test_latrunculi
 from testing import test_latrunculi_s
-from testing import test_latrunculi_ne
 from testing import test_cnnct_four
 from testing import test_minimax
 from testing import test_mcts
@@ -25,7 +24,6 @@ times_ne = []
 times_cf = []
 test_l = games_to_test is None or games_to_test == "latrunculi"
 test_ls = games_to_test is None or games_to_test == "latrunculi_s"
-test_lne = games_to_test is None or games_to_test == "latrunculi_ne"
 test_cf =  games_to_test is None or games_to_test == "connect4"
 
 if test_l:
@@ -41,12 +39,6 @@ if test_ls:
         print("Test iteration {}/{} ".format(i, test_iterations))
         time_taken = test_latrunculi_s.run_iteration_timing_test(log_type=None)
         times_s.append(time_taken)
-if test_lne:
-    print("\n{}-=-=-=- LATRUNCULI_NE GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
-    for i in range(1, test_iterations+1):
-        print("Test iteration {}/{} ".format(i, test_iterations))
-        time_taken = test_latrunculi_ne.run_iteration_timing_test(log_type=None)
-        times_ne.append(time_taken)
 if test_cf:
     print("\n{}-=-=-=-=- CONNECT FOUR TESTS -=-=-=-=-{}".format(YELLOW, RESET))
     for i in range(1, test_iterations+1):
@@ -58,7 +50,5 @@ if test_l:
     print("Average time for Latrunculi: {} s".format(sum(times_l) / len(times_l)))
 if test_ls:
     print("Average time for Latrunculi_s: {} s".format(sum(times_s) / len(times_s)))
-if test_lne:
-    print("Average time for Latrunculi_ne: {} s".format(sum(times_ne) / len(times_ne)))
 if test_cf:
     print("Average time for Connect Four: {} s".format(sum(times_cf) / len(times_cf)))

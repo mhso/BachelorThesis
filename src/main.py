@@ -349,6 +349,7 @@ if argc > 1:
                 if argc > 5 and args[5] != wildcard:
                     rand_seed = int(args[5])
 
+
 game = get_game(game_name, board_size, rand_seed, wildcard)
 p_white = get_ai_algorithm(player1, game, wildcard)
 p_black = get_ai_algorithm(player2, game, wildcard)

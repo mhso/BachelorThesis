@@ -4,7 +4,6 @@ latrunculi: Subclass of game. Implements game methods for latrunculi.
 ---------------------------------------------------------------------
 """
 import numpy as np
-import numba
 from numba import jit
 from controller.game import Game
 from model.state import State, Action

@@ -4,9 +4,9 @@ latrunculi: Subclass of game. Implements game methods for latrunculi.
 ---------------------------------------------------------------------
 """
 import numpy as np
+from numba import jit
 from controller.game import Game
 from model.state import State, Action
-from enum import Enum
 
 class Latrunculi_s(Game):
     size = 8
@@ -127,25 +127,29 @@ class Latrunculi_s(Game):
 
         return actionsList
 
+    @jit(nopython=True)
     def is_within_board(self, coords):
         y, x = coords
         return 0 <= x and x < self.board_no_of_rows and 0 <= y and y < self.board_no_of_rows
-    
+
+    @jit(nopython=True)
     def is_empty_field(self, coords):
         return self.is_within_board(coords) and self.board[coords] == 0
 
+    @jit(nopython=True)
     def move_coords(self, direction, coords):
         y, x = coords
         if direction == 2: # UP
-            return (y-1, x)
+            return y-1, x
         elif direction == 4: # LEFT
-            return (y, x-1)
+            return y, x-1
         elif direction == 6: # RIGHT
-            return (y, x+1)
+            return y, x+1
         elif direction == 8: # DOWN
-            return (y+1, x)
+            return y+1, x
         return None
 
+    @jit(nopython=True)
     def get_direction(self, coords_from, coords_to):
         y_from, x_from = coords_from
         y_to, x_to = coords_to
@@ -159,10 +163,12 @@ class Latrunculi_s(Game):
             return 8  # DOWN
         return None
 
+    @jit(nopython=True)
     def append_list_if_valid(self, current_player, alist, coords_from, coords_to):
         if self.is_empty_field(coords_to) and not self.is_suicide_move(coords_from, coords_to, current_player):
             alist.append(Action(coords_from, coords_to))
-    
+
+    @jit(nopython=True)
     def is_suicide_move(self, coords_from, coords_to, current_player):
         move = self.get_direction(coords_from, coords_to)
 
@@ -173,6 +179,7 @@ class Latrunculi_s(Game):
         else:
             return True
 
+    @jit(nopython=True)
     def valid_coords(self, direction1, direction2, coords, current_player):
         coord1_c = self.move_coords(direction1, coords)
         coord2_c = self.move_coords(direction2, coords)
@@ -194,6 +201,7 @@ class Latrunculi_s(Game):
             else:
                 return True
 
+    @jit(nopython=True)
     def result(self, state, action):
         super.__doc__
         if action is None:

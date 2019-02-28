@@ -146,6 +146,11 @@ def get_ai_algorithm(algorithm, game, wildcard):
         print("Unknown AI algorithm, name must equal name of AI class.")
         return None, "unknown"
 
+def get_latest_network(storage):
+    step, network = storage.get()
+    storage.put((step, network))
+    return network
+
 def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
     """
     Run a given number of game iterations with a given AI.
@@ -154,16 +159,19 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
     we load these MCTS models.
     """
     if iteration == 0:
-        while network_storage and network_storage.is_empty():
+        while network_storage and network_storage.empty():
             # Wait for initial construction/compilation of network.
             sleep(0.5)
     if iteration == constants.GAME_ITERATIONS:
         print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
+        print("We get to here?")
         if network_storage and type(p1).__name__ != "Random":
             # Set MCTS AI's newest network, if present.
-            network = network_storage.latest_network()
+            network = get_latest_network(network_storage)
+            print(hash(network))
+            
             if type(p1).__name__ == "MCTS":
                 p1.network = network
             if type(p2).__name__ == "MCTS":
@@ -179,7 +187,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storag
                     and len(replay_storage.buffer) >= constants.RANDOM_INITIAL_GAMES):
                 # We are done with random game generation,
                 # moving on to actual self-play.
-                network = network_storage.latest_network()
+                network = get_latest_network(network_storage)
                 p1 = get_ai_algorithm("MCTS", game, ".")
                 p1.network = network
                 p2 = get_ai_algorithm("MCTS", game, ".")

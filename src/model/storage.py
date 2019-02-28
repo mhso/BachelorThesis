@@ -85,7 +85,6 @@ class NetworkStorage:
     """
     def __init__(self):
         self.networks = Queue(constants.TRAINING_STEPS // constants.SAVE_CHECKPOINT)
-        print(hash(self.networks))
 
     def is_empty(self):
         return self.networks.empty()

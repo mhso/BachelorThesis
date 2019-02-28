@@ -3,7 +3,7 @@
 neural: Neural Network stuff.
 -----------------------------
 """
-from threading import Lock
+from multiprocessing import Lock, Process
 from tensorflow import Session, ConfigProto, reset_default_graph, get_default_graph
 from keras.backend.tensorflow_backend import set_session, clear_session
 from keras.backend import get_session
@@ -25,10 +25,10 @@ class NeuralNetwork:
     def __init__(self, board_size, action_space=4, train_immediately=True):
         self.action_space = action_space
         self.board_size = board_size
+        print("CREATING NETWORK")
         #self.lock = Lock()
         if not train_immediately:
             return
-        print("CREATING NETWORK")
         # Clean up from previous TF graphs.
         reset_default_graph()
         clear_session()
@@ -113,6 +113,7 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
+        print("Eval on {}".format(Process.pid))
         #self.lock.acquire()
         if len(inp.shape) < 4:
             inp = np.array([inp]).reshape((-1, 4, 4, 4))

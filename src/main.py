@@ -5,7 +5,7 @@ main: Run game iterations and do things.
 """
 import pickle
 import threading
-from multiprocessing import Queue, Process
+from multiprocessing import Queue, Process, Lock
 from glob import glob
 from sys import argv
 from time import sleep
@@ -37,7 +37,7 @@ def train_network(network_storage, size, replay_storage, iterations):
     """
     FancyLogger.start_timing()
     network = NeuralNetwork(size)
-    NETWORK_STORAGE.save_network(0, network)
+    network_storage.put((0, network))
     FancyLogger.set_network_status("Waiting for data...")
     while replay_storage.buffer.qsize() < constants.BATCH_SIZE:
         sleep(1)
@@ -51,12 +51,12 @@ def train_network(network_storage, size, replay_storage, iterations):
         inputs, expected_out = replay_storage.sample_batch()
         loss = network.train(inputs, expected_out)
         if not i % constants.SAVE_CHECKPOINT:
-            network_storage.save_network(i, network)
+            network_storage.put((i, network))
         FancyLogger.set_network_status("Training loss: {}".format(loss))
         #Graph.plot_data("Training Evaluation", None, loss[0])
         if self_play.force_quit(None):
             break
-    network_storage.save_network(iterations, network)
+    network_storage.put((iterations, network))
     FancyLogger.set_network_status("Training finished!")
 
 def prepare_training(game, p1, p2, **kwargs):
@@ -184,8 +184,9 @@ if "-g" in options or player1 == "human" or player2 == "human":
 NETWORK_STORAGE = None
 REPLAY_STORAGE = None
 if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
-    queue = Queue(constants.TRAINING_STEPS // constants.SAVE_CHECKPOINT)
-    NETWORK_STORAGE = NetworkStorage(queue)
+    NETWORK_STORAGE = Queue(constants.TRAINING_STEPS // constants.SAVE_CHECKPOINT)
+    global_lock = Lock()
+    #NETWORK_STORAGE = NetworkStorage(queue)
     REPLAY_STORAGE = ReplayStorage()
     if constants.RANDOM_INITIAL_GAMES:
         if type(p_white).__name__ == "MCTS":

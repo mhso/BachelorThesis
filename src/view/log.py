@@ -62,7 +62,7 @@ class FancyLogger:
     @staticmethod
     def pp():
         FancyLogger.lock.acquire()
-        clear_console()
+        #clear_console()
         print("-=-=- Network status -=-=-")
         print(FancyLogger.network_status)
 
@@ -81,6 +81,7 @@ class FancyLogger:
         for thread, status in FancyLogger.thread_statuses.items():
             print("{}: {}".format(thread, status))
 
+        print("Number of processes: {}".format(constants.GAME_THREADS))
         print("Total games generated: {}".format(FancyLogger.total_games))
         print("Time spent: {} s".format(time() - FancyLogger.time_started))
         FancyLogger.lock.release()

@@ -11,6 +11,7 @@ from os import getpid
 from glob import glob
 from sys import argv
 from time import sleep
+from numpy import array
 from controller.latrunculi import Latrunculi
 from controller import self_play
 from model.storage import ReplayStorage, NetworkStorage
@@ -62,26 +63,32 @@ def train_network(network_storage, size, replay_storage, iterations):
     FancyLogger.set_network_status("Training finished!")
 
 def monitor_games(connections, network_storage, replay_storage):
-    #eval_queue = []
-    #queue_size = constants.GAME_THREADS
+    """
+    Listen for updates from self-play processes.
+    These include:
+        - requests for network evaluation.
+        - the result of a terminated game.
+        - logging events.
+    """
+    eval_queue = []
+    queue_size = constants.GAME_THREADS
     while network_storage.networks == {}:
         sleep(0.5)
 
     for conn in connections:
-            conn.send("go")
+        conn.send("go")
 
     while True:
         for conn in wait(connections):
             status, val = conn.recv()
             if status == "evaluate":
-                """
                 eval_queue.append((conn, val))
                 if len(eval_queue) == queue_size:
-                    while eval_queue != []:
-                        c, v = eval_queue.pop(0)
-                """
-                eval_result = network_storage.latest_network().evaluate(val)
-                conn.send(eval_result)
+                    arr = array([v for _, v in eval_queue])
+                    policy, value = network_storage.latest_network().evaluate(arr)
+                    for i, conn in enumerate(eval_queue):
+                        conn[0].send((policy[0][i], policy[1][i]), value[i])
+                    eval_queue = []
             elif status == "game_over":
                 replay_storage.save_game(val)
             elif status == "log":
@@ -120,7 +127,7 @@ def prepare_training(game, p1, p2, **kwargs):
             game_thread.start() # Start game logic thread.
 
         # Start monitor thread.
-        if pipes == []:
+        if pipes != []:
             monitor = threading.Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
             monitor.start()
 

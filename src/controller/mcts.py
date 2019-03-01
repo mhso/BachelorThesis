@@ -130,6 +130,8 @@ class MCTS(GameAI):
         actions = self.game.actions(state)
         self.connection.send(("evaluate", self.game.structure_data(state)))
         policy_logits, value = self.connection.recv()
+        print(policy_logits)
+        print(value)
 
         # Expand node.
         logit_map = self.game.map_logits(actions, policy_logits)

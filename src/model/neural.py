@@ -33,7 +33,7 @@ class NeuralNetwork:
         reset_default_graph()
         clear_session()
 
-        FILTERS = 256
+        FILTERS = 64
         RES_LAYERS = 19
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
@@ -119,6 +119,8 @@ class NeuralNetwork:
         if len(inp.shape) < 4:
             inp = np.array([inp]).reshape((-1, 4, 4, 4))
         output = self.model.predict(inp)
+        print(output)
+        print(output.shape)
         self.lock.release()
 
         policy_moves = output[0][0]

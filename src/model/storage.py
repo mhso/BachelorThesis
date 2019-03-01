@@ -2,9 +2,9 @@
 storage: Stores/saves/loads neural network models for use in
 training and self-play, as well as replay buffers generated from self-play.
 """
-from multiprocessing import Queue
 import numpy as np
 import constants
+from model.neural import NeuralNetwork, DummyNetwork
 
 class ReplayStorage:
     """
@@ -13,13 +13,14 @@ class ReplayStorage:
     def __init__(self):
         self.max_games = constants.MAX_GAME_STORAGE
         self.batch_size = constants.BATCH_SIZE
-        self.buffer = Queue(constants.MAX_GAME_STORAGE)
-        self.perform_eval_buffer = Queue(constants.EVAL_ITERATIONS * constants.GAME_THREADS)
+        self.buffer = []
+        self.perform_eval_buffer = []
 
     def save_game(self, game):
-        if self.buffer.full():
-            self.buffer.get() # Remove oldest game (maybe).
-        self.buffer.put(game)
+        if len(self.buffer) >= self.max_games:
+            self.buffer.pop(0) # Remove oldest game.
+        self.buffer.append(game)
+        #print("Saved game to buffer. Games: {}".format(len(self.buffer)), flush=True)
 
     def sample_batch(self):
         """
@@ -29,22 +30,15 @@ class ReplayStorage:
         expected outcomes of the game + move probability distribution.
         """
         # TODO: Add a threading lock instead of copying buffer??
-        copy_buffer = Queue(constants.MAX_GAME_STORAGE)
-        buffer_arr = []
-        while not self.buffer.empty():
-            game = self.buffer.get()
-            copy_buffer.put(game)
-            buffer_arr.append(game)
-        self.buffer = copy_buffer
-
+        copy_buffer = [g for g in self.buffer]
         # Sum up how many moves were made during all games in the buffer.
-        move_sum = float(sum(len(g.history) for g in buffer_arr))
+        move_sum = float(sum(len(g.history) for g in copy_buffer))
         # Draw random games, with each game weighed according to the amount
         # of moves made in that game.
         batch = np.random.choice(
-            buffer_arr,
+            copy_buffer,
             size=self.batch_size,
-            p=[len(g.history)/move_sum for g in buffer_arr]
+            p=[len(g.history)/move_sum for g in copy_buffer]
         )
         # Draw random state index values from all chosen games.
         state_indices = [(g, np.random.randint(0, len(g.history))) for g in batch]
@@ -63,18 +57,18 @@ class ReplayStorage:
         return np.array(images), [np.array(out1), np.array(out2), np.array(out3)]
 
     def full_buffer(self):
-        return self.buffer.full()
+        return len(self.buffer) == constants.BATCH_SIZE
 
     def save_perform_eval_data(self, data):
-        self.perform_eval_buffer.put(data)
+        buff = self.perform_eval_buffer
+        buff.append(data)
 
     def eval_performance(self):
-        return self.perform_eval_buffer.full()
+        return len(self.perform_eval_buffer) >= constants.EVAL_ITERATIONS * constants.GAME_THREADS
 
     def reset_perform_data(self):
-        data = []
-        while not self.perform_eval_buffer.empty():
-            data.append(self.perform_eval_buffer.get())
+        data = self.perform_eval_buffer
+        self.perform_eval_buffer = []
         return data
 
 class NetworkStorage:
@@ -84,20 +78,17 @@ class NetworkStorage:
     MCTS loads the newest network during self-play.
     """
     def __init__(self):
-        self.networks = Queue(constants.TRAINING_STEPS // constants.SAVE_CHECKPOINT)
-
-    def is_empty(self):
-        return self.networks.empty()
+        self.networks = {}
+        self.curr_step = 0
 
     def latest_network(self):
-        step, network = self.networks.get()
-        self.networks.put((step, network))
-        return network
+        return self.networks[self.curr_step]
 
     def save_network(self, step, network):
-        self.networks.put((step, network))
+        self.networks[step] = network
+        self.curr_step = step
 
-    #def replace_dummy_network(self):
-    #    old_network = self.latest_network()
-    #    network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
-    #    self.save_network(self.networks.qsize, network)
+    def replace_dummy_network(self):
+        old_network = self.latest_network()
+        network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
+        self.save_network(self.curr_step, network)

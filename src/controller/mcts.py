@@ -39,7 +39,7 @@ class MCTS(GameAI):
     Simulation and Backpropagation.
     """
     state_map = dict()
-    network = None
+    connection = None
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
@@ -128,7 +128,8 @@ class MCTS(GameAI):
         """
         state = node.state
         actions = self.game.actions(state)
-        policy_logits, value = self.network.evaluate(self.game.structure_data(state))
+        self.connection.send(("evaluate", self.game.structure_data(state)))
+        policy_logits, value = self.connection.recv()
 
         # Expand node.
         logit_map = self.game.map_logits(actions, policy_logits)

@@ -5,7 +5,8 @@ main: Run game iterations and do things.
 """
 import pickle
 import threading
-from multiprocessing import Queue, Process, Lock
+from multiprocessing import Process, Pipe
+from os import getpid
 from glob import glob
 from sys import argv
 from time import sleep
@@ -37,9 +38,9 @@ def train_network(network_storage, size, replay_storage, iterations):
     """
     FancyLogger.start_timing()
     network = NeuralNetwork(size)
-    network_storage.put((0, network))
+    network_storage.save_network(0, network)
     FancyLogger.set_network_status("Waiting for data...")
-    while replay_storage.buffer.qsize() < constants.BATCH_SIZE:
+    while len(replay_storage.buffer) < constants.BATCH_SIZE:
         sleep(1)
         if self_play.force_quit(None):
             return
@@ -51,13 +52,42 @@ def train_network(network_storage, size, replay_storage, iterations):
         inputs, expected_out = replay_storage.sample_batch()
         loss = network.train(inputs, expected_out)
         if not i % constants.SAVE_CHECKPOINT:
-            network_storage.put((i, network))
+            network_storage.save_network(i, network)
         FancyLogger.set_network_status("Training loss: {}".format(loss))
         #Graph.plot_data("Training Evaluation", None, loss[0])
         if self_play.force_quit(None):
             break
-    network_storage.put((iterations, network))
+    network_storage.save_network(iterations, network)
     FancyLogger.set_network_status("Training finished!")
+
+def monitor_games(connections, network_storage, replay_storage):
+    ready = False
+    alerted = False
+    #eval_queue = []
+    #queue_size = constants.GAME_THREADS
+    while True:
+        for conn in connections:
+            if not ready and network_storage.networks != {}:
+                alerted = True
+                conn.send("go")
+            elif conn.poll(0.05):
+                status, val = conn.recv()
+                if status == "evaluate":
+                    """
+                    eval_queue.append((conn, val))
+                    if len(eval_queue) == queue_size:
+                        while eval_queue != []:
+                            c, v = eval_queue.pop(0)
+                    """
+                    eval_result = network_storage.latest_network().evaluate(val)
+                    conn.send(eval_result)
+                elif status == "game_over":
+                    replay_storage.save_game(val)
+                elif status == "log":
+                    FancyLogger.set_thread_status(val[1], val[0])
+        if alerted:
+            ready = True
+            alerted = False
 
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
@@ -65,6 +95,7 @@ def prepare_training(game, p1, p2, **kwargs):
     plot_data = kwargs.get("plot_data", False)
     network_storage = kwargs.get("network_storage", None)
     replay_storage = kwargs.get("replay_storage", None)
+
     if gui is not None or plot_data or constants.GAME_THREADS > 1:
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,
@@ -72,7 +103,7 @@ def prepare_training(game, p1, p2, **kwargs):
         if constants.GAME_THREADS > 1:
             # Don't use plot/GUI if several games are played.
             gui = None
-
+        pipes = []
         for i in range(constants.GAME_THREADS):
             if i > 0: # Make copies of game and players.
                 copy_game = self_play.get_game(type(game).__name__, game.size, None, ".")
@@ -80,9 +111,16 @@ def prepare_training(game, p1, p2, **kwargs):
                 game = copy_game
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = self_play.get_ai_algorithm(type(p2).__name__, game, ".")
-            game_thread = Process(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, network_storage, replay_storage))
+            parent, child = Pipe()
+            pipes.append(parent)
+
+            game_thread = Process(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, child))
             #game_thread = GameThread(game, p1, p2, gui, plot_data, network_storage, replay_storage)
             game_thread.start() # Start game logic thread.
+
+        # Start monitor thread.
+        monitor = threading.Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
+        monitor.start()
 
         if network_storage is not None and constants.GAME_THREADS > 1:
             # Run the network training iterations.
@@ -99,7 +137,7 @@ def prepare_training(game, p1, p2, **kwargs):
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
-        self_play.play_loop(game, p1, p2, 0, network_storage=network_storage, replay_storage=replay_storage)
+        self_play.play_loop(game, p1, p2, 0, None)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)
@@ -184,9 +222,7 @@ if "-g" in options or player1 == "human" or player2 == "human":
 NETWORK_STORAGE = None
 REPLAY_STORAGE = None
 if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
-    NETWORK_STORAGE = Queue(constants.TRAINING_STEPS // constants.SAVE_CHECKPOINT)
-    global_lock = Lock()
-    #NETWORK_STORAGE = NetworkStorage(queue)
+    NETWORK_STORAGE = NetworkStorage()
     REPLAY_STORAGE = ReplayStorage()
     if constants.RANDOM_INITIAL_GAMES:
         if type(p_white).__name__ == "MCTS":
@@ -195,6 +231,7 @@ if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
             p_black = self_play.get_ai_algorithm("Random", game, ".")
 
 if __name__ == "__main__":
+    print("Main PID: {}".format(getpid()))
     prepare_training(game, p_white, p_black,
                      gui=gui,
                      plot_data="-p" in options,

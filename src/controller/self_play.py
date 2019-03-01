@@ -1,4 +1,5 @@
 import threading
+from os import getpid
 from time import time, sleep
 from view.log import log, FancyLogger
 import constants
@@ -8,7 +9,7 @@ from view.visualize import Gui
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()
 
-def play_game(game, player_white, player_black, gui=None):
+def play_game(game, player_white, player_black, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
     """
@@ -34,6 +35,8 @@ def play_game(game, player_white, player_black, gui=None):
         thread_status = "Moves: {}. {}'s turn, turn took {} s".format(len(game.history),
                                                                       state.str_player(),
                                                                       time() - time_turn)
+        if connection:
+            connection.send(("log", [thread_status, getpid()]))
         #FancyLogger.set_thread_status(threading.current_thread().name, thread_status)
 
         game.history.append(state)
@@ -118,7 +121,7 @@ class GameThread(threading.Thread):
             # Wait for initial construction/compilation of network.
             sleep(0.5)
 
-        play_loop(self.args[0], self.args[1], self.args[2], 0, self.args[3], self.args[4], self.args[5], self.args[6])
+        play_loop(self.args[0], self.args[1], self.args[2], 0, self.args[3], self.args[4], self.args[5])
 
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
@@ -146,61 +149,47 @@ def get_ai_algorithm(algorithm, game, wildcard):
         print("Unknown AI algorithm, name must equal name of AI class.")
         return None, "unknown"
 
-def get_latest_network(storage):
-    step, network = storage.get()
-    storage.put((step, network))
-    return network
-
-def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, network_storage=None, replay_storage=None):
+def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=None):
     """
     Run a given number of game iterations with a given AI.
     After each game iteration, if the model is MCTS,
     we save the model for later use. If 'load' is true,
     we load these MCTS models.
     """
-    if iteration == 0:
-        while network_storage and network_storage.empty():
-            # Wait for initial construction/compilation of network.
-            sleep(0.5)
+    if iteration == 0 and connection:
+        # Wait for initial construction/compilation of network.
+        if type(p1).__name__ == "MCTS":
+            p1.connection = connection
+        if type(p2).__name__ == "MCTS":
+            p2.connection = connection
+        connection.recv()
     if iteration == constants.GAME_ITERATIONS:
         print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
-        print("We get to here?")
-        if network_storage and type(p1).__name__ != "Random":
-            # Set MCTS AI's newest network, if present.
-            network = get_latest_network(network_storage)
-            print(hash(network))
-            
-            if type(p1).__name__ == "MCTS":
-                p1.network = network
-            if type(p2).__name__ == "MCTS":
-                p2.network = network
-
         play_game(game, p1, p2, gui)
 
-        if replay_storage:
+        if connection:
             # Save game to be used for neural network training.
-            replay_storage.save_game(game.clone())
+            connection.send("game_over", game.clone())
             #FancyLogger.increment_total_games()
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
-                    and len(replay_storage.buffer) >= constants.RANDOM_INITIAL_GAMES):
+                    and iteration >= constants.RANDOM_INITIAL_GAMES // constants.GAME_THREADS):
                 # We are done with random game generation,
                 # moving on to actual self-play.
-                network = get_latest_network(network_storage)
                 p1 = get_ai_algorithm("MCTS", game, ".")
-                p1.network = network
+                p1.connection = connection
                 p2 = get_ai_algorithm("MCTS", game, ".")
-                p2.network = network
+                p2.connection = connection
 
         game.reset() # Reset game history.
-
-        if (type(p1).__name__ == "MCTS" and len(replay_storage.buffer) > constants.BATCH_SIZE
-                and constants.EVAL_CHECKPOINT) and not iteration % constants.EVAL_CHECKPOINT:
+        """
+        if (type(p1).__name__ == "MCTS" and constants.EVAL_CHECKPOINT
+                and not iteration % constants.EVAL_CHECKPOINT):
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, replay_storage, network_storage.curr_step, plot_data)
-
-        play_loop(game, p1, p2, iteration+1, gui, plot_data, network_storage, replay_storage)
+        """
+        play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")
         if gui is not None:

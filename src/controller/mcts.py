@@ -42,13 +42,13 @@ class MCTS(GameAI):
     connection = None
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
+    ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
 
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if self.game.size > 3:
-            playout_options = [800, 200, 35, 20, 10, 5, 5]
+            playout_options = [100, 200, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
@@ -174,7 +174,7 @@ class MCTS(GameAI):
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
         # number of mean value (value/visits) are chosen as the best action.
-        for _ in range(self.ITERATIONS):
+        for i in range(self.ITERATIONS):
             node = self.select(original_node)
 
             # Perform rollout, simulate till end of game and return outcome.
@@ -191,7 +191,6 @@ class MCTS(GameAI):
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value)
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
         self.game.store_search_statistics(best_node)
-
         return best_node.state
 
     def __str__(self):

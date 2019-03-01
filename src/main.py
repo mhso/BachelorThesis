@@ -6,6 +6,7 @@ main: Run game iterations and do things.
 import pickle
 import threading
 from multiprocessing import Process, Pipe
+from multiprocessing.connection import wait
 from os import getpid
 from glob import glob
 from sys import argv
@@ -61,33 +62,30 @@ def train_network(network_storage, size, replay_storage, iterations):
     FancyLogger.set_network_status("Training finished!")
 
 def monitor_games(connections, network_storage, replay_storage):
-    ready = False
-    alerted = False
     #eval_queue = []
     #queue_size = constants.GAME_THREADS
+    while network_storage.networks == {}:
+        sleep(0.5)
+
+    for conn in connections:
+            conn.send("go")
+
     while True:
-        for conn in connections:
-            if not ready and network_storage.networks != {}:
-                alerted = True
-                conn.send("go")
-            elif conn.poll(0.05):
-                status, val = conn.recv()
-                if status == "evaluate":
-                    """
-                    eval_queue.append((conn, val))
-                    if len(eval_queue) == queue_size:
-                        while eval_queue != []:
-                            c, v = eval_queue.pop(0)
-                    """
-                    eval_result = network_storage.latest_network().evaluate(val)
-                    conn.send(eval_result)
-                elif status == "game_over":
-                    replay_storage.save_game(val)
-                elif status == "log":
-                    FancyLogger.set_thread_status(val[1], val[0])
-        if alerted:
-            ready = True
-            alerted = False
+        for conn in wait(connections):
+            status, val = conn.recv()
+            if status == "evaluate":
+                """
+                eval_queue.append((conn, val))
+                if len(eval_queue) == queue_size:
+                    while eval_queue != []:
+                        c, v = eval_queue.pop(0)
+                """
+                eval_result = network_storage.latest_network().evaluate(val)
+                conn.send(eval_result)
+            elif status == "game_over":
+                replay_storage.save_game(val)
+            elif status == "log":
+                FancyLogger.set_thread_status(val[1], val[0])
 
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
@@ -114,13 +112,17 @@ def prepare_training(game, p1, p2, **kwargs):
             parent, child = Pipe()
             pipes.append(parent)
 
-            game_thread = Process(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, child))
-            #game_thread = GameThread(game, p1, p2, gui, plot_data, network_storage, replay_storage)
+            if gui is None:
+                game_thread = Process(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, child))
+            else:
+                pipes = []
+                game_thread = threading.Thread(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
 
         # Start monitor thread.
-        monitor = threading.Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
-        monitor.start()
+        if pipes == []:
+            monitor = threading.Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
+            monitor.start()
 
         if network_storage is not None and constants.GAME_THREADS > 1:
             # Run the network training iterations.
@@ -229,6 +231,10 @@ if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
             p_white = self_play.get_ai_algorithm("Random", game, ".")
         if type(p_black).__name__ == "MCTS":
             p_black = self_play.get_ai_algorithm("Random", game, ".")
+elif constants.GAME_THREADS > 1:
+    # If we are not playing with MCTS,
+    # disable multi-threading.
+    constants.GAME_THREADS = 1
 
 if __name__ == "__main__":
     print("Main PID: {}".format(getpid()))

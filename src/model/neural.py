@@ -33,8 +33,8 @@ class NeuralNetwork:
         reset_default_graph()
         clear_session()
 
-        FILTERS = 64
-        RES_LAYERS = 5
+        FILTERS = 256
+        RES_LAYERS = 19
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION

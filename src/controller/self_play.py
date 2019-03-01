@@ -37,6 +37,8 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
                                                                       time() - time_turn)
         if connection:
             connection.send(("log", [thread_status, getpid()]))
+            # Block until logging is complete.
+            #connection.recv()
         #FancyLogger.set_thread_status(threading.current_thread().name, thread_status)
 
         game.history.append(state)
@@ -167,7 +169,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         print("{} is done with training!".format(threading.current_thread().name))
         return
     try:
-        play_game(game, p1, p2, gui)
+        play_game(game, p1, p2, gui, connection)
 
         if connection:
             # Save game to be used for neural network training.

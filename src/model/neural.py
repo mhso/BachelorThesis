@@ -14,8 +14,8 @@ from keras.optimizers import SGD
 from keras.models import Sequential
 from keras.models import save_model, Model
 from keras.utils.vis_utils import plot_model
-from model.residual import Residual
 import numpy as np
+from model.residual import Residual
 import constants
 
 class NeuralNetwork:
@@ -33,8 +33,6 @@ class NeuralNetwork:
         reset_default_graph()
         clear_session()
 
-        FILTERS = 64
-        RES_LAYERS = 19
         # Config options, to stop TF from eating all GPU memory.
         config = ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION
@@ -42,22 +40,19 @@ class NeuralNetwork:
         #config.gpu_options.visible_device_list = "0"
         set_session(Session(config=config))
 
-        session = get_session()
-        nn_graph = get_default_graph()
-
         inp = Input((board_size, board_size, 4))
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
-        out = Conv2D(FILTERS, kernel_size=3, strides=1, padding="same",
+        out = Conv2D(constants.CONV_FILTERS, kernel_size=3, strides=1, padding="same",
                      kernel_initializer="random_uniform",
                      bias_initializer="random_uniform")(inp)
         out = BatchNormalization()(out)
         out = Activation("relu")(out)
 
         # Residual layers, 19 in total.
-        for _ in range(RES_LAYERS):
-            out = Residual(FILTERS, FILTERS, out)
+        for _ in range(constants.RES_LAYERS):
+            out = Residual(constants.CONV_FILTERS, constants.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
         policy = Conv2D(2, kernel_size=1, strides=1, padding="same",
@@ -69,36 +64,36 @@ class NeuralNetwork:
         # Split into...
         # ...move policies.
         policy_moves = Conv2D(action_space, kernel_size=3, strides=1, padding="same",
-                                kernel_initializer="random_uniform",
-                                bias_initializer="random_uniform")(policy)
+                              kernel_initializer="random_uniform",
+                              bias_initializer="random_uniform")(policy)
         policy_moves = BatchNormalization()(policy_moves)
 
         # ...delete captured pieces policy.
         policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
-                                kernel_initializer="random_uniform",
-                                bias_initializer="random_uniform")(policy)
+                               kernel_initializer="random_uniform",
+                               bias_initializer="random_uniform")(policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
         value = Conv2D(1, kernel_size=1, strides=1, kernel_initializer="random_uniform",
-                        bias_initializer="random_uniform")(out)
+                       bias_initializer="random_uniform")(out)
         value = BatchNormalization()(value)
         value = Activation("relu")(value)
 
         value = Flatten()(value)
-        value = Dense(FILTERS, kernel_initializer="random_uniform",
-                        bias_initializer="random_uniform")(value) # Linear layer.
+        value = Dense(constants.CONV_FILTERS, kernel_initializer="random_uniform",
+                      bias_initializer="random_uniform")(value) # Linear layer.
         value = Activation("relu")(value)
 
         # Final value layer. Outputs probability of win/loss/draw as value between -1 and 1.
         value = Dense(1, kernel_initializer="random_uniform",
-                        bias_initializer="random_uniform")(value)
+                      bias_initializer="random_uniform")(value)
         value = Activation("tanh")(value)
 
         self.model = Model(inputs=inp, outputs=[policy_moves, policy_delete, value])
         self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
-                                            decay=constants.WEIGHT_DECAY,
-                                            momentum=constants.MOMENTUM),
-                            loss='mean_squared_error')
+                                         decay=constants.WEIGHT_DECAY,
+                                         momentum=constants.MOMENTUM),
+                           loss='mean_squared_error')
         self.model._make_predict_function()
 
     def save_as_image(self):

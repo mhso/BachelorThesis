@@ -71,6 +71,7 @@ def monitor_games(connections, network_storage, replay_storage):
     These include:
         - requests for network evaluation.
         - the result of a terminated game.
+        - the result of performance evaluation games.
         - logging events.
     """
     while network_storage.networks == {}:
@@ -103,20 +104,35 @@ def monitor_games(connections, network_storage, replay_storage):
                 elif status == "log":
                     FancyLogger.set_thread_status(val[1], val[0])
                 else:
+                    # Get performance data from games against alternate AIs.
                     if status == "perform_mini":
                         perform_data[0].append(val)
                     elif status == "perform_rand":
                         perform_data[1].append(val)
                     elif status == "perform_mcts":
                         perform_data[2].append(val)
+                    step = network_storage.curr_step
                     p1 = perform_data[0]
                     p2 = perform_data[1]
                     p3 = perform_data[2]
-                    if (len(p1) >= perform_size or len(p2) >= perform_size
-                            or len(p3) >= perform_size):
-                        FancyLogger.set_performance_values(perform_data[-1])
-                        Graph.plot_data("Versus Minimax", step, data[0]) # TODO: FIX DIS
-
+                    if len(p1) >= perform_size:
+                        # Get result of eval against minimax.
+                        avg_mini = sum(p1) / len(p1)
+                        FancyLogger.set_performance_values([avg_mini, None, None])
+                        Graph.plot_data("Versus Minimax", step, avg_mini)
+                        perform_data[0] = []
+                    elif len(p2) >= perform_size:
+                        # Get result of eval against random.
+                        avg_rand = sum(p2) / len(p2)
+                        FancyLogger.set_performance_values([None, avg_rand, None])
+                        Graph.plot_data("Versus Random", step, avg_rand)
+                        perform_data[1] = []
+                    elif len(p3) >= perform_size:
+                        # Get result of eval against basic mcts.
+                        avg_mcts = sum(p3) / len(p3)
+                        FancyLogger.set_performance_values([None, None, avg_mcts])
+                        Graph.plot_data("Versus MCTS", step, avg_mcts)
+                        perform_data[2] = []
         except EOFError:
             pass
 
@@ -147,13 +163,13 @@ def prepare_training(game, p1, p2, **kwargs):
 
             if gui is None:
                 #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
-                game_thread = Process(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, child))
+                game_thread = Process(target=self_play.play_loop,
+                                      args=(game, p1, p2, 0, gui, plot_data, child))
             else:
                 pipes = []
-                game_thread = threading.Thread(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, None))
+                game_thread = threading.Thread(target=self_play.play_loop,
+                                               args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
-
-        sleep(1)
 
         # Start monitor thread.
         if pipes != []:
@@ -175,7 +191,7 @@ def prepare_training(game, p1, p2, **kwargs):
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
-        self_play.play_loop(game, p1, p2, 0, None)
+        self_play.play_loop(game, p1, p2, 0)
 
 def save_models(model, path):
     print("Saving model to file: {}".format(path), flush=True)

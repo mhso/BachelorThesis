@@ -14,7 +14,6 @@ class ReplayStorage:
         self.max_games = constants.MAX_GAME_STORAGE
         self.batch_size = constants.BATCH_SIZE
         self.buffer = []
-        self.perform_eval_buffer = []
 
     def save_game(self, game):
         if len(self.buffer) >= self.max_games:
@@ -57,18 +56,6 @@ class ReplayStorage:
 
     def full_buffer(self):
         return len(self.buffer) == constants.BATCH_SIZE
-
-    def save_perform_eval_data(self, data):
-        buff = self.perform_eval_buffer
-        buff.append(data)
-
-    def eval_performance(self):
-        return len(self.perform_eval_buffer) >= constants.EVAL_ITERATIONS * constants.GAME_THREADS
-
-    def reset_perform_data(self):
-        data = self.perform_eval_buffer
-        self.perform_eval_buffer = []
-        return data
 
 class NetworkStorage:
     """

@@ -31,10 +31,13 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
         else:
             state = player_black.execute_action(state)
 
-        thread_status = "Moves: {}. {}'s turn, turn took {} s".format(len(game.history),
-                                                                      state.str_player(),
-                                                                      time() - time_turn)
         if connection:
+            ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
+            pieces = state.count_pieces()
+            thread_status = ("Moves: {}. {}'s turn ({}), ".format(len(game.history), ai_name,
+                                                                  state.str_player()) +
+                             "pieces: w: {}, b: {}. Turn took {} s".format(pieces[0], pieces[1],
+                                                                           time() - time_turn))
             connection.send(("log", [thread_status, getpid()]))
 
         game.history.append(state)
@@ -57,7 +60,7 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
     # Return resulting state of game.
     return state
 
-def evaluate_against_ai(game, player, other, num_games):
+def evaluate_against_ai(game, player, other, num_games, connection=None):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -67,8 +70,9 @@ def evaluate_against_ai(game, player, other, num_games):
     """
     wins = 0
     for _ in range(num_games):
-        result = play_game(game, player, other)
+        result = play_game(game, player, other, connection=connection)
         wins += game.utility(result, True)
+        game.reset()
     return wins/num_games # Return ratio of games won.
 
 def evaluate_model(game, player, connection):
@@ -82,21 +86,21 @@ def evaluate_model(game, player, connection):
                                        get_ai_algorithm(
                                            "Minimax" if type(game).__name__ == "Latrunculi"
                                            else "Minimax_CF", game, "."),
-                                       constants.EVAL_ITERATIONS)
+                                       constants.EVAL_ITERATIONS, connection)
 
     connection.send(("perform_mini", eval_minimax))
     connection.send(("log", ["Evaluating against Random", getpid()]))
 
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
-                                      constants.EVAL_ITERATIONS)
+                                      constants.EVAL_ITERATIONS, connection)
 
     connection.send(("perform_rand", eval_random))
     connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
 
     eval_mcts = evaluate_against_ai(game, player,
                                     get_ai_algorithm("MCTS_Basic", game, "."),
-                                    constants.EVAL_ITERATIONS)
+                                    constants.EVAL_ITERATIONS, connection)
 
     connection.send(("perform_mcts", eval_mcts))
 
@@ -160,7 +164,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
 
         if connection:
             # Save game to be used for neural network training.
-            connection.send("game_over", game.clone())
+            connection.send(("game_over", game.clone()))
             #FancyLogger.increment_total_games()
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
                     and iteration >= constants.RANDOM_INITIAL_GAMES // constants.GAME_THREADS):

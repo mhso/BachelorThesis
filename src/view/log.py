@@ -24,7 +24,7 @@ class FancyLogger:
     thread_statuses = dict()
     train_step = 0
     train_ratio = 0
-    performance_values = (0, 0, 0)
+    performance_values = [0, 0, 0]
     total_games = 0
     time_started = 0
     lock = Lock()
@@ -51,7 +51,9 @@ class FancyLogger:
 
     @staticmethod
     def set_performance_values(values):
-        FancyLogger.performance_values = values
+        for i, val in enumerate(values):
+            if val is not None:
+                FancyLogger.performance_values[i] = val
         FancyLogger.pp()
 
     @staticmethod
@@ -64,6 +66,7 @@ class FancyLogger:
         FancyLogger.lock.acquire()
         clear_console()
         print("-=-=- Network status -=-=-")
+        print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
         print(FancyLogger.network_status)
 
         num_symbols = constants.TRAINING_STEPS * FancyLogger.train_ratio

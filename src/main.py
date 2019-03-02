@@ -19,7 +19,7 @@ if __name__ == "__main__":
     from controller import self_play
     from model.storage import ReplayStorage, NetworkStorage
     from model.neural import NeuralNetwork, DummyNetwork
-    from view.log import log, FancyLogger
+    from view.log import FancyLogger
     from view.visualize import Gui
     from view.graph import Graph
     import constants
@@ -73,8 +73,6 @@ def monitor_games(connections, network_storage, replay_storage):
         - the result of a terminated game.
         - logging events.
     """
-    eval_queue = []
-    queue_size = constants.GAME_THREADS
     while network_storage.networks == {}:
         # Wait for network to be constructed/compiled.
         sleep(0.5)
@@ -82,6 +80,11 @@ def monitor_games(connections, network_storage, replay_storage):
     # Notify processes that network is ready.
     for conn in connections:
         conn.send("go")
+
+    eval_queue = []
+    queue_size = constants.GAME_THREADS
+    perform_data = [[], [], []]
+    perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
 
     while True:
         try:
@@ -99,6 +102,21 @@ def monitor_games(connections, network_storage, replay_storage):
                     replay_storage.save_game(val)
                 elif status == "log":
                     FancyLogger.set_thread_status(val[1], val[0])
+                else:
+                    if status == "perform_mini":
+                        perform_data[0].append(val)
+                    elif status == "perform_rand":
+                        perform_data[1].append(val)
+                    elif status == "perform_mcts":
+                        perform_data[2].append(val)
+                    p1 = perform_data[0]
+                    p2 = perform_data[1]
+                    p3 = perform_data[2]
+                    if (len(p1) >= perform_size or len(p2) >= perform_size
+                            or len(p3) >= perform_size):
+                        FancyLogger.set_performance_values(perform_data[-1])
+                        Graph.plot_data("Versus Minimax", step, data[0]) # TODO: FIX DIS
+
         except EOFError:
             pass
 

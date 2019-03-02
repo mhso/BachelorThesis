@@ -50,8 +50,8 @@ class NeuralNetwork:
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
         out = Conv2D(FILTERS, kernel_size=3, strides=1, padding="same",
-                        kernel_initializer="random_uniform",
-                        bias_initializer="random_uniform")(inp)
+                     kernel_initializer="random_uniform",
+                     bias_initializer="random_uniform")(inp)
         out = BatchNormalization()(out)
         out = Activation("relu")(out)
 

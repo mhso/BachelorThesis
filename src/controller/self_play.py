@@ -22,8 +22,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
     while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
-        #print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-        #print("Player: {}".format(state.str_player()), flush=True)
         num_white, num_black = state.count_pieces()
         log("Num of pieces, White: {} Black: {}".format(num_white, num_black))
         time_turn = time()
@@ -38,7 +36,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
                                                                       time() - time_turn)
         if connection:
             connection.send(("log", [thread_status, getpid()]))
-        #FancyLogger.set_thread_status(threading.current_thread().name, thread_status)
 
         game.history.append(state)
 
@@ -56,7 +53,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
 
     winner = "Black" if state.player else "White"
     log("Game finished on thread {}, winner: {}".format(threading.current_thread().name, winner))
-    #print(state.board, flush=True)
 
     # Return resulting state of game.
     return state
@@ -75,42 +71,34 @@ def evaluate_against_ai(game, player, other, num_games):
         wins += game.utility(result, True)
     return wins/num_games # Return ratio of games won.
 
-def evaluate_model(game, player, storage, step, show_plot=False):
+def evaluate_model(game, player, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
-    thread_name = threading.current_thread().name
-    #FancyLogger.set_thread_status(thread_name, "Evaluating against Minimax")
+    connection.send(("log", ["Evaluating against Minimax", getpid()]))
+
     eval_minimax = evaluate_against_ai(game, player,
                                        get_ai_algorithm(
                                            "Minimax" if type(game).__name__ == "Latrunculi"
                                            else "Minimax_CF", game, "."),
                                        constants.EVAL_ITERATIONS)
 
-    print("Evaluation against Minimax: {}".format(eval_minimax))
+    connection.send(("perform_mini", eval_minimax))
+    connection.send(("log", ["Evaluating against Random", getpid()]))
 
-    #FancyLogger.set_thread_status(thread_name, "Evaluating against Random")
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
                                       constants.EVAL_ITERATIONS)
 
-    print("Evaluation against Random: {}".format(eval_minimax))
-    
-    #FancyLogger.set_thread_status(thread_name, "Evaluating against basic MCTS")
+    connection.send(("perform_rand", eval_random))
+    connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
+
     eval_mcts = evaluate_against_ai(game, player,
                                     get_ai_algorithm("MCTS_Basic", game, "."),
                                     constants.EVAL_ITERATIONS)
 
-    storage.save_perform_eval_data([eval_minimax, eval_random, eval_mcts])
-
-    if storage.eval_performance():
-        data = storage.reset_perform_data()
-        FancyLogger.set_performance_values(data)
-        if show_plot:
-            Graph.plot_data("Versus Minimax", step, data[0])
-            Graph.plot_data("Versus Random", step, data[1])
-            Graph.plot_data("Versus Basic MCTS", step, data[2])
+    connection.send(("perform_mcts", eval_mcts))
 
 class GameThread(threading.Thread):
     def __init__(self, *args):
@@ -184,12 +172,10 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
                 p2.connection = connection
 
         game.reset() # Reset game history.
-        """
         if (type(p1).__name__ == "MCTS" and constants.EVAL_CHECKPOINT
                 and not iteration % constants.EVAL_CHECKPOINT):
             # Evaluate performance of trained model against other AIs.
-            evaluate_model(game, p1, replay_storage, network_storage.curr_step, plot_data)
-        """
+            evaluate_model(game, p1, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)
     except KeyboardInterrupt:
         print("Exiting by interrupt...")

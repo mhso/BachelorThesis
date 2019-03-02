@@ -79,7 +79,7 @@ class FancyLogger:
         print("")
         print("-=-=- Self play status -=-=-")
         for thread, status in FancyLogger.thread_statuses.items():
-            print("{}: {}".format(thread, status))
+            print("PID {}: {}".format(thread, status))
 
         print("Number of processes: {}".format(constants.GAME_THREADS))
         print("Total games generated: {}".format(FancyLogger.total_games))

@@ -86,8 +86,8 @@ def monitor_games(connections, network_storage, replay_storage):
                 if len(eval_queue) == queue_size:
                     arr = array([v for _, v in eval_queue])
                     policy, value = network_storage.latest_network().evaluate(arr)
-                    for i, conn in enumerate(eval_queue):
-                        conn[0].send((policy[0][i], policy[1][i]), value[i])
+                    for i, c in enumerate(eval_queue):
+                        c[0].send(((policy[0][i], policy[1][i]), value[i]))
                     eval_queue = []
             elif status == "game_over":
                 replay_storage.save_game(val)
@@ -125,6 +125,8 @@ def prepare_training(game, p1, p2, **kwargs):
                 pipes = []
                 game_thread = threading.Thread(target=self_play.play_loop, args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
+        
+        sleep(1)
 
         # Start monitor thread.
         if pipes != []:

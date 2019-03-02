@@ -37,8 +37,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
                                                                       time() - time_turn)
         if connection:
             connection.send(("log", [thread_status, getpid()]))
-            # Block until logging is complete.
-            #connection.recv()
         #FancyLogger.set_thread_status(threading.current_thread().name, thread_status)
 
         game.history.append(state)

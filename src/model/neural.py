@@ -119,21 +119,19 @@ class NeuralNetwork:
         if len(inp.shape) < 4:
             inp = np.array([inp]).reshape((-1, 4, 4, 4))
         output = self.model.predict(inp)
-        print(output)
-        print(output.shape)
         self.lock.release()
 
-        policy_moves = output[0][0]
+        policy_moves = output[0][:]
         policy_moves -= np.min(policy_moves)
         policy_moves /= np.ptp(policy_moves)
 
-        policy_delete = output[1][0]
+        policy_delete = output[1][:]
         policy_delete -= np.min(policy_delete)
         peaks = np.ptp(policy_delete)
         if peaks:
             policy_delete /= peaks
 
-        return ((policy_moves, policy_delete), output[2][0][0])
+        return ((policy_moves, policy_delete), output[2][:])
 
     def train(self, inputs, expected_out):
         """

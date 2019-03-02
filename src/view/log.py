@@ -62,7 +62,7 @@ class FancyLogger:
     @staticmethod
     def pp():
         FancyLogger.lock.acquire()
-        #clear_console()
+        clear_console()
         print("-=-=- Network status -=-=-")
         print(FancyLogger.network_status)
 

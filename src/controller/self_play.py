@@ -1,6 +1,7 @@
 import threading
 from os import getpid
 from time import time, sleep
+from multiprocessing import Process
 from view.log import log, FancyLogger
 import constants
 from view.graph import Graph
@@ -197,3 +198,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         if plot_data:
             Graph.close()
         exit(0)
+
+def spawn_process(game, p1, p2, gui, plot_data, child):
+    p = Process(target=play_loop, args=(game, p1, p2, 0, gui, plot_data, child))
+    p.start()

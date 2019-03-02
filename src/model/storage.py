@@ -20,7 +20,6 @@ class ReplayStorage:
         if len(self.buffer) >= self.max_games:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
-        #print("Saved game to buffer. Games: {}".format(len(self.buffer)), flush=True)
 
     def sample_batch(self):
         """

@@ -76,7 +76,7 @@ class MCTS(GameAI):
         the PUCT formula = Q(i) + c * P(i) * sqrt (N(i) / (1 + n(i))
         Where
             - Q(i) = mean value of node (node value / node visits).
-            - c = exploration rate, increases with node visits.
+            - c = exploration rate.
             - P(i) = prior probability of selecting action in node (i).
             - N(i) = visits of parent node.
             - n(i) = times current node was visited.
@@ -97,14 +97,6 @@ class MCTS(GameAI):
         """
         node_probability = 1/len(actions) # Probability of selecting node.
         node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
-
-    def simulate(self, state, actions):
-        """
-        Simulate a random action from the given state and the given
-        possible actions. Return the result of the random action.
-        """
-        chosen_action = actions[int(np.random.uniform(0, len(actions)))] # Chose random action.
-        return self.game.result(state, chosen_action)
 
     def back_propagate(self, node, value):
         """
@@ -128,13 +120,14 @@ class MCTS(GameAI):
         """
         state = node.state
         actions = self.game.actions(state)
+        # Get network evaluation from main process.
         self.connection.send(("evaluate", self.game.structure_data(state)))
         policy_logits, value = self.connection.recv()
 
-        # Expand node.
         logit_map = self.game.map_logits(actions, policy_logits)
         policy_sum = sum(logit_map.values())
 
+        # Expand node.
         for a, p in logit_map.items():
             node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
 

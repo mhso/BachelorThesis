@@ -18,7 +18,7 @@ class Minimax(GameAI):
         kill_weight = 10
         player_pieces = (state.board == player_piece).sum()
         other_pieces = (state.board == other_piece).sum()
-        bonus = 5*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
+        bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
 
         captured_enemy = (state.board == other_captured).sum()
         captured_player = (state.board == player_captured).sum()

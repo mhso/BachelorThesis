@@ -4,8 +4,8 @@ main: Run game iterations and do things.
 ----------------------------------------
 """
 if __name__ == "__main__":
-    # This atrocious if statement is needed, since these imports
-    # would otherwise be run everytime we start a new process (no bueno).
+    # This atrocious if statement is needed since these imports would
+    # otherwise be run everytime we start a new process (no bueno).
     import pickle
     from threading import Thread
     from multiprocessing import Process, Pipe
@@ -24,16 +24,6 @@ if __name__ == "__main__":
     from view.graph import Graph
     import constants
 
-def leading_zeros(num):
-    result = str(num)
-    if num < 1000:
-        result = "0" + result
-    if num < 100:
-        result = "0" + result
-    if num < 10:
-        result = "0" + result
-    return result
-
 def train_network(network_storage, size, replay_storage, iterations):
     """
     Run a given number of iterations.
@@ -46,6 +36,7 @@ def train_network(network_storage, size, replay_storage, iterations):
     network_storage.save_network(0, network)
     FancyLogger.set_network_status("Waiting for data...")
     while len(replay_storage.buffer) < constants.BATCH_SIZE:
+        # Wait until batch size is full.
         sleep(1)
         if self_play.force_quit(None):
             return
@@ -92,12 +83,15 @@ def monitor_games(connections, network_storage, replay_storage):
             for conn in wait(connections):
                 status, val = conn.recv()
                 if status == "evaluate":
+                    # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
                     if len(eval_queue) == queue_size:
                         arr = array([v for _, v in eval_queue])
-                        policy, value = network_storage.latest_network().evaluate(arr)
+                        # Evaluate everything in the queue.
+                        policies, values = network_storage.latest_network().evaluate(arr)
                         for i, c in enumerate(eval_queue):
-                            c[0].send(((policy[0][i], policy[1][i]), value[i]))
+                            # Send result to all processes in the queue.
+                            c[0].send(((policies[0][i], policies[1][i]), values[i]))
                         eval_queue = []
                 elif status == "game_over":
                     replay_storage.save_game(val)

@@ -4,7 +4,6 @@ self_play: Run game iterations, with any combination of players.
 May be run in a seperate process.
 ----------------------------------------------------------------
 """
-import threading
 from os import getpid
 from time import time, sleep
 from multiprocessing import Process
@@ -48,7 +47,7 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
         game.history.append(state)
 
         if force_quit(gui):
-            print("{}: Forcing exit...".format(threading.current_thread().name))
+            print("{}: Forcing exit...".format(getpid()))
             exit(0)
 
         if gui is not None:
@@ -60,7 +59,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
         counter += 1
 
     winner = "Black" if state.player else "White"
-    log("Game finished on thread {}, winner: {}".format(threading.current_thread().name, winner))
 
     # Return resulting state of game.
     return state
@@ -109,18 +107,6 @@ def evaluate_model(game, player, connection):
 
     connection.send(("perform_mcts", eval_mcts))
 
-class GameThread(threading.Thread):
-    def __init__(self, *args):
-        threading.Thread.__init__(self)
-        self.args = args
-
-    def run(self):
-        while self.args[5] and self.args[5].networks == {}:
-            # Wait for initial construction/compilation of network.
-            sleep(0.5)
-
-        play_loop(self.args[0], self.args[1], self.args[2], 0, self.args[3], self.args[4], self.args[5])
-
 def get_game(game_name, size, rand_seed, wildcard):
     lower = game_name.lower()
     if lower == wildcard:
@@ -162,7 +148,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
             p2.connection = connection
         connection.recv()
     if iteration == constants.GAME_ITERATIONS:
-        print("{} is done with training!".format(threading.current_thread().name))
+        print("{} is done with training!".format(getpid()))
         return
     try:
         play_game(game, p1, p2, gui, connection)

@@ -7,7 +7,7 @@ if __name__ == "__main__":
     # This atrocious if statement is needed, since these imports
     # would otherwise be run everytime we start a new process (no bueno).
     import pickle
-    import threading
+    from threading import Thread
     from multiprocessing import Process, Pipe
     from multiprocessing.connection import wait
     from os import getpid
@@ -167,21 +167,21 @@ def prepare_training(game, p1, p2, **kwargs):
                                       args=(game, p1, p2, 0, gui, plot_data, child))
             else:
                 pipes = []
-                game_thread = threading.Thread(target=self_play.play_loop,
-                                               args=(game, p1, p2, 0, gui, plot_data, None))
+                game_thread = Thread(target=self_play.play_loop,
+                                     args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
 
         # Start monitor thread.
         if pipes != []:
-            monitor = threading.Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
+            monitor = Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
             monitor.start()
 
         if network_storage is not None and constants.GAME_THREADS > 1:
             # Run the network training iterations.
             if plot_data:
-                train_thread = threading.Thread(target=train_network,
-                                                args=(network_storage, game.size,
-                                                      replay_storage, constants.TRAINING_STEPS))
+                train_thread = Thread(target=train_network,
+                                      args=(network_storage, game.size,
+                                            replay_storage, constants.TRAINING_STEPS))
                 train_thread.start()
             else:
                 train_network(network_storage, game.size, replay_storage, constants.TRAINING_STEPS)

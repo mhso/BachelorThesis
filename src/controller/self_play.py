@@ -1,11 +1,16 @@
+"""
+----------------------------------------------------------------
+self_play: Run game iterations, with any combination of players.
+May be run in a seperate process.
+----------------------------------------------------------------
+"""
 import threading
 from os import getpid
 from time import time, sleep
 from multiprocessing import Process
-from view.log import log, FancyLogger
 import constants
+from view.log import log, FancyLogger
 from view.graph import Graph
-from view.visualize import Gui
 
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()

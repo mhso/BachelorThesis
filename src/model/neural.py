@@ -1,7 +1,7 @@
 """
------------------------------
-neural: Neural Network stuff.
------------------------------
+-------------------------------
+neural: Neural Network wrapper.
+-------------------------------
 """
 from threading import Lock
 from os import getpid

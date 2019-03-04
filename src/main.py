@@ -24,39 +24,29 @@ if __name__ == "__main__":
     from view.graph import Graph
     import constants
 
-def train_network(network_storage, size, replay_storage, iterations):
-    """
-    Run a given number of iterations.
-    For each iteration, sample a batch of data
-    from replay buffer and use the data to train
-    the network.
-    """
+def construct_network(size):
     FancyLogger.start_timing()
     network = NeuralNetwork(size)
-    network_storage.save_network(0, network)
     FancyLogger.set_network_status("Waiting for data...")
-    while len(replay_storage.buffer) < constants.BATCH_SIZE:
-        # Wait until batch size is full.
-        sleep(1)
-        if self_play.force_quit(None):
-            return
+    return network
 
-    FancyLogger.set_network_status("Starting training...")
+def train_network(network_storage, replay_storage, iteration):
+    """
+    Trains the network by sampling a batch of data
+    from replay buffer.
+    """
+    network = network_storage.latest_network()
+    FancyLogger.set_network_status("Training...")
 
-    for i in range(iterations):
-        FancyLogger.set_training_step((i+1))
-        inputs, expected_out = replay_storage.sample_batch()
-        loss = network.train(inputs, expected_out)
-        if not i % constants.SAVE_CHECKPOINT:
-            network_storage.save_network(i, network)
-        FancyLogger.set_network_status("Training loss: {}".format(loss))
-        #Graph.plot_data("Training Evaluation", None, loss[0])
-        if self_play.force_quit(None):
-            break
-    network_storage.save_network(iterations, network)
-    FancyLogger.set_network_status("Training finished!")
+    FancyLogger.set_training_step((iteration+1))
+    inputs, expected_out = replay_storage.sample_batch()
+    loss = network.train(inputs, expected_out)
+    if not iteration % constants.SAVE_CHECKPOINT:
+        network_storage.save_network(iteration, network)
+    FancyLogger.set_network_status("Training loss: {}".format(loss))
+    #Graph.plot_data("Training Evaluation", None, loss[0])
 
-def monitor_games(connections, network_storage, replay_storage):
+def monitor_games(game_conns, network_storage, replay_storage):
     """
     Listen for updates from self-play processes.
     These include:
@@ -70,17 +60,19 @@ def monitor_games(connections, network_storage, replay_storage):
         sleep(0.5)
 
     # Notify processes that network is ready.
-    for conn in connections:
+    for conn in game_conns:
         conn.send("go")
 
     eval_queue = []
     queue_size = constants.GAME_THREADS
     perform_data = [[], [], []]
     perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
+    training_step = 0
+    new_games = 0
 
     while True:
         try:
-            for conn in wait(connections):
+            for conn in wait(game_conns):
                 status, val = conn.recv()
                 if status == "evaluate":
                     # Process has data that needs to be evaluated. Add it to the queue.
@@ -95,6 +87,14 @@ def monitor_games(connections, network_storage, replay_storage):
                         eval_queue = []
                 elif status == "game_over":
                     replay_storage.save_game(val)
+                    new_games += 1
+                    if new_games >= constants.BATCH_SIZE:
+                        train_network(network_storage, replay_storage, training_step)
+                        training_step += 1
+                        new_games = 0
+                        if training_step == constants.TRAINING_STEPS:
+                            FancyLogger.set_network_status("Training finished!")
+                            return # Exit? Do some cleanup?
                 elif status == "log":
                     FancyLogger.set_thread_status(val[1], val[0])
                 else:
@@ -171,14 +171,9 @@ def prepare_training(game, p1, p2, **kwargs):
             monitor.start()
 
         if network_storage is not None and constants.GAME_THREADS > 1:
-            # Run the network training iterations.
-            if plot_data:
-                train_thread = Thread(target=train_network,
-                                      args=(network_storage, game.size,
-                                            replay_storage, constants.TRAINING_STEPS))
-                train_thread.start()
-            else:
-                train_network(network_storage, game.size, replay_storage, constants.TRAINING_STEPS)
+            # Construct the initial network.
+            network = construct_network(game.size)
+            network_storage.save_network(0, network)
 
         if plot_data:
             Graph.run(gui, "Training Evaluation", "Training Iteration", "Winrate") # Start graph window in main thread.

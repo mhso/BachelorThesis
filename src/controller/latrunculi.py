@@ -419,9 +419,8 @@ class Latrunculi(Game):
 
     def map_logits(self, actions, logits):
         """
-        Map actions to neural network output 
-        policy logits. Set all other logits
-        to 0, since they represent illegal actions.
+        Map actions to neural network output policy logits. 
+        Set all other logits to 0, since they represent illegal actions.
         """
         action_map = dict()
         move_logits = logits[0]
@@ -450,11 +449,16 @@ class Latrunculi(Game):
             policy_sum += logit
 
         for action, policy in action_map.items():
-            action_map[action] = np.exp(policy/policy_sum) # TODO: Fix divide-by-zero error.
+            action_map[action] = np.exp(policy/policy_sum)
 
         return action_map
 
     def map_actions(self, target_policies):
+        """
+        Map policy logits, for all states in the game, to
+        board positions. This returns policies in the dimensions
+        outputted by the neural network.
+        """
         policy_moves = np.zeros((self.size, self.size, 4))
         policy_remove = np.zeros((self.size, self.size, 1))
         for a, p in target_policies.items():

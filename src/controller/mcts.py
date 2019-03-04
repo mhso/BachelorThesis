@@ -39,10 +39,10 @@ class MCTS(GameAI):
     Simulation and Backpropagation.
     """
     state_map = dict()
-    network = None
+    connection = None
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
+    ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
 
     def __init__(self, game, playouts=None):
@@ -76,7 +76,7 @@ class MCTS(GameAI):
         the PUCT formula = Q(i) + c * P(i) * sqrt (N(i) / (1 + n(i))
         Where
             - Q(i) = mean value of node (node value / node visits).
-            - c = exploration rate, increases with node visits.
+            - c = exploration rate.
             - P(i) = prior probability of selecting action in node (i).
             - N(i) = visits of parent node.
             - n(i) = times current node was visited.
@@ -97,14 +97,6 @@ class MCTS(GameAI):
         """
         node_probability = 1/len(actions) # Probability of selecting node.
         node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
-
-    def simulate(self, state, actions):
-        """
-        Simulate a random action from the given state and the given
-        possible actions. Return the result of the random action.
-        """
-        chosen_action = actions[int(np.random.uniform(0, len(actions)))] # Chose random action.
-        return self.game.result(state, chosen_action)
 
     def back_propagate(self, node, value):
         """
@@ -128,12 +120,14 @@ class MCTS(GameAI):
         """
         state = node.state
         actions = self.game.actions(state)
-        policy_logits, value = self.network.evaluate(self.game.structure_data(state))
+        # Get network evaluation from main process.
+        self.connection.send(("evaluate", self.game.structure_data(state)))
+        policy_logits, value = self.connection.recv()
 
-        # Expand node.
         logit_map = self.game.map_logits(actions, policy_logits)
         policy_sum = sum(logit_map.values())
 
+        # Expand node.
         for a, p in logit_map.items():
             node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
 
@@ -173,7 +167,7 @@ class MCTS(GameAI):
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
         # number of mean value (value/visits) are chosen as the best action.
-        for _ in range(self.ITERATIONS):
+        for i in range(self.ITERATIONS):
             node = self.select(original_node)
 
             # Perform rollout, simulate till end of game and return outcome.
@@ -190,7 +184,6 @@ class MCTS(GameAI):
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value)
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
         self.game.store_search_statistics(best_node)
-
         return best_node.state
 
     def __str__(self):

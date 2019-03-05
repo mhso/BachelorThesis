@@ -7,6 +7,7 @@ May be run in a seperate process.
 from os import getpid
 from sys import argv
 from time import time, sleep
+from sys import argv
 from multiprocessing import Process
 import constants
 from view.log import log, FancyLogger
@@ -51,6 +52,8 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
                              "pieces: w: {}, b: {}. Turn took {} s".format(pieces[0], pieces[1],
                                                                            time() - time_turn))
             connection.send(("log", [thread_status, getpid()]))
+        elif "-t" in argv:
+            print("Turn took {} s".format(time() - time_turn))
 
         game.history.append(state)
 
@@ -84,6 +87,8 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
         SqlUtil.evaluation_cost_insert_row(sql_conn, row)
 
     winner = "Black" if state.player else "White"
+    if "-t" in argv:
+        print("Game over! Winner: {}, time spent: {} s".format(winner, time() - time_game))
 
     # Return resulting state of game.
     return state

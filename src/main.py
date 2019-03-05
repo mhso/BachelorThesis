@@ -49,7 +49,7 @@ def train_network(network_storage, replay_storage, iteration):
 def show_performance_data(step, perform_data, perform_size):
     """
     Get performance data from games against alternate AIs.
-    Print/plot the result.
+    Print/plot the results.
     """
     p1 = perform_data[0]
     p2 = perform_data[1]
@@ -73,6 +73,47 @@ def show_performance_data(step, perform_data, perform_size):
         Graph.plot_data("Versus MCTS", step, avg_mcts)
         perform_data[2] = []
 
+def game_over(conn, training_step, new_games, perform_started, replay_storage, network_storage):
+    """
+    Handle cases for when a game is completed on a process.
+    These include:
+        - Train the network if a big enough batch size is ready.
+        - Start evaluating performance of MCTS against alternate AI's.
+        - Check if training is finished.
+    @returns True or false, indicating whether training is complete.
+    """
+    if new_games >= constants.BATCH_SIZE:
+        # Tell the network to train on a batch of games.
+        train_network(network_storage, replay_storage, training_step)
+        training_step += 1
+        new_games = 0
+        if training_step == constants.TRAINING_STEPS:
+            FancyLogger.set_network_status("Training finished!")
+            return True
+        if not training_step % constants.EVAL_CHECKPOINT:
+            # Indicate that the process should run performance evaluation games.
+            for k in perform_started.keys():
+                perform_started[k] = False
+    elif not perform_started[conn]:
+        # Tell the process to start running perform eval games.
+        perform_started[conn] = True
+        conn.send("eval_perform")
+    else:
+        # Nothing of note happens, indicate that process should carry on as usual.
+        conn.send(None)
+    return False
+
+def evaluate_games(eval_queue, network_storage):
+    """
+    Evaluate a queue of games using the latest neural network.
+    """
+    arr = array([v for _, v in eval_queue])
+    # Evaluate everything in the queue.
+    policies, values = network_storage.latest_network().evaluate(arr)
+    for i, c in enumerate(eval_queue):
+        # Send result to all processes in the queue.
+        c[0].send(((policies[0][i], policies[1][i]), values[i]))
+
 def monitor_games(game_conns, network_storage, replay_storage):
     """
     Listen for updates from self-play processes.
@@ -92,10 +133,9 @@ def monitor_games(game_conns, network_storage, replay_storage):
 
     eval_queue = []
     queue_size = constants.GAME_THREADS
-    perform_data = ([], [], [])
+    perform_data = [[], [], []]
     perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
-    perform_underway = {conn: True for conn in game_conns}
-    latest_perform = 0
+    perform_started = {conn: True for conn in game_conns}
     training_step = 0
     new_games = 0
 
@@ -107,29 +147,14 @@ def monitor_games(game_conns, network_storage, replay_storage):
                     # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
                     if len(eval_queue) == queue_size:
-                        arr = array([v for _, v in eval_queue])
-                        # Evaluate everything in the queue.
-                        policies, values = network_storage.latest_network().evaluate(arr)
-                        for i, c in enumerate(eval_queue):
-                            # Send result to all processes in the queue.
-                            c[0].send(((policies[0][i], policies[1][i]), values[i]))
+                        evaluate_games(eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":
                     replay_storage.save_game(val)
                     new_games += 1
-                    if new_games >= constants.BATCH_SIZE:
-                        train_network(network_storage, replay_storage, training_step)
-                        training_step += 1
-                        new_games = 0
-                    if perform_underway != {} and perform_underway[conn]:
-                        conn.send("eval_perform")
-                    elif not training_step % constants.EVAL_CHECKPOINT and latest_perform != training_step:
-                        # Indicate that the process should run performance evaluation games.
-                        latest_perform = training_step
-                        perform_underway = {conn: False for conn in game_conns}
-                        conn.send(None)
-                    elif training_step == constants.TRAINING_STEPS:
-                        FancyLogger.set_network_status("Training finished!")
+                    finished = game_over(conn, training_step, new_games,
+                                         perform_started, replay_storage, network_storage)
+                    if finished:
                         for c in game_conns:
                             c.close()
                         return
@@ -184,8 +209,8 @@ def prepare_training(game, p1, p2, **kwargs):
                                      args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
 
-        # Start monitor thread.
         if pipes != []:
+            # Start monitor thread.
             monitor = Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
             monitor.start()
 

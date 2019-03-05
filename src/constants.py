@@ -41,14 +41,14 @@ GAME_THREADS = 4
 EVAL_CHECKPOINT = 5
 
 # How many games to play against base AI's while
-# evaluating model performance (per thread).
-EVAL_ITERATIONS = 5
+# evaluating model performance (per process).
+EVAL_ITERATIONS = 1
 
 # |***********************************|
 # |      NEURAL NETWORK OPTIONS       |
 # |***********************************|
 # Fraction of GPU memory TensorFlow is allowed to use.
-MAX_GPU_FRACTION = 0.6
+MAX_GPU_FRACTION = 0.5
 
 # How often to save neural network to shared storage.
 SAVE_CHECKPOINT = 50
@@ -67,6 +67,12 @@ MOMENTUM = 0.9
 
 # Weight decay.
 WEIGHT_DECAY = 1e-4
+
+# Amount of filters to use in convolutional layers.
+CONV_FILTERS = 64
+
+# Number of residual layers.
+RES_LAYERS = 19
 
 # |***********************************|
 # |           MCTS OPTIONS            |

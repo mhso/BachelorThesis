@@ -15,6 +15,13 @@ class Game(ABC):
         self.__observers = []
 
     @abstractmethod
+    def seed_used(self):
+        """
+        Returns starting state for the game.
+        """
+        pass
+
+    @abstractmethod
     def start_state(self):
         """
         Returns starting state for the game.

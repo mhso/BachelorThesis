@@ -5,11 +5,14 @@ May be run in a seperate process.
 ----------------------------------------------------------------
 """
 from os import getpid
+from sys import argv
 from time import time, sleep
 from multiprocessing import Process
 import constants
 from view.log import log, FancyLogger
 from view.graph import Graph
+from util.timerUtil import TimerUtil
+from util.sqlUtil import SqlUtil
 
 def force_quit(gui):
     return gui is not None and not gui.active or Graph.stop_event.is_set()
@@ -24,7 +27,10 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
     if gui is not None:
         sleep(1)
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
-
+    timeGame = TimerUtil()
+    timeGame.start_timing()
+    time_begin = timeGame.get_datetime_str()
+    count_player_moves = [0,0]
     while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
         num_white, num_black = state.count_pieces()
         log("Num of pieces, White: {} Black: {}".format(num_white, num_black))
@@ -32,8 +38,10 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
 
         if game.player(state):
             state = player_white.execute_action(state)
+            count_player_moves[0] += 1
         else:
             state = player_black.execute_action(state)
+            count_player_moves[1] += 1
 
         if connection:
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
@@ -57,6 +65,23 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
                 sleep(0.5)
             gui.update(state)
         counter += 1
+    timeGame.stop_timing()
+    if False:
+        print("\n----- GAME ENDED STATISTIC -----")
+        timeGame.print_duration_in_seconds("Game timing, pid: {}".format(getpid()))
+        print("Moves used: White {}, Black {}".format(count_player_moves[0], count_player_moves[1]))
+        pieces = state.count_pieces()
+        print("Piece a game ending: White {}, Black {}\n".format(pieces[0], pieces[1]))
+    if True:
+        evalUsed = "standard"
+        if "-mini1" in argv:
+            evalUsed = "-mini1"
+        elif "-mini2" in argv:
+            evalUsed = "-mini2"
+        pieces = state.count_pieces()
+        row = SqlUtil.evaluation_cost_row(time_begin, timeGame.get_computer_hostname(), getpid(), "Latrunculi Eval: {}".format(evalUsed), game.seed_used(), type(player_white).__name__, type(player_black).__name__, int(count_player_moves[0]), int(count_player_moves[1]), int(pieces[0]), int(pieces[1]), timeGame.time_duration())
+        sql_conn = SqlUtil.connect()
+        SqlUtil.evaluation_cost_insert_row(sql_conn, row)
 
     winner = "Black" if state.player else "White"
 

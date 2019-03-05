@@ -217,13 +217,14 @@ def fast_utility(board, player):
 class Latrunculi(Game):
     size = 8
     init_state = None
+    rand_seed_used = None
 
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')
         num_pieces = int((self.size * self.size) / 2)
         pieces = []
-
         if seed is not None:
+            self.rand_seed_used = seed
             # Generate random positions for pieces
             np.random.seed(seed)
             squares = np.arange(0, self.size * self.size)
@@ -249,6 +250,10 @@ class Latrunculi(Game):
             pieces.extend([(self.size-1, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
+
+    def seed_used(self):
+        super.__doc__
+        return self.rand_seed_used
 
     def __init__(self, size, start_seed=None):
         Game.__init__(self)

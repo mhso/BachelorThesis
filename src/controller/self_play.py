@@ -167,8 +167,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
                 p2.connection = connection
 
         game.reset() # Reset game history.
-        eval_perf = connection.recv() # Check if we should run performance evaluation games.
-        if type(p1).__name__ == "MCTS" and eval_perf:
+        if type(p1).__name__ == "MCTS" and connection and connection.recv():
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)

@@ -149,6 +149,80 @@ def monitor_games(game_conns, network_storage, replay_storage):
         except EOFError:
             pass
 
+def monitor_games(connections, network_storage, replay_storage):
+    """
+    Listen for updates from self-play processes.
+    These include:
+        - requests for network evaluation.
+        - the result of a terminated game.
+        - the result of performance evaluation games.
+        - logging events.
+    """
+    while network_storage.networks == {}:
+        # Wait for network to be constructed/compiled.
+        sleep(0.5)
+
+    # Notify processes that network is ready.
+    for conn in connections:
+        conn.send("go")
+
+    eval_queue = []
+    queue_size = constants.GAME_THREADS
+    perform_data = [[], [], []]
+    perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
+
+    while True:
+        try:
+            for conn in wait(connections):
+                status, val = conn.recv()
+                if status == "evaluate":
+                    # Process has data that needs to be evaluated. Add it to the queue.
+                    eval_queue.append((conn, val))
+                    if len(eval_queue) == queue_size:
+                        arr = array([v for _, v in eval_queue])
+                        # Evaluate everything in the queue.
+                        policies, values = network_storage.latest_network().evaluate(arr)
+                        for i, c in enumerate(eval_queue):
+                            # Send result to all processes in the queue.
+                            c[0].send(((policies[0][i], policies[1][i]), values[i]))
+                        eval_queue = []
+                elif status == "game_over":
+                    replay_storage.save_game(val)
+                elif status == "log":
+                    FancyLogger.set_thread_status(val[1], val[0])
+                else:
+                    # Get performance data from games against alternate AIs.
+                    if status == "perform_mini":
+                        perform_data[0].append(val)
+                    elif status == "perform_rand":
+                        perform_data[1].append(val)
+                    elif status == "perform_mcts":
+                        perform_data[2].append(val)
+                    step = network_storage.curr_step
+                    p1 = perform_data[0]
+                    p2 = perform_data[1]
+                    p3 = perform_data[2]
+                    if len(p1) >= perform_size:
+                        # Get result of eval against minimax.
+                        avg_mini = sum(p1) / len(p1)
+                        FancyLogger.set_performance_values([avg_mini, None, None])
+                        Graph.plot_data("Versus Minimax", step, avg_mini)
+                        perform_data[0] = []
+                    elif len(p2) >= perform_size:
+                        # Get result of eval against random.
+                        avg_rand = sum(p2) / len(p2)
+                        FancyLogger.set_performance_values([None, avg_rand, None])
+                        Graph.plot_data("Versus Random", step, avg_rand)
+                        perform_data[1] = []
+                    elif len(p3) >= perform_size:
+                        # Get result of eval against basic mcts.
+                        avg_mcts = sum(p3) / len(p3)
+                        FancyLogger.set_performance_values([None, None, avg_mcts])
+                        Graph.plot_data("Versus MCTS", step, avg_mcts)
+                        perform_data[2] = []
+        except EOFError:
+            pass
+
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
     gui = kwargs.get("gui", None)

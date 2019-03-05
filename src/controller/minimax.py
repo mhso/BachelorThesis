@@ -3,30 +3,44 @@ minimax: Implements Minimax with Alpha-Beta pruning for playing a game.
 """
 from controller.game_ai import GameAI
 from view.log import log
+from numba import jit
 
-class Minimax(GameAI):
-    def evaluate_board(self, state, depth):
+@jit(nopython=True)
+def evaluate_board_jit(board, player, depth):
         """
         Very simple heurstic for evaluating worth of board.
         Simply counts the difference in number of pieces of each player.
         """
-        player_piece = 1 if state.player else -1
-        other_piece = -1 if state.player else 1
-        player_captured = 2 if state.player else -2
-        other_captured = -2 if state.player else 2
+        player_piece = 1 if player else -1
+        other_piece = -1 if player else 1
+        player_captured = 2 if player else -2
+        other_captured = -2 if player else 2
         capture_weight = 2
         kill_weight = 10
-        player_pieces = (state.board == player_piece).sum()
-        other_pieces = (state.board == other_piece).sum()
+        player_pieces = (board == player_piece).sum()
+        other_pieces = (board == other_piece).sum()
         bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
 
-        captured_enemy = (state.board == other_captured).sum()
-        captured_player = (state.board == player_captured).sum()
+        captured_enemy = (board == other_captured).sum()
+        captured_player = (board == player_captured).sum()
 
         raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
         capture_diff = (captured_enemy - captured_player) * capture_weight
 
         return raw_diff + capture_diff + bonus
+
+@jit(nopython=True)
+def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
+    worth = max(next_depth, worth) if maxing_player else min(next_depth, worth)
+    if maxing_player:
+        alpha = max(alpha, worth)
+    else:
+        beta = min(beta, worth)
+    return beta, alpha, worth
+
+class Minimax(GameAI):
+    def evaluate_board(self, state, depth):
+        return evaluate_board_jit(state.board, state.player, depth)
 
     def minimax(self, state, depth, maxing_player, alpha, beta):
         """
@@ -43,11 +57,7 @@ class Minimax(GameAI):
         for action in actions:
             result = self.game.result(state, action)
             next_depth = self.minimax(result, depth-1, not maxing_player, alpha, beta)
-            worth = max(next_depth, worth) if maxing_player else min(next_depth, worth)
-            if maxing_player:
-                alpha = max(alpha, worth)
-            else:
-                beta = min(beta, worth)
+            beta, alpha, worth = minimax_jit(maxing_player, next_depth, worth, alpha, beta)
 
             if beta <= alpha:
                 return worth

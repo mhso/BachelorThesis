@@ -69,12 +69,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
             gui.update(state)
         counter += 1
     timeGame.stop_timing()
-    if False:
-        print("\n----- GAME ENDED STATISTIC -----")
-        timeGame.print_duration_in_seconds("Game timing, pid: {}".format(getpid()))
-        print("Moves used: White {}, Black {}".format(count_player_moves[0], count_player_moves[1]))
-        pieces = state.count_pieces()
-        print("Piece a game ending: White {}, Black {}\n".format(pieces[0], pieces[1]))
     if True:
         evalUsed = "standard"
         test_name = "n/a"
@@ -82,7 +76,10 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
             evalUsed = argv[len(argv)-2]
             test_name = argv[len(argv)-1]
         pieces = state.count_pieces()
-        row = SqlUtil.evaluation_cost_row(time_begin, timeGame.get_computer_hostname(), getpid(), test_name, "Latrunculi Eval: {}".format(evalUsed), game.seed_used(), type(player_white).__name__, type(player_black).__name__, int(count_player_moves[0]), int(count_player_moves[1]), int(pieces[0]), int(pieces[1]), timeGame.time_duration())
+        row = SqlUtil.evaluation_cost_row(time_begin, timeGame.get_computer_hostname(), getpid(), test_name, "Latrunculi Eval: {}".format(evalUsed),
+                                                                game.seed_used(), type(player_white).__name__, type(player_black).__name__,
+                                                                int(count_player_moves[0]), int(count_player_moves[1]),
+                                                                int(pieces[0]), int(pieces[1]), timeGame.time_duration())
         sql_conn = SqlUtil.connect()
         SqlUtil.evaluation_cost_insert_row(sql_conn, row)
 

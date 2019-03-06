@@ -43,6 +43,8 @@ def train_network(network_storage, replay_storage, iteration):
     loss = network.train(inputs, expected_out)
     if not iteration % constants.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
+        if "-s" in argv:
+            network_storage.save_network_to_file(iteration, network)
     FancyLogger.set_network_status("Training loss: {}".format(loss))
     #Graph.plot_data("Training Evaluation", None, loss[0])
 
@@ -151,6 +153,8 @@ def monitor_games(game_conns, network_storage, replay_storage):
                         eval_queue = []
                 elif status == "game_over":
                     replay_storage.save_game(val)
+                    if "-s" in argv:
+                        replay_storage.save_replay(val, training_step)
                     new_games += 1
                     finished = game_over(conn, training_step, new_games,
                                          perform_started, replay_storage, network_storage)

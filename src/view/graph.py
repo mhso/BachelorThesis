@@ -13,6 +13,7 @@ class Graph:
     parent = None
     root = None
     ax = None
+    size = (900, 500)
     persist = False
     data = dict()
     changed_plots = dict()
@@ -20,13 +21,14 @@ class Graph:
     colors = dict()
     stop_event = Event()
 
-    def __init__(self, title, gui_parent=None, x_label=None, y_label=None):
+    def __init__(self, title, gui_parent=None, x_label=None, y_label=None, pos=None):
         self.persist = True # Set to False if graph should reset between every game.
         self.parent = gui_parent
         self.root = tk.Tk() if gui_parent is None else gui_parent.root
         window = self.root if gui_parent is None else tk.Toplevel(self.root)
-        window["width"] = 900
-        window["height"] = 500
+
+        x, y = self.get_window_pos(pos)
+        window.geometry("{}x{}+{}+{}".format(self.size[0], self.size[1], x, y))
         window.title(title)
 
         figure = plt.figure.Figure()
@@ -41,6 +43,19 @@ class Graph:
         self.canvas = FigureCanvasTkAgg(figure, master=window)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    def get_window_pos(self, pos):
+        ww, wh = self.size
+        if pos:
+            sw = self.root.winfo_screenwidth()
+            sh = self.root.winfo_screenheight()
+            if pos == "top-r":
+                return (sw - ww-10, -5)
+            elif pos == "bot-r":
+                return (sw - ww-10, sh - wh-60)
+            elif pos == "bot-l":
+                return (10, sh - wh-10)
+        return (100, 100)
 
     def run(self, gui_parent=None):
         self.root.after(200, self.check_change)
@@ -125,7 +140,8 @@ class GraphHandler:
 
     @staticmethod
     def new_graph(title, gui_parent=None, x_label=None, y_label=None):
-        graph = Graph(title, gui_parent, x_label, y_label)
+        positions = ["top-r", "bot-r", "bot-l"]
+        graph = Graph(title, gui_parent, x_label, y_label, positions[len(GraphHandler.graphs)])
         GraphHandler.graphs[title] = graph
         return graph
 

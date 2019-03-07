@@ -86,8 +86,8 @@ class Game(ABC):
     def store_search_statistics(self, node):
         sum_visits = sum(child.visits for child in node.children.values())
         self.visit_counts.append({
-            a: node.children[a].visit_count / sum_visits if a in node.children else 0
-            for a in range(self.num_actions)
+            a: node.children[a].visits / sum_visits
+            for a in node.children
         })
 
     def store_random_statistics(self, rand_stats):

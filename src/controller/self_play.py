@@ -198,7 +198,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
             evaluate_model(game, p1, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)
     except KeyboardInterrupt:
-        print("{}: Exiting by interrupt...".format(getpid()))
+        print("Process {}: Exiting by interrupt...".format(getpid()))
         if gui is not None:
             gui.close()
         if plot_data:

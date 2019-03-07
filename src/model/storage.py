@@ -101,13 +101,14 @@ class ReplayStorage:
 
         try:
             if step is None:
-                current_step = len(glob(folder_name))
+                #current_step = len(glob(folder_name))
+                current_step = 0
             else:
                 current_step = step
 
             step_counter = current_step
             file_counter = 0
-            while 0 < file_counter < constants.MAX_GAME_STORAGE:
+            while step_counter >= 0 and file_counter < constants.MAX_GAME_STORAGE:
                 file_list = glob(folder_name + folder_nn_no_version + str(step_counter) + "/" + "*" + file_extension)
 
                 for f in file_list:
@@ -123,6 +124,9 @@ class ReplayStorage:
             print("Saved games were loaded from files")
         except IOError:
             print("something went wrong when trying to load games into buffer")
+
+    def __str__(self):
+        return "<ReplayStorage: {} games, total length of games: {}>".format(len(self.buffer), sum(len(g.history) for g in self.buffer))
 
 class NetworkStorage:
     """

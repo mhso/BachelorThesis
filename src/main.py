@@ -40,12 +40,13 @@ def train_network(network_storage, replay_storage, iteration):
 
     FancyLogger.set_training_step((iteration+1))
     inputs, expected_out = replay_storage.sample_batch()
+
     loss = network.train(inputs, expected_out)
     if not iteration % constants.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
-    FancyLogger.set_network_status("Training loss: {}".format(loss))
+    FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
     GraphHandler.plot_data("Training Loss", "Training Loss", None, loss[0])
 
 def show_performance_data(step, perform_data, perform_size):
@@ -125,9 +126,15 @@ def monitor_games(game_conns, network_storage, replay_storage):
         - the result of performance evaluation games.
         - logging events.
     """
-    while network_storage.networks == {}:
-        # Wait for network to be constructed/compiled.
-        sleep(0.5)
+    if network_storage is not None and constants.GAME_THREADS > 1:
+        # Construct the initial network.
+        #if the -l option is selected, load a network from files
+        network = None
+        if "-l" in argv:
+            network = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
+        if network is None:
+            network = construct_network(game.size)
+        network_storage.save_network(0, network)
 
     # Notify processes that network is ready.
     for conn in game_conns:
@@ -214,24 +221,15 @@ def prepare_training(game, p1, p2, **kwargs):
                                      args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
 
-        if pipes != []:
-            # Start monitor thread.
-            monitor = Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
-            monitor.start()
 
         #if "-l" option is selected load old replays from file
         if "-l" in argv:
             replay_storage.load_replay(None) #TODO: replace None with the argument for NN version
 
-        if network_storage is not None and constants.GAME_THREADS > 1:
-            # Construct the initial network.
-            #if the -l option is selected, load a network from files
-            network = None
-            if "-l" in argv:
-                network = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
-            if network is None:
-                network = construct_network(game.size)
-            network_storage.save_network(0, network)
+        if pipes != []:
+            # Start monitor thread.
+            monitor = Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
+            monitor.start()
 
         if plot_data:
             graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.

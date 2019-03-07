@@ -48,24 +48,27 @@ class SqlUtil(object):
         connection.commit()
 
     @staticmethod
-    def game_data_row(hostname, filename, description, bin_data):
-        return (hostname, filename, description, bin_data)
-
-    @staticmethod
-    def game_data_insert_row(connection, row):
+    def game_data_insert_row(connection, hostname, filename, description, bin_data):
         mycursor = connection.cursor()
         sql = "INSERT INTO game_data (hostname, filename, description, bin_data) VALUES (%s, %s, %s, %s)"
-
-        # row = (hostname, filename, description, bin_data)
+        row = (hostname, filename, description, bin_data)
     
         mycursor.execute(sql, row)
         connection.commit()
     
     @staticmethod
-    def game_data_select_filename(connection, filename):
+    def game_data_select_filename(connection, file_name):
         mycursor = connection.cursor()
-        sql = "SELECT * FROM game_data WHERE filename={}".format(filename)
-    
+        sql = "SELECT * FROM game_data WHERE filename='{}'".format(file_name)
+        print(sql)
         mycursor.execute(sql)
         result = mycursor.fetchone()
-        return result
+
+        db_id = result[0]
+        created = result[1]
+        hostname = result[2]
+        filename = result[3]
+        description = result[4]
+        bin_data = result[5]
+
+        return bin_data

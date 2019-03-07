@@ -39,11 +39,11 @@ GAME_THREADS = 8
 # How many games to generate per training run.
 # Default is to run training every time all processes
 # has completed a game.
-GAMES_PER_TRAINING = GAME_THREADS
+GAMES_PER_TRAINING = 16
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 1
+EVAL_CHECKPOINT = 5
 
 # How many games to play against base AI's while
 # evaluating model performance (per process).

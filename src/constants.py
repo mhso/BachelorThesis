@@ -96,3 +96,10 @@ NUM_SAMPLING_MOVES = 30
 NOISE_BASE = 0.3
 
 NOISE_FRACTION = 0.25
+
+# |***********************************|
+# |           SELF PLAY               |
+# |***********************************|
+
+# Sleep delay for when an AI is playing with gui
+GUI_AI_SLEEP = 0.5

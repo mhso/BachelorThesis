@@ -8,107 +8,80 @@ from sys import argv
 
 @jit(nopython=True)
 def evaluate_board_jit(board, player, depth):
-        """
-        Very simple heurstic for evaluating worth of board.
-        Simply counts the difference in number of pieces of each player.
-        """
-        player_piece = 1 if player else -1
-        other_piece = -1 if player else 1
-        player_captured = 2 if player else -2
-        other_captured = -2 if player else 2
-        capture_weight = 2
-        kill_weight = 10
-        player_pieces = (board == player_piece).sum()
-        other_pieces = (board == other_piece).sum()
-        bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
+    """
+    Very simple heurstic for evaluating worth of board.
+    Simply counts the difference in number of pieces of each player.
+    """
+    player_piece = 1 if player else -1
+    other_piece = -1 if player else 1
+    player_captured = 2 if player else -2
+    other_captured = -2 if player else 2
 
-        captured_enemy = (board == other_captured).sum()
-        captured_player = (board == player_captured).sum()
+    player_pieces = (board == player_piece).sum()
+    other_pieces = (board == other_piece).sum()
+    captured_enemy = (board == other_captured).sum()
+    captured_player = (board == player_captured).sum()
+    bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
 
-        raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
-        capture_diff = (captured_enemy - captured_player) * capture_weight
+    capture_weight = 2
+    kill_weight = 10
 
-        return raw_diff + capture_diff + bonus
+    raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
+    capture_diff = (captured_enemy - captured_player) * capture_weight
 
-@jit(nopython=True)
-def evaluate_board_jit_v1(board, player, depth):
-        """
-        Very simple heurstic for evaluating worth of board.
-        Simply counts the difference in number of pieces of each player.
-        """
-        player_piece = 1 if player else -1
-        other_piece = -1 if player else 1
-        player_captured = 2 if player else -2
-        other_captured = -2 if player else 2
-        capture_weight = 2
-        kill_weight = 10
-        player_pieces = (board == player_piece).sum()
-        other_pieces = (board == other_piece).sum()
-        bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
-        
-        if other_pieces == 0:
-            piece_bonus = int(player_pieces/0.5) * kill_weight
-        else:
-            piece_bonus = int(player_pieces/other_pieces) * kill_weight
-
-        captured_enemy = (board == other_captured).sum()
-        captured_player = (board == player_captured).sum()
-        captured_bonus = int(captured_enemy-captured_player) * capture_weight
+    return raw_diff + capture_diff + bonus
 
 @jit(nopython=True)
-def evaluate_board_jit_v2(board, player, depth):
-        """
-        Very simple heurstic for evaluating worth of board.
-        Simply counts the difference in number of pieces of each player.
-        """
-        player_piece = 1 if player else -1
-        other_piece = -1 if player else 1
-        player_captured = 2 if player else -2
-        other_captured = -2 if player else 2
-        capture_weight = 2
+def evaluate_board_jit_test(board, player, depth, test_version):
+    # COMMON VARS
+    player_piece = 1 if player else -1
+    other_piece = -1 if player else 1
+    player_captured = 2 if player else -2
+    other_captured = -2 if player else 2
+    
+    player_pieces = (board == player_piece).sum()
+    other_pieces = (board == other_piece).sum()
+    captured_enemy = (board == other_captured).sum()
+    captured_player = (board == player_captured).sum()
+    bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast
+    
+    if test_version == "0": # STANDARD
+        return evaluate_board_jit(board, player, depth)
+    elif test_version == "1":
+        capture_weight = 10
+        kill_weight = 2
+        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
+    elif test_version == "2":
+        capture_weight = 10
+        kill_weight = 50
+        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
+    elif test_version == "3":
+        capture_weight = 50
         kill_weight = 10
-        player_pieces = (board == player_piece).sum()
-        other_pieces = (board == other_piece).sum()
-        bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
-        
-        if other_pieces == 0:
-            piece_bonus = int(player_pieces/0.5) * kill_weight
-        else:
-            piece_bonus = int(player_pieces/other_pieces) * kill_weight
+        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
+    elif test_version == "4":
+        capture_weight = 15
+        kill_weight = 100
+        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
+    elif test_version == "5":
+        capture_weight = 100
+        kill_weight = 15
+        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
 
-        captured_enemy = (board == other_captured).sum()
-        captured_player = (board == player_captured).sum()
-        captured_bonus = int(captured_enemy-captured_player) * capture_weight
-        
 @jit(nopython=True)
-def evaluate_board_jit_v4(board, player, depth):
-        """
-        Very simple heurstic for evaluating worth of board.
-        Simply counts the difference in number of pieces of each player.
-        """
-        player_piece = 1 if player else -1
-        other_piece = -1 if player else 1
-        player_captured = 2 if player else -2
-        other_captured = -2 if player else 2
-        capture_weight = 2
-        kill_weight = 10
-        player_pieces = (board == player_piece).sum()
-        other_pieces = (board == other_piece).sum()
-        bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast.
-        
-        if other_pieces == 0:
-            piece_bonus = int(player_pieces/0.5) * kill_weight
-        else:
-            piece_bonus = int(player_pieces/other_pieces) * kill_weight
+def eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus):
+    raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
+    capture_diff = (captured_enemy - captured_player) * capture_weight
+    return raw_diff + capture_diff + bonus
 
-        captured_enemy = (board == other_captured).sum()
-        captured_player = (board == player_captured).sum()
-        captured_bonus = int(captured_enemy-captured_player) * capture_weight
-
-        # raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
-        # capture_diff = (captured_enemy - captured_player) * capture_weight
-
-        return piece_bonus + captured_bonus + bonus
+# @jit(nopython=True)
+# def eval_test_version_type2(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus):
+#     if other_pieces == 0:
+#         piece_bonus = int(player_pieces/0.5) * kill_weight
+#     else:
+#         piece_bonus = int(player_pieces/other_pieces) * kill_weight
+#     captured_bonus = int(captured_enemy-captured_player) * capture_weight
+#     return piece_bonus + captured_bonus + bonus
 
 @jit(nopython=True)
 def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
@@ -121,14 +94,9 @@ def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
 
 class Minimax(GameAI):
     def evaluate_board(self, state, depth):
-        if "-mini1" in argv:
-            return evaluate_board_jit_v2(state.board, state.player, depth)
-        elif "-mini2" in argv:
-            return evaluate_board_jit_v2(state.board, state.player, depth)
-        elif "-mini3" in argv:
-            return evaluate_board_jit_v3(state.board, state.player, depth)
-        elif "-mini4" in argv:
-            return evaluate_board_jit_v4(state.board, state.player, depth)
+        if "-eval" == argv[len(argv)-3]:
+            test_version = argv[len(argv)-2]
+            return evaluate_board_jit_test(state.board, state.player, depth, test_version)
         else:
             return evaluate_board_jit(state.board, state.player, depth)
 

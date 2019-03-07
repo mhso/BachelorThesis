@@ -218,9 +218,17 @@ def prepare_training(game, p1, p2, **kwargs):
             monitor = Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
             monitor.start()
 
+        #if "-l" option is selected load old replays from file
+        if "-l" in argv:
+            replay_storage.load_replay(None) #TODO: replace None with the argument for NN version
+
         if network_storage is not None and constants.GAME_THREADS > 1:
             # Construct the initial network.
-            network = construct_network(game.size)
+            #if the -l option is selected, load a network from files
+            if "-l" in argv:
+                network = construct_network(game.size)
+            else: 
+                network = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
             network_storage.save_network(0, network)
 
         if plot_data:

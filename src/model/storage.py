@@ -72,7 +72,6 @@ class ReplayStorage:
         folderNN = "NNv" + versionNN + "/"
         fileName = "game"
         fileExtension = ".txt"
-        print("save_replay was called")
 
         numberOfFiles = (glob(folderName + folderNN + "*" + fileExtension)).__len__()
         gameNumber = numberOfFiles+1
@@ -84,6 +83,7 @@ class ReplayStorage:
             newFile = open((folderName + folderNN + fileName + str (gameNumber) + fileExtension), "xb")
             pickle.dump(game, newFile)
             newFile.close()
+            print("game was saved to file")
         except:
             print("something went wrong, when trying to save a replay")
 
@@ -118,6 +118,7 @@ class ReplayStorage:
                     else:
                         break
                 stepCounter -= 1 
+            print("Saved games were loaded from files")
         except:
             print("something went wrong when trying to load games into buffer")
 
@@ -156,6 +157,7 @@ class NetworkStorage:
             os.makedirs((folderName))
         try:
             save_model(network, (folderName + fileName + str(versionNN)), True, True)
+            print("Neural Network was saved to file")
         except:
             print("saving the network failed")
 
@@ -165,12 +167,17 @@ class NetworkStorage:
         This network is then returned
         """
         folderName = "resources/networks/"
-        versionNN = str(step)
         fileName = "network"
 
         try:
+            if step is None:
+                currentStep = (glob(folderName + "*")).__len__()
+            else:
+                currentStep = step
+            versionNN = str(currentstep)
+
             network = load_model((folderName + fileName + str(versionNN)), None, True)
-            print("Network was loaded from file")
+            print("Neural Network was loaded from file")
             return network
         except:
             if not os.path.exists((folderName + fileName + str(versionNN))):

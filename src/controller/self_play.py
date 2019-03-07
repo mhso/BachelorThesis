@@ -69,7 +69,7 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
             gui.update(state)
         counter += 1
     timeGame.stop_timing()
-    if True:
+    if False:
         evalUsed = "standard"
         test_name = "n/a"
         if "-eval" in argv[len(argv)-3]:

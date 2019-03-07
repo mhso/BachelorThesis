@@ -101,8 +101,7 @@ class ReplayStorage:
 
         try:
             if step is None:
-                #current_step = len(glob(folder_name))
-                current_step = 0
+                current_step = len(glob(folder_name))-1
             else:
                 current_step = step
 
@@ -168,7 +167,7 @@ class NetworkStorage:
         if not os.path.exists((folder_name)):
             os.makedirs((folder_name))
         try:
-            save_model(network, (folder_name + file_name + str(version_nn)), True, True)
+            save_model(network.model, (folder_name + file_name + str(version_nn)), True, True)
             print("Neural Network was saved to file")
         except IOError:
             print("saving the network failed")
@@ -184,7 +183,7 @@ class NetworkStorage:
 
         try:
             if step is None:
-                current_step = (glob(folder_name + "*")).__len__()
+                current_step = len(glob(folder_name + "*"))-1
             else:
                 current_step = step
             version_nn = str(current_step)

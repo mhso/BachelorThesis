@@ -27,7 +27,6 @@ class FancyLogger:
     performance_values = [0, 0, 0]
     total_games = 0
     time_started = 0
-    lock = Lock()
 
     @staticmethod
     def start_timing():
@@ -63,28 +62,28 @@ class FancyLogger:
 
     @staticmethod
     def pp():
-        FancyLogger.lock.acquire()
-        clear_console()
-        print("-=-=- Network status -=-=-")
-        print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
-        print(FancyLogger.network_status)
+        global debug
+        if not debug:
+            clear_console()
+            print("-=-=- Network status -=-=-")
+            print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
+            print(FancyLogger.network_status)
 
-        num_symbols = int(constants.TRAINING_STEPS * FancyLogger.train_ratio)
-        progress_str = "▓" * num_symbols
-        remain = "▒" * (20 - num_symbols)
-        print("Training progress: {} {}/{}".format(progress_str + remain, FancyLogger.train_step, constants.TRAINING_STEPS))
-        print("")
+            num_symbols = int(20 * FancyLogger.train_ratio)
+            progress_str = "▓" * num_symbols
+            remain = "▒" * (20 - num_symbols)
+            print("Training progress: {} {}/{}".format(progress_str + remain, FancyLogger.train_step, constants.TRAINING_STEPS))
+            print("")
 
-        print("-=-=- Latest evaluation statuses -=-=-")
-        print("Against Random: {}".format(FancyLogger.performance_values[0]))
-        print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
-        print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
-        print("")
-        print("-=-=- Self play status -=-=-")
-        for thread, status in FancyLogger.thread_statuses.items():
-            print("PID {}: {}".format(thread, status))
+            print("-=-=- Latest evaluation statuses -=-=-")
+            print("Against Random: {}".format(FancyLogger.performance_values[0]))
+            print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
+            print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
+            print("")
+            print("-=-=- Self play status -=-=-")
+            for thread, status in FancyLogger.thread_statuses.items():
+                print("PID {}: {}".format(thread, status))
 
-        print("Number of processes: {}".format(constants.GAME_THREADS))
-        print("Total games generated: {}".format(FancyLogger.total_games))
-        print("Time spent: {} s".format(time() - FancyLogger.time_started))
-        FancyLogger.lock.release()
+            print("Number of processes: {}".format(constants.GAME_THREADS))
+            print("Total games generated: {}".format(FancyLogger.total_games))
+            print("Time spent: {} s".format(time() - FancyLogger.time_started))

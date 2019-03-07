@@ -24,9 +24,9 @@ if __name__ == "__main__":
     from view.graph import GraphHandler
     import constants
 
-def construct_network(size):
+def construct_network(size, model=None):
     FancyLogger.start_timing()
-    network = NeuralNetwork(size)
+    network = NeuralNetwork(size, model=model)
     FancyLogger.set_network_status("Waiting for data...")
     return network
 
@@ -47,7 +47,7 @@ def train_network(network_storage, replay_storage, iteration):
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
-    GraphHandler.plot_data("Training Loss", "Training Loss", None, loss[0])
+    GraphHandler.plot_data("Training Loss", "Training Loss", iteration, loss[0])
 
 def show_performance_data(step, perform_data, perform_size):
     """
@@ -85,6 +85,13 @@ def game_over(conn, training_step, new_games, perform_started, replay_storage, n
         - Check if training is finished.
     @returns True or false, indicating whether training is complete.
     """
+    if not perform_started[conn]:
+        # Tell the process to start running perform eval games.
+        perform_started[conn] = True
+        conn.send("eval_perform")
+    else:
+        # Nothing of note happens, indicate that process should carry on as usual.
+        conn.send(None)
     if new_games >= constants.GAMES_PER_TRAINING:
         # Tell the network to train on a batch of games.
         train_network(network_storage, replay_storage, training_step)
@@ -97,13 +104,6 @@ def game_over(conn, training_step, new_games, perform_started, replay_storage, n
             # Indicate that the process should run performance evaluation games.
             for k in perform_started.keys():
                 perform_started[k] = False
-    elif not perform_started[conn]:
-        # Tell the process to start running perform eval games.
-        perform_started[conn] = True
-        conn.send("eval_perform")
-    else:
-        # Nothing of note happens, indicate that process should carry on as usual.
-        conn.send(None)
     return False
 
 def evaluate_games(eval_queue, network_storage):
@@ -129,11 +129,10 @@ def monitor_games(game_conns, network_storage, replay_storage):
     if network_storage is not None and constants.GAME_THREADS > 1:
         # Construct the initial network.
         #if the -l option is selected, load a network from files
-        network = None
+        model = None
         if "-l" in argv:
-            network = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
-        if network is None:
-            network = construct_network(game.size)
+            model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
+        network = construct_network(game.size, model)
         network_storage.save_network(0, network)
 
     # Notify processes that network is ready.
@@ -144,8 +143,10 @@ def monitor_games(game_conns, network_storage, replay_storage):
     queue_size = constants.GAME_THREADS
     perform_data = [[], [], []]
     perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
-    perform_started = {conn: True for conn in game_conns}
+    perform_started = {conn: False for conn in game_conns}
     training_step = 0
+    train_network(network_storage, replay_storage, 0)
+    train_network(network_storage, replay_storage, 1)
     new_games = 0
 
     while True:
@@ -180,9 +181,8 @@ def monitor_games(game_conns, network_storage, replay_storage):
                         perform_data[1].append(val)
                     elif status == "perform_mcts":
                         perform_data[2].append(val)
-                    step = network_storage.curr_step
 
-                    show_performance_data(step, perform_data, perform_size)
+                    show_performance_data(training_step, perform_data, perform_size)
         except EOFError:
             pass
 
@@ -221,7 +221,6 @@ def prepare_training(game, p1, p2, **kwargs):
                                      args=(game, p1, p2, 0, gui, plot_data, None))
             game_thread.start() # Start game logic thread.
 
-
         #if "-l" option is selected load old replays from file
         if "-l" in argv:
             replay_storage.load_replay(None) #TODO: replace None with the argument for NN version
@@ -233,9 +232,9 @@ def prepare_training(game, p1, p2, **kwargs):
 
         if plot_data:
             graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate") # Start graph window in main thread.
-            graph_2.run(graph_1)
-            graph_1.run(gui)
+            GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate") # Start graph window in main thread.
+            graph_1.run()
+            #GraphHandler.start_root_graph(graph_1)
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:

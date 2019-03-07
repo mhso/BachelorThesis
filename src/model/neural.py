@@ -23,11 +23,12 @@ class NeuralNetwork:
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
-    def __init__(self, board_size, action_space=4, train_immediately=True):
+    def __init__(self, board_size, action_space=4, model=None):
         self.action_space = action_space
         self.board_size = board_size
         self.lock = Lock()
-        if not train_immediately:
+        if model:
+            self.model = model
             return
         # Clean up from previous TF graphs.
         reset_default_graph()

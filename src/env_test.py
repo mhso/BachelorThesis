@@ -1,1 +1,0 @@
-print(os.environ['PATH'])

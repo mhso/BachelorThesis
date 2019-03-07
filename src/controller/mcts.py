@@ -47,8 +47,8 @@ class MCTS(GameAI):
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if self.game.size > 3:
-            playout_options = [200, 200, 35, 20, 10, 5, 5]
-            max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
+            playout_options = [800, 200, 35, 20, 10, 5, 5]
+            max_moves = [300, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
         if playouts is not None:

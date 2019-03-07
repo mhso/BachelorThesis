@@ -454,7 +454,7 @@ class Latrunculi(Game):
             policy_sum += logit
 
         for action, policy in action_map.items():
-            action_map[action] = np.exp(policy/policy_sum)
+            action_map[action] = np.exp(policy/policy_sum) if policy_sum else 0
 
         return action_map
 

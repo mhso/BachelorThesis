@@ -34,7 +34,7 @@ GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 16
+GAME_THREADS = 8
 
 # How many games to generate per training run.
 # Default is to run training every time all processes
@@ -43,7 +43,7 @@ GAMES_PER_TRAINING = GAME_THREADS
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 3
+EVAL_CHECKPOINT = 1
 
 # How many games to play against base AI's while
 # evaluating model performance (per process).
@@ -56,7 +56,7 @@ EVAL_ITERATIONS = 1
 MAX_GPU_FRACTION = 0.5
 
 # How often to save neural network to shared storage.
-SAVE_CHECKPOINT = 50
+SAVE_CHECKPOINT = 1
 
 # Amount of games stored, at one time, in replay storage.
 MAX_GAME_STORAGE = 10000 # Is 1 million in AlphaZero, scale accordingly.

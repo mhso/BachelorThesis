@@ -9,10 +9,6 @@ import matplotlib as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class Graph:
-    canvas = None
-    parent = None
-    root = None
-    ax = None
     size = (900, 500)
     persist = False
     data = dict()
@@ -44,6 +40,8 @@ class Graph:
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+        self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
+
     def get_window_pos(self, pos):
         ww, wh = self.size
         if pos:
@@ -57,22 +55,24 @@ class Graph:
                 return (10, sh - wh-10)
         return (100, 100)
 
-    def run(self, gui_parent=None):
-        self.root.after(200, self.check_change)
-
-        #self.root.geometry("800x600")
-        self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
-        if gui_parent is None:
-            tk.mainloop()
+    def run(self):
+        """
+        Start the mainloop of the underlying
+        Tkinter window for this graph.
+        """
+        tk.mainloop()
 
     def check_change(self):
+        """
+        This function is run every 200 ms. by the
+        Tkinter mainloop. This function checks for
+        incoming data and plots it.
+        """
         changed_label = None
         for label in self.changed_plots:
             if self.changed_plots[label]:
                 changed_label = label
                 break
-
-        self.root.after(100, self.check_change)
 
         if changed_label is None:
             return
@@ -136,13 +136,26 @@ class Graph:
         self.stop_event.set()
 
 class GraphHandler:
+    """
+    GraphHandler acts as a static factory class for
+    interacting with any number of graph windows.
+    Graphs can be created and closed, and data can be
+    added, without worrying about threading issues.
+    """
     graphs = dict()
+
+    @staticmethod
+    def update_graphs(root_graph):
+        for graph in GraphHandler.graphs.values():
+            graph.check_change()
+        root_graph.root.after(200, lambda g: GraphHandler.update_graphs(g), root_graph)
 
     @staticmethod
     def new_graph(title, gui_parent=None, x_label=None, y_label=None):
         positions = ["top-r", "bot-r", "bot-l"]
         graph = Graph(title, gui_parent, x_label, y_label, positions[len(GraphHandler.graphs)])
         GraphHandler.graphs[title] = graph
+        graph.root.after(200, lambda g: GraphHandler.update_graphs(g), graph)
         return graph
 
     @staticmethod

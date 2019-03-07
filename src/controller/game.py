@@ -83,7 +83,6 @@ class Game(ABC):
         state = self.history[state_index]
         return (self.utility(state, state.player), self.visit_counts[state_index])
 
-
     def store_search_statistics(self, node):
         sum_visits = sum(child.visits for child in node.children.values())
         self.visit_counts.append({

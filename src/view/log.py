@@ -64,12 +64,12 @@ class FancyLogger:
     @staticmethod
     def pp():
         FancyLogger.lock.acquire()
-        clear_console()
+        #clear_console()
         print("-=-=- Network status -=-=-")
         print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
         print(FancyLogger.network_status)
 
-        num_symbols = constants.TRAINING_STEPS * FancyLogger.train_ratio
+        num_symbols = int(constants.TRAINING_STEPS * FancyLogger.train_ratio)
         progress_str = "▓" * num_symbols
         remain = "▒" * (20 - num_symbols)
         print("Training progress: {} {}/{}".format(progress_str + remain, FancyLogger.train_step, constants.TRAINING_STEPS))

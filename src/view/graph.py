@@ -20,66 +20,65 @@ class Graph:
     colors = dict()
     stop_event = Event()
 
-    @staticmethod
-    def check_change():
+    def __init__(self, title, gui_parent=None, x_label=None, y_label=None):
+        self.persist = True # Set to False if graph should reset between every game.
+        self.parent = gui_parent
+        self.root = tk.Tk() if gui_parent is None else gui_parent.root
+        window = self.root if gui_parent is None else tk.Toplevel(self.root)
+        window["width"] = 900
+        window["height"] = 500
+        window.title(title)
+
+        figure = plt.figure.Figure()
+        self.ax = figure.add_subplot(111)
+        if title:
+            self.ax.set_title(title)
+        if x_label:
+            self.ax.set_xlabel(x_label)
+        if y_label:
+            self.ax.set_ylabel(y_label)
+
+        self.canvas = FigureCanvasTkAgg(figure, master=window)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    def run(self, gui_parent=None):
+        self.root.after(200, self.check_change)
+
+        #self.root.geometry("800x600")
+        self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
+        if gui_parent is None:
+            tk.mainloop()
+
+    def check_change(self):
         changed_label = None
-        for label in Graph.changed_plots:
-            if Graph.changed_plots[label]:
+        for label in self.changed_plots:
+            if self.changed_plots[label]:
                 changed_label = label
                 break
 
-        Graph.root.after(100, Graph.check_change)
+        self.root.after(100, self.check_change)
 
         if changed_label is None:
             return
 
-        p_x, p_y = Graph.data[changed_label]
+        p_x, p_y = self.data[changed_label]
 
-        Graph.ax.plot(p_x, p_y, Graph.colors[changed_label])
-        Graph.ax.legend([l for l in Graph.data])
+        self.ax.plot(p_x, p_y, self.colors[changed_label])
+        self.ax.legend([l for l in self.data])
 
-        Graph.canvas.draw()
-        Graph.changed_plots[changed_label] = False
+        self.canvas.draw()
+        self.changed_plots[changed_label] = False
 
-    @staticmethod
-    def run(gui_parent=None, title=None, x_label=None, y_label=None):
-        Graph.persist = True # Set to False if graph should reset between every game.
-        Graph.parent = gui_parent
-        Graph.root = tk.Tk() if gui_parent is None else gui_parent.root
-        window = Graph.root if gui_parent is None else tk.Toplevel(Graph.root)
-        window.title("Graphs")
-
-        figure = plt.figure.Figure()
-        Graph.ax = figure.add_subplot(111)
-        if title:
-            Graph.ax.set_title(title)
-        if x_label:
-            Graph.ax.set_xlabel(x_label)
-        if y_label:
-            Graph.ax.set_ylabel(y_label)
-
-        Graph.canvas = FigureCanvasTkAgg(figure, master=window)
-        Graph.canvas.draw()
-        Graph.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-        Graph.root.after(200, Graph.check_change)
-
-        if gui_parent is None:
-            Graph.root.geometry("800x600")
-            Graph.root.protocol("WM_DELETE_WINDOW", lambda: Graph.close())
-            tk.mainloop()
-
-    @staticmethod
-    def clear():
+    def clear(self):
         # Reset graph window.
-        Graph.data = dict()
-        Graph.changed_plots = dict()
-        Graph.colors = dict()
+        self.data = dict()
+        self.changed_plots = dict()
+        self.colors = dict()
 
-        Graph.ax.clear()
+        self.ax.clear()
 
-    @staticmethod
-    def plot_data(graph_name, X, Y):
+    def plot_data(self, graph_name, X, Y):
         """
         Plot data for graph with a given name and axes labels.
         @param graph_name - Name of the graph.
@@ -95,7 +94,7 @@ class Graph:
         lock = Lock() # Use a lock (mutex) to ensure thread safety.
         lock.acquire()
         try:
-            p_x, p_y = Graph.data[graph_name]
+            p_x, p_y = self.data[graph_name]
             if not isinstance(Y, list):
                 Y = [Y]
             if X is None:
@@ -111,13 +110,37 @@ class Graph:
                 X = [v for v in range(1, len(Y)+1)]
             elif not isinstance(X, list):
                 X = [X]
-            Graph.colors[graph_name] = Graph.color_options[len(Graph.data)]
-            Graph.data[graph_name] = (X, Y)
+            self.colors[graph_name] = self.color_options[len(self.data)]
+            self.data[graph_name] = (X, Y)
 
-        Graph.changed_plots[graph_name] = True
+        self.changed_plots[graph_name] = True
         lock.release()
 
+    def close(self):
+        self.root.destroy()
+        self.stop_event.set()
+
+class GraphHandler:
+    graphs = dict()
+
     @staticmethod
-    def close():
-        Graph.root.destroy()
-        Graph.stop_event.set()
+    def new_graph(title, gui_parent=None, x_label=None, y_label=None):
+        graph = Graph(title, gui_parent, x_label, y_label)
+        GraphHandler.graphs[title] = graph
+        return graph
+
+    @staticmethod
+    def plot_data(graph_window, graph_name, X, Y):
+        GraphHandler.graphs[graph_window].plot_data(graph_name, X, Y)
+
+    @staticmethod
+    def close_graphs():
+        for graph in GraphHandler.graphs.items():
+            graph.close()
+
+    @staticmethod
+    def closed():
+        for graph in GraphHandler.graphs.items():
+            if graph.stop_event.is_set():
+                return True
+        return False

@@ -11,12 +11,12 @@ from sys import argv
 from multiprocessing import Process
 import constants
 from view.log import log, FancyLogger
-from view.graph import Graph
+from view.graph import GraphHandler
 from util.timerUtil import TimerUtil
 from util.sqlUtil import SqlUtil
 
 def force_quit(gui):
-    return gui is not None and not gui.active or Graph.stop_event.is_set()
+    return gui is not None and not gui.active or GraphHandler.closed()
 
 def play_game(game, player_white, player_black, gui=None, connection=None):
     """
@@ -183,7 +183,6 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         if connection:
             # Save game to be used for neural network training.
             connection.send(("game_over", game.clone()))
-            #FancyLogger.increment_total_games()
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
                     and iteration >= constants.RANDOM_INITIAL_GAMES // constants.GAME_THREADS):
                 # We are done with random game generation,
@@ -199,9 +198,9 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
             evaluate_model(game, p1, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)
     except KeyboardInterrupt:
-        print("Exiting by interrupt...")
+        print("{}: Exiting by interrupt...".format(getpid()))
         if gui is not None:
             gui.close()
         if plot_data:
-            Graph.close()
+            GraphHandler.close_graphs()
         exit(0)

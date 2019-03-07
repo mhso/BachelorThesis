@@ -7,7 +7,6 @@ import numpy as np
 import constants
 from controller.game_ai import GameAI
 from view.log import log
-from view.graph import Graph
 
 class Node():
     action = None
@@ -48,7 +47,7 @@ class MCTS(GameAI):
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if self.game.size > 3:
-            playout_options = [800, 200, 35, 20, 10, 5, 5]
+            playout_options = [200, 200, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
@@ -181,7 +180,6 @@ class MCTS(GameAI):
 
         best_node = self.choose_action(original_node)
 
-        #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value)
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
         self.game.store_search_statistics(best_node)
         return best_node.state

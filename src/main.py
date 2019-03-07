@@ -21,7 +21,7 @@ if __name__ == "__main__":
     from model.neural import NeuralNetwork, DummyNetwork
     from view.log import FancyLogger
     from view.visualize import Gui
-    from view.graph import Graph
+    from view.graph import GraphHandler
     import constants
 
 def construct_network(size):
@@ -46,7 +46,7 @@ def train_network(network_storage, replay_storage, iteration):
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
     FancyLogger.set_network_status("Training loss: {}".format(loss))
-    #Graph.plot_data("Training Evaluation", None, loss[0])
+    GraphHandler.plot_data("Training Loss", "Training Loss", None, loss[0])
 
 def show_performance_data(step, perform_data, perform_size):
     """
@@ -60,19 +60,19 @@ def show_performance_data(step, perform_data, perform_size):
         # Get result of eval against minimax.
         avg_mini = sum(p1) / len(p1)
         FancyLogger.set_performance_values([avg_mini, None, None])
-        Graph.plot_data("Versus Minimax", step, avg_mini)
+        GraphHandler.plot_data("Training Evaluation", "Versus Minimax", step, avg_mini)
         perform_data[0] = []
     elif len(p2) >= perform_size:
         # Get result of eval against random.
         avg_rand = sum(p2) / len(p2)
         FancyLogger.set_performance_values([None, avg_rand, None])
-        Graph.plot_data("Versus Random", step, avg_rand)
+        GraphHandler.plot_data("Training Evaluation", "Versus Random", step, avg_rand)
         perform_data[1] = []
     elif len(p3) >= perform_size:
         # Get result of eval against basic mcts.
         avg_mcts = sum(p3) / len(p3)
         FancyLogger.set_performance_values([None, None, avg_mcts])
-        Graph.plot_data("Versus MCTS", step, avg_mcts)
+        GraphHandler.plot_data("Training Evaluation", "Versus MCTS", step, avg_mcts)
         perform_data[2] = []
 
 def game_over(conn, training_step, new_games, perform_started, replay_storage, network_storage):
@@ -84,7 +84,7 @@ def game_over(conn, training_step, new_games, perform_started, replay_storage, n
         - Check if training is finished.
     @returns True or false, indicating whether training is complete.
     """
-    if new_games >= constants.BATCH_SIZE:
+    if new_games >= constants.GAMES_PER_TRAINING:
         # Tell the network to train on a batch of games.
         train_network(network_storage, replay_storage, training_step)
         training_step += 1
@@ -152,6 +152,7 @@ def monitor_games(game_conns, network_storage, replay_storage):
                         evaluate_games(eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":
+                    FancyLogger.increment_total_games()
                     replay_storage.save_game(val)
                     if "-s" in argv:
                         replay_storage.save_replay(val, training_step)
@@ -225,14 +226,18 @@ def prepare_training(game, p1, p2, **kwargs):
         if network_storage is not None and constants.GAME_THREADS > 1:
             # Construct the initial network.
             #if the -l option is selected, load a network from files
+            network = None
             if "-l" in argv:
-                network = construct_network(game.size)
-            else: 
                 network = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
+            if network is None:
+                network = construct_network(game.size)
             network_storage.save_network(0, network)
 
         if plot_data:
-            Graph.run(gui, "Training Evaluation", "Training Iteration", "Winrate") # Start graph window in main thread.
+            graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate") # Start graph window in main thread.
+            graph_2.run(graph_1)
+            graph_1.run(gui)
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:

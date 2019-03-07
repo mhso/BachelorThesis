@@ -46,3 +46,26 @@ class SqlUtil(object):
     
         mycursor.execute(sql, row)
         connection.commit()
+
+    @staticmethod
+    def game_data_row(hostname, filename, description, bin_data):
+        return (hostname, filename, description, bin_data)
+
+    @staticmethod
+    def game_data_insert_row(connection, row):
+        mycursor = connection.cursor()
+        sql = "INSERT INTO game_data (hostname, filename, description, bin_data) VALUES (%s, %s, %s, %s)"
+
+        # row = (hostname, filename, description, bin_data)
+    
+        mycursor.execute(sql, row)
+        connection.commit()
+    
+    @staticmethod
+    def game_data_select_filename(connection, filename):
+        mycursor = connection.cursor()
+        sql = "SELECT * FROM game_data WHERE filename={}".format(filename)
+    
+        mycursor.execute(sql)
+        result = mycursor.fetchone()
+        return result

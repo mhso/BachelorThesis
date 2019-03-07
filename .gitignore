@@ -8,7 +8,8 @@ __pycache__/
 
 # VS Code
 .vscode/
-resources/replays
+resources/replays/
+resources/networks/
 
 # Distribution / packaging
 .Python

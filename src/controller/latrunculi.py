@@ -242,12 +242,13 @@ class Latrunculi(Game):
             pieces.sort()
         else:
             # Position pieces as a 'Chess formation'.
-            board[:][0:2] = -1
-            board[:][-2:] = 1
-            pieces.extend([(0, x) for x in range(self.size)])
-            pieces.extend([(1, x) for x in range(self.size)])
-            pieces.extend([(self.size-2, x) for x in range(self.size)])
-            pieces.extend([(self.size-1, x) for x in range(self.size)])
+            num_rows = int(self.size/4)
+            board[:][0:num_rows] = -1
+            board[:][-num_rows:] = 1
+            for i in range(num_rows):
+                pieces.extend([(i, x) for x in range(self.size)])
+            for i in range(num_rows):
+                pieces.extend([(self.size-1-i, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
 

@@ -9,7 +9,6 @@ import matplotlib as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class Graph:
-    size = (900, 500)
     persist = False
     data = dict()
     changed_plots = dict()
@@ -23,8 +22,8 @@ class Graph:
         self.root = tk.Tk() if gui_parent is None else gui_parent.root
         window = self.root if gui_parent is None else tk.Toplevel(self.root)
 
-        x, y = self.get_window_pos(pos)
-        window.geometry("{}x{}+{}+{}".format(self.size[0], self.size[1], x, y))
+        w, h, x, y = self.get_window_geometry(pos)
+        window.geometry("{}x{}+{}+{}".format(w, h, x, y))
         window.title(title)
 
         figure = plt.figure.Figure()
@@ -42,18 +41,22 @@ class Graph:
 
         self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
 
-    def get_window_pos(self, pos):
-        ww, wh = self.size
+    def get_window_geometry(self, pos):
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()        
+        ww, wh = int(sw // 2.2), int(sh // 2.25)
+        x, y = 100, 100
         if pos:
-            sw = self.root.winfo_screenwidth()
-            sh = self.root.winfo_screenheight()
             if pos == "top-r":
-                return (sw - ww-10, -5)
+                x = sw - ww - 10
+                y = -5
             elif pos == "bot-r":
-                return (sw - ww-10, sh - wh-60)
+                x = sw - ww - 10
+                y = sh - wh - 70
             elif pos == "bot-l":
-                return (10, sh - wh-10)
-        return (100, 100)
+                x = 10
+                y = sh - wh - 10
+        return (ww, wh, x, y)
 
     def run(self):
         """

@@ -125,6 +125,7 @@ def monitor_games(game_conns, network_storage, replay_storage):
         - the result of performance evaluation games.
         - logging events.
     """
+    
     if network_storage is not None and constants.GAME_THREADS > 1:
         # Construct the initial network.
         #if the -l option is selected, load a network from files
@@ -132,7 +133,11 @@ def monitor_games(game_conns, network_storage, replay_storage):
         if "-l" in argv:
             model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
         network = construct_network(game.size, model)
-        network_storage.save_network(0, network)
+        network_storage.save_network(network_storage.curr_step, network)
+
+    training_step = network_storage.curr_step
+    FancyLogger.total_games = len(replay_storage.buffer)
+    FancyLogger.set_training_step(training_step)
 
     # Notify processes that network is ready.
     for conn in game_conns:
@@ -143,7 +148,6 @@ def monitor_games(game_conns, network_storage, replay_storage):
     perform_data = [[], [], []]
     perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
     perform_started = {conn: True for conn in game_conns}
-    training_step = 0
     new_games = 0
 
     while True:
@@ -201,9 +205,7 @@ def prepare_training(game, p1, p2, **kwargs):
         pipes = []
         for i in range(constants.GAME_THREADS):
             if i > 0: # Make copies of game and players.
-                copy_game = self_play.get_game(type(game).__name__, game.size, None, ".")
-                copy_game.init_state = game.start_state()
-                game = copy_game
+                game = self_play.get_game(type(game).__name__, game.size, "random", ".")
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = self_play.get_ai_algorithm(type(p2).__name__, game, ".")
             parent, child = Pipe()

@@ -184,6 +184,7 @@ class NetworkStorage:
         try:
             if step is None:
                 current_step = len(glob(folder_name + "*"))-1
+                self.curr_step = current_step
             else:
                 current_step = step
             version_nn = str(current_step)

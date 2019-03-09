@@ -26,7 +26,6 @@ if __name__ == "__main__":
 def construct_network(size, model=None):
     FancyLogger.start_timing()
     network = NeuralNetwork(size, model=model)
-    FancyLogger.set_network_status("Waiting for data...")
     return network
 
 def train_network(network_storage, replay_storage, iteration):
@@ -45,6 +44,7 @@ def train_network(network_storage, replay_storage, iteration):
         network_storage.save_network(iteration, network)
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
+            save_loss(loss, iteration)
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
     GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
 
@@ -61,18 +61,24 @@ def show_performance_data(step, perform_data, perform_size):
         avg_mini = sum(p1) / len(p1)
         FancyLogger.set_performance_values([avg_mini, None, None])
         GraphHandler.plot_data("Training Evaluation", "Versus Minimax", step, avg_mini)
+        if "-s" in argv:
+            save_perform_data(perform_data[0], "minimax", step) # Save to file.
         perform_data[0] = []
     elif len(p2) >= perform_size:
         # Get result of eval against random.
         avg_rand = sum(p2) / len(p2)
         FancyLogger.set_performance_values([None, avg_rand, None])
         GraphHandler.plot_data("Training Evaluation", "Versus Random", step, avg_rand)
+        if "-s" in argv:
+            save_perform_data(perform_data[1], "random", step) # Save to file.
         perform_data[1] = []
     elif len(p3) >= perform_size:
         # Get result of eval against basic mcts.
         avg_mcts = sum(p3) / len(p3)
         FancyLogger.set_performance_values([None, None, avg_mcts])
         GraphHandler.plot_data("Training Evaluation", "Versus MCTS", step, avg_mcts)
+        if "-s" in argv:
+            save_perform_data(perform_data[2], "mcts", step) # Save to file.
         perform_data[2] = []
 
 def game_over(conn, training_step, new_games, perform_started, replay_storage, network_storage):
@@ -116,6 +122,23 @@ def evaluate_games(eval_queue, network_storage):
         # Send result to all processes in the queue.
         c[0].send(((policies[0][i], policies[1][i]), values[i]))
 
+def load_all_perform_data():
+    perf_mini = load_perform_data("minimax", None)
+    if perf_mini:
+        for t_step, data in perf_mini:
+            GraphHandler.plot_data("Training Evaluation", "Versus Minimax", t_step, data)
+        FancyLogger.set_performance_values([perf_mini[-1][1], None, None])
+    perf_rand = load_perform_data("random", None)
+    if perf_rand:
+        for t_step, data in perf_mini:
+            GraphHandler.plot_data("Training Evaluation", "Versus Random", t_step, data)
+        FancyLogger.set_performance_values([None, perf_rand[-1][1], None])        
+    perf_mcts = load_perform_data("mcts", None)
+    if perf_mcts:
+        for t_step, data in perf_mini:
+            GraphHandler.plot_data("Training Evaluation", "Versus MCTS", t_step, data)
+        FancyLogger.set_performance_values([None, None, perf_mcts[-1][1]])        
+
 def monitor_games(game_conns, network_storage, replay_storage):
     """
     Listen for updates from self-play processes.
@@ -125,19 +148,28 @@ def monitor_games(game_conns, network_storage, replay_storage):
         - the result of performance evaluation games.
         - logging events.
     """
-    
+    training_step = 0
     if network_storage is not None and constants.GAME_THREADS > 1:
         # Construct the initial network.
         #if the -l option is selected, load a network from files
         model = None
+        FancyLogger.set_network_status("Waiting for data...")
         if "-l" in argv:
             model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
-        network = construct_network(game.size, model)
-        network_storage.save_network(network_storage.curr_step, network)
+            training_step = network_storage.curr_step
+            # Load previously saved network loss + performance data.
+            losses = []
+            for i in range(training_step+1):
+                losses.append(load_loss(i))
+            GraphHandler.plot_data("Training Loss", "Training Loss", None, losses)
+            FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
+            load_all_perform_data()
 
-    training_step = network_storage.curr_step
+        network = construct_network(game.size, model)
+        network_storage.save_network(training_step, network)
+
     FancyLogger.total_games = len(replay_storage.buffer)
-    FancyLogger.set_training_step(training_step)
+    FancyLogger.set_training_step(training_step+1)
 
     # Notify processes that network is ready.
     for conn in game_conns:
@@ -240,13 +272,38 @@ def prepare_training(game, p1, p2, **kwargs):
     else:
         self_play.play_loop(game, p1, p2, 0)
 
-def save_models(model, path):
-    print("Saving model to file: {}".format(path), flush=True)
-    pickle.dump(model, open(path, "wb"))
+def save_perform_data(data, ai, step):
+    pickle.dump(data, open("../resources/misc/perform_eval_{}_{}.bin".format(ai, step), "wb"))
 
-def load_model(path):
-    print("Loading model from file: {}".format(path), flush=True)
-    return pickle.load(open(path, "rb"))
+def save_loss(loss, step):
+    pickle.dump(loss, open("../resources/misc/loss_{}.bin".format(step), "wb"))
+
+def load_perform_data(ai, step):
+    try:
+        data = None
+        path = "../resources/misc/perform_eval_"
+        if step:
+            data = pickle.load(open("{}{}_{}.bin".format(path, ai, step), "rb"))
+        else:
+            data = []
+            files = glob("{}{}_*.bin".format(path, ai))
+            for f in files:
+                step = f.split("_")[-1][:-4]
+                data.append((int(step), pickle.load(f)), "rb")
+        return data
+    except IOError:
+        return None
+
+def load_loss(step):
+    """
+    Loads network training loss for given training step.
+    If no such data exists, returns 1.
+    """
+    try:
+        loss = pickle.load(open("../resources/misc/loss_{}.bin".format(step), "rb"))
+        return loss
+    except IOError:
+        return 1
 
 if __name__ == "__main__":
     # Load arguments for running the program.

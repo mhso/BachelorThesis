@@ -163,7 +163,10 @@ class GraphHandler:
 
     @staticmethod
     def plot_data(graph_window, graph_name, X, Y):
-        GraphHandler.graphs[graph_window].plot_data(graph_name, X, Y)
+        try:
+            GraphHandler.graphs[graph_window].plot_data(graph_name, X, Y)
+        except KeyError:
+            return
 
     @staticmethod
     def close_graphs():

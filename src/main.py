@@ -44,7 +44,7 @@ def train_network(network_storage, replay_storage, iteration):
         network_storage.save_network(iteration, network)
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
-            save_loss(loss, iteration)
+            save_loss(loss[0], iteration)
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
     GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
 
@@ -149,31 +149,31 @@ def monitor_games(game_conns, network_storage, replay_storage):
         - logging events.
     """
     training_step = 0
-    if network_storage is not None and constants.GAME_THREADS > 1:
-        # Construct the initial network.
-        #if the -l option is selected, load a network from files
-        model = None
-        FancyLogger.set_network_status("Waiting for data...")
-        if "-l" in argv:
-            model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
-            training_step = network_storage.curr_step
-            # Load previously saved network loss + performance data.
-            losses = []
-            for i in range(training_step+1):
-                losses.append(load_loss(i))
-            GraphHandler.plot_data("Training Loss", "Training Loss", None, losses)
-            FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
-            load_all_perform_data()
+    # Construct the initial network.
+    #if the -l option is selected, load a network from files
+    model = None
+    if "-l" in argv:
+        model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
+        training_step = network_storage.curr_step+1
+        FancyLogger.set_training_step(training_step)
+        # Load previously saved network loss + performance data.
+        losses = []
+        for i in range(training_step):
+            losses.append(load_loss(i))
+        load_all_perform_data()
 
+        GraphHandler.plot_data("Training Loss", "Training Loss", None, losses)
         network = construct_network(game.size, model)
-        network_storage.save_network(training_step, network)
-
-    FancyLogger.total_games = len(replay_storage.buffer)
-    FancyLogger.set_training_step(training_step+1)
+        network_storage.save_network(training_step-1, network)
+        FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
+    else:
+        FancyLogger.set_network_status("Waiting for data...")
 
     # Notify processes that network is ready.
     for conn in game_conns:
         conn.send("go")
+
+    FancyLogger.total_games = len(replay_storage.buffer)
 
     eval_queue = []
     queue_size = constants.GAME_THREADS
@@ -287,6 +287,8 @@ def load_perform_data(ai, step):
         else:
             data = []
             files = glob("{}{}_*.bin".format(path, ai))
+            if files == []:
+                return None
             for f in files:
                 step = f.split("_")[-1][:-4]
                 data.append((int(step), pickle.load(f)), "rb")

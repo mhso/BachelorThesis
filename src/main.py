@@ -13,7 +13,6 @@ if __name__ == "__main__":
     from os import getpid
     from glob import glob
     from sys import argv
-    from time import sleep
     from numpy import array
     from controller.latrunculi import Latrunculi
     from controller import self_play
@@ -47,7 +46,7 @@ def train_network(network_storage, replay_storage, iteration):
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
-    GraphHandler.plot_data("Training Loss", "Training Loss", iteration, loss[0])
+    GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
 
 def show_performance_data(step, perform_data, perform_size):
     """
@@ -99,12 +98,12 @@ def game_over(conn, training_step, new_games, perform_started, replay_storage, n
         new_games = 0
         if training_step == constants.TRAINING_STEPS:
             FancyLogger.set_network_status("Training finished!")
-            return True
+            return True, new_games, training_step
         if not training_step % constants.EVAL_CHECKPOINT:
             # Indicate that the process should run performance evaluation games.
             for k in perform_started.keys():
                 perform_started[k] = False
-    return False
+    return False, new_games, training_step
 
 def evaluate_games(eval_queue, network_storage):
     """
@@ -163,8 +162,9 @@ def monitor_games(game_conns, network_storage, replay_storage):
                     if "-s" in argv:
                         replay_storage.save_replay(val, training_step)
                     new_games += 1
-                    finished = game_over(conn, training_step, new_games,
-                                         perform_started, replay_storage, network_storage)
+                    finished, new_games, training_step = game_over(conn, training_step, new_games,
+                                                                   perform_started, replay_storage,
+                                                                   network_storage)
                     if finished:
                         for c in game_conns:
                             c.close()
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     player2 = "."
     game_name = "."
     board_size = constants.DEFAULT_BOARD_SIZE
-    rand_seed = None
+    rand_seed = "random"
 
     wildcard = "."
     option_list = ["-s", "-l", "-v", "-t", "-g", "-p"]
@@ -290,7 +290,10 @@ if __name__ == "__main__":
                         board_size = int(args[4]) # Size of board.
 
                     if argc > 5 and args[5] != wildcard:
-                        rand_seed = int(args[5])
+                        if args[5] != "random":
+                            rand_seed = int(args[5])
+                        else:
+                            rand_seed = args[5] # Use numpy-determined random seed.
 
     game = self_play.get_game(game_name, board_size, rand_seed, wildcard)
     p_white = self_play.get_ai_algorithm(player1, game, wildcard)

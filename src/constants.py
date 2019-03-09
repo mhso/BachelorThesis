@@ -39,11 +39,11 @@ GAME_THREADS = 8
 # How many games to generate per training run.
 # Default is to run training every time all processes
 # has completed a game.
-GAMES_PER_TRAINING = 16
+GAMES_PER_TRAINING = 8
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 5
+EVAL_CHECKPOINT = 3
 
 # How many games to play against base AI's while
 # evaluating model performance (per process).
@@ -77,10 +77,10 @@ MOMENTUM = 0.9
 WEIGHT_DECAY = 1e-4
 
 # Amount of filters to use in convolutional layers.
-CONV_FILTERS = 32
+CONV_FILTERS = 128
 
 # Number of residual layers.
-RES_LAYERS = 3
+RES_LAYERS = 11
 
 # |***********************************|
 # |           MCTS OPTIONS            |

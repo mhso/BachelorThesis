@@ -224,9 +224,10 @@ class Latrunculi(Game):
         num_pieces = int((self.size * self.size) / 2)
         pieces = []
         if seed is not None:
-            self.rand_seed_used = seed
+            if seed != "random":
+                self.rand_seed_used = seed
+                np.random.seed(seed)
             # Generate random positions for pieces
-            np.random.seed(seed)
             squares = np.arange(0, self.size * self.size)
             np.random.shuffle(squares)
 
@@ -242,13 +243,12 @@ class Latrunculi(Game):
             pieces.sort()
         else:
             # Position pieces as a 'Chess formation'.
-            num_rows = int(self.size/4)
-            board[:][0:num_rows] = -1
-            board[:][-num_rows:] = 1
-            for i in range(num_rows):
-                pieces.extend([(i, x) for x in range(self.size)])
-            for i in range(num_rows):
-                pieces.extend([(self.size-1-i, x) for x in range(self.size)])
+            board[:][0:2] = -1
+            board[:][-2:] = 1
+            pieces.extend([(0, x) for x in range(self.size)])
+            pieces.extend([(1, x) for x in range(self.size)])
+            pieces.extend([(self.size-2, x) for x in range(self.size)])
+            pieces.extend([(self.size-1, x) for x in range(self.size)])
 
         self.init_state = State(board, True, pieces=pieces)
 

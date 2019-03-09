@@ -183,6 +183,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         if connection:
             # Save game to be used for neural network training.
             connection.send(("game_over", game.clone()))
+            game.populate_board("random")
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
                     and iteration >= constants.RANDOM_INITIAL_GAMES // constants.GAME_THREADS):
                 # We are done with random game generation,

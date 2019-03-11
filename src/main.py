@@ -49,7 +49,15 @@ def train_network(network_storage, replay_storage, iteration):
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
     GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
 
-def show_performance_data(step, perform_data, perform_size):
+def show_performance_data(ai, index, step, data):
+    # Get result of eval against minimax.
+    avg_data = sum(data) / len(data)
+    values = [None, None, None]
+    values[index] = avg_data
+    FancyLogger.set_performance_values(values)
+    GraphHandler.plot_data("Training Evaluation", ai, step, avg_data)
+
+def handle_performance_data(step, perform_data, perform_size):
     """
     Get performance data from games against alternate AIs.
     Print/plot the results.
@@ -58,26 +66,17 @@ def show_performance_data(step, perform_data, perform_size):
     p2 = perform_data[1]
     p3 = perform_data[2]
     if len(p1) >= perform_size:
-        # Get result of eval against minimax.
-        avg_mini = sum(p1) / len(p1)
-        FancyLogger.set_performance_values([avg_mini, None, None])
-        GraphHandler.plot_data("Training Evaluation", "Versus Minimax", step, avg_mini)
+        show_performance_data("Versus Minimax", 0, step, p1)
         if "-s" in argv:
             save_perform_data(perform_data[0], "minimax", step) # Save to file.
         perform_data[0] = []
     elif len(p2) >= perform_size:
-        # Get result of eval against random.
-        avg_rand = sum(p2) / len(p2)
-        FancyLogger.set_performance_values([None, avg_rand, None])
-        GraphHandler.plot_data("Training Evaluation", "Versus Random", step, avg_rand)
+        show_performance_data("Versus Random", 1, step, p2)
         if "-s" in argv:
             save_perform_data(perform_data[1], "random", step) # Save to file.
         perform_data[1] = []
     elif len(p3) >= perform_size:
-        # Get result of eval against basic mcts.
-        avg_mcts = sum(p3) / len(p3)
-        FancyLogger.set_performance_values([None, None, avg_mcts])
-        GraphHandler.plot_data("Training Evaluation", "Versus MCTS", step, avg_mcts)
+        show_performance_data("Versus MCTS", 2, step, p3)
         if "-s" in argv:
             save_perform_data(perform_data[2], "mcts", step) # Save to file.
         perform_data[2] = []
@@ -127,18 +126,15 @@ def load_all_perform_data():
     perf_mini = load_perform_data("minimax", None)
     if perf_mini:
         for t_step, data in perf_mini:
-            GraphHandler.plot_data("Training Evaluation", "Versus Minimax", t_step, data)
-        FancyLogger.set_performance_values([perf_mini[-1][1], None, None])
+            show_performance_data("Versus Minimax", 0, t_step, data)
     perf_rand = load_perform_data("random", None)
     if perf_rand:
-        for t_step, data in perf_mini:
-            GraphHandler.plot_data("Training Evaluation", "Versus Random", t_step, data)
-        FancyLogger.set_performance_values([None, perf_rand[-1][1], None])        
+        for t_step, data in perf_rand:
+            show_performance_data("Versus Random", 1, t_step, data) 
     perf_mcts = load_perform_data("mcts", None)
     if perf_mcts:
-        for t_step, data in perf_mini:
-            GraphHandler.plot_data("Training Evaluation", "Versus MCTS", t_step, data)
-        FancyLogger.set_performance_values([None, None, perf_mcts[-1][1]])        
+        for t_step, data in perf_mcts:
+            show_performance_data("Versus MCTS", 2, t_step, data)                  
 
 def monitor_games(game_conns, network_storage, replay_storage):
     """
@@ -168,6 +164,8 @@ def monitor_games(game_conns, network_storage, replay_storage):
         network_storage.save_network(training_step-1, network)
         FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
     else:
+        network = construct_network(game.size)
+        network_storage.save_network(0, network)
         FancyLogger.set_network_status("Waiting for data...")
 
     # Notify processes that network is ready.
@@ -217,7 +215,7 @@ def monitor_games(game_conns, network_storage, replay_storage):
                     elif status == "perform_mcts":
                         perform_data[2].append(val)
 
-                    show_performance_data(training_step, perform_data, perform_size)
+                    handle_performance_data(training_step, perform_data, perform_size)
         except EOFError:
             pass
 
@@ -265,9 +263,8 @@ def prepare_training(game, p1, p2, **kwargs):
 
         if plot_data:
             graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.
-            GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate") # Start graph window in main thread.
-            graph_1.run()
-            #GraphHandler.start_root_graph(graph_1)
+            graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate") # Start graph window in main thread.
+            graph_2.run("top-r")
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
@@ -287,12 +284,13 @@ def load_perform_data(ai, step):
             data = pickle.load(open("{}{}_{}.bin".format(path, ai, step), "rb"))
         else:
             data = []
-            files = glob("{}{}_*.bin".format(path, ai))
+            files = glob("{}{}_*".format(path, ai))
             if files == []:
                 return None
             for f in files:
                 step = f.split("_")[-1][:-4]
-                data.append((int(step), pickle.load(f)), "rb")
+                data.append((int(step), pickle.load(open(f, "rb"))))
+            data.sort(key=lambda sd: sd[0])
         return data
     except IOError:
         return None
@@ -365,15 +363,6 @@ if __name__ == "__main__":
         type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__), flush=True)
     player1 = player1.lower()
     player2 = player2.lower()
-
-    if "-l" in options:
-        MCTS_PATH = "../resources/"
-        models = glob(MCTS_PATH+"/mcts*")
-        if models != []:
-            if player1 == "mcts":
-                p_white.state_map = load_model(models[-1])
-            if player2 == "mcts":
-                p_black.state_map = load_model(models[-1])
 
     gui = None
     if "-g" in options or player1 == "human" or player2 == "human":

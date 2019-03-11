@@ -216,7 +216,6 @@ def fast_utility(board, player):
 
 class Latrunculi(Game):
     size = 8
-    init_state = None
     rand_seed_used = None
 
     def populate_board(self, seed):

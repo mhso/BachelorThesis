@@ -43,7 +43,7 @@ GAMES_PER_TRAINING = 8
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 3
+EVAL_CHECKPOINT = 7
 
 # How many games to play against base AI's while
 # evaluating model performance (per process).

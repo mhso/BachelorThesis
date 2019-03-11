@@ -10,21 +10,16 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class Graph:
     persist = False
-    data = dict()
-    changed_plots = dict()
-    color_options = ["r", "b", "g", "y"]
-    colors = dict()
-    stop_event = Event()
 
-    def __init__(self, title, gui_parent=None, x_label=None, y_label=None, pos=None):
+    def __init__(self, title, gui_parent=None, x_label=None, y_label=None):
         self.persist = True # Set to False if graph should reset between every game.
+        self.data = dict()
+        self.changed_plots = dict()
+        self.color_options = ["r", "b", "g", "y"]
+        self.colors = dict()
+        self.stop_event = Event()
         self.parent = gui_parent
         self.root = tk.Tk() if gui_parent is None else gui_parent.root
-        window = self.root if gui_parent is None else tk.Toplevel(self.root)
-
-        w, h, x, y = self.get_window_geometry(pos)
-        window.geometry("{}x{}+{}+{}".format(w, h, x, y))
-        window.title(title)
 
         figure = plt.figure.Figure()
         self.ax = figure.add_subplot(111)
@@ -35,16 +30,16 @@ class Graph:
         if y_label:
             self.ax.set_ylabel(y_label)
 
-        self.canvas = FigureCanvasTkAgg(figure, master=window)
+        self.canvas = FigureCanvasTkAgg(figure, master=self.root)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
         self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
 
     def get_window_geometry(self, pos):
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()        
-        ww, wh = int(sw // 2.2), int(sh // 2.25)
+        ww, wh = int(sw // 1.25), int(sh // 2.1)
         x, y = 100, 100
         if pos:
             if pos == "top-r":
@@ -58,11 +53,14 @@ class Graph:
                 y = sh - wh - 10
         return (ww, wh, x, y)
 
-    def run(self):
+    def run(self, pos=None):
         """
         Start the mainloop of the underlying
         Tkinter window for this graph.
         """
+        self.root.title("Graphs")
+        w, h, x, y = self.get_window_geometry(pos)
+        self.root.geometry("{}x{}+{}+{}".format(w, h, x, y))
         tk.mainloop()
 
     def check_change(self):
@@ -71,22 +69,22 @@ class Graph:
         Tkinter mainloop. This function checks for
         incoming data and plots it.
         """
-        changed_label = None
+        changed_labels = []
         for label in self.changed_plots:
             if self.changed_plots[label]:
-                changed_label = label
-                break
+                changed_labels.append(label)
 
-        if changed_label is None:
+        if changed_labels == []:
             return
 
-        p_x, p_y = self.data[changed_label]
+        for label in changed_labels:
+            p_x, p_y = self.data[label]
 
-        self.ax.plot(p_x, p_y, self.colors[changed_label])
-        self.ax.legend([l for l in self.data])
+            self.ax.plot(p_x, p_y, self.colors[label])
+            self.ax.legend([l for l in self.data])
 
-        self.canvas.draw()
-        self.changed_plots[changed_label] = False
+            self.canvas.draw()
+            self.changed_plots[label] = False
 
     def clear(self):
         # Reset graph window.
@@ -106,8 +104,6 @@ class Graph:
         used instead, and is incremented by one. If no such graph exists,
         X is instantiated to 1.
         @param Y - Y-axis value(s). Can be a singular value or a list.
-        @param x_label - Label for x-axis.
-        @param y_label - Label for y-axis.
         """
         lock = Lock() # Use a lock (mutex) to ensure thread safety.
         lock.acquire()
@@ -155,8 +151,7 @@ class GraphHandler:
 
     @staticmethod
     def new_graph(title, gui_parent=None, x_label=None, y_label=None):
-        positions = ["top-r", "bot-r", "bot-l"]
-        graph = Graph(title, gui_parent, x_label, y_label, positions[len(GraphHandler.graphs)])
+        graph = Graph(title, gui_parent, x_label, y_label)
         GraphHandler.graphs[title] = graph
         graph.root.after(200, lambda g: GraphHandler.update_graphs(g), graph)
         return graph

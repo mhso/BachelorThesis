@@ -34,7 +34,7 @@ GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 8
+GAME_THREADS = 1
 
 # How many games to generate per training run.
 # Default is to run training every time all processes

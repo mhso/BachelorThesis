@@ -18,6 +18,9 @@ from util.sqlUtil import SqlUtil
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
 
+def is_mcts(ai):
+    return type(ai).__name__ == "MCTS"
+
 def play_game(game, player_white, player_black, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
@@ -169,9 +172,9 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
     """
     if iteration == 0 and connection:
         # Wait for initial construction/compilation of network.
-        if type(p1).__name__ == "MCTS":
+        if is_mcts(p1):
             p1.connection = connection
-        if type(p2).__name__ == "MCTS":
+        if is_mcts(p2):
             p2.connection = connection
         connection.recv()
     if iteration == constants.GAME_ITERATIONS:
@@ -194,7 +197,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
                 p2.connection = connection
 
         game.reset() # Reset game history.
-        if type(p1).__name__ == "MCTS" and connection and connection.recv():
+        if is_mcts(p1) and connection and connection.recv():
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)

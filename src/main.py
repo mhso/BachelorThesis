@@ -22,6 +22,7 @@ if __name__ == "__main__":
     from view.visualize import Gui
     from view.graph import GraphHandler
     import constants
+    import sys
 
 def construct_network(size, model=None):
     FancyLogger.start_timing()
@@ -317,7 +318,7 @@ if __name__ == "__main__":
     rand_seed = "random"
 
     wildcard = "."
-    option_list = ["-s", "-l", "-v", "-t", "-g", "-p"]
+    option_list = ["-s", "-l", "-v", "-t", "-g", "-p", "-ds", "-dl"]
     options = []
     args = []
     # Seperate arguments from options.
@@ -388,6 +389,13 @@ if __name__ == "__main__":
     if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
         NETWORK_STORAGE = NetworkStorage()
         REPLAY_STORAGE = ReplayStorage()
+        
+        """
+        if "-dl" in options:
+            REPLAY_STORAGE.load_game_from_sql()
+            sys.exit("test")
+        """
+
         if constants.RANDOM_INITIAL_GAMES:
             if type(p_white).__name__ == "MCTS":
                 p_white = self_play.get_ai_algorithm("Random", game, ".")

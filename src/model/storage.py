@@ -11,6 +11,8 @@ import os
 from model.neural import NeuralNetwork, DummyNetwork
 from glob import glob
 from keras.models import save_model, load_model
+from util.sqlUtil import SqlUtil
+from util.timerUtil import TimerUtil
 
 class ReplayStorage:
     """
@@ -124,6 +126,25 @@ class ReplayStorage:
         except IOError:
             print("something went wrong when trying to load games into buffer")
 
+
+    def save_game_to_sql(self, game):
+        filename = "game"
+
+        data = pickle.dumps(game)
+        sql_conn = SqlUtil.connect()
+        SqlUtil.game_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "sql blob testing",  data)
+        print("Game inserted into sql database table")
+
+    def load_game_from_sql(self):
+        sql_conn = SqlUtil.connect()
+        games = SqlUtil.game_data_select_newest_games(sql_conn)
+
+        #game = SqlUtil.game_data_select_filename(sql_conn, filename)
+        #unpickled_game = pickle.loads(game)
+        #print("Game selected from sql database table")
+        #return unpickled_game
+
+
     def __str__(self):
         return "<ReplayStorage: {} games, total length of games: {}>".format(len(self.buffer), sum(len(g.history) for g in self.buffer))
 
@@ -197,3 +218,16 @@ class NetworkStorage:
                 print("network file was not found: " + folder_name + file_name + str(version_nn))
             else:
                 print("file was found, but something else went wrong")
+
+    def sql_insert_blob(self, filename, network):
+        data = pickle.dumps(network) #TODO: change this to appropriate method
+        sql_conn = SqlUtil.connect()
+        SqlUtil.game_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "sql blob testing",  data)
+        print("Game inserted into sql database table")
+
+    def sql_select_filename(self, filename):
+        sql_conn = SqlUtil.connect()
+        network = SqlUtil.game_data_select_filename(sql_conn, filename) #TODO: change this to appropriate method
+        unpickled_game = pickle.loads(network)
+        print("Game selected from sql database table")
+        return unpickled_game

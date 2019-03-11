@@ -1,4 +1,5 @@
 import mysql.connector
+import constants
 
 
 class SqlUtil(object):
@@ -55,6 +56,18 @@ class SqlUtil(object):
     
         mycursor.execute(sql, row)
         connection.commit()
+
+    
+    @staticmethod
+    def game_data_select_newest_games(connection):
+        mycursor = connection.cursor()
+        sql = "SELECT filename FROM game_data ORDER BY id DESC LIMIT {}".format(constants.MAX_GAME_STORAGE)
+        print(sql)
+        mycursor.execute(sql)
+        result = mycursor.fetchall()
+        print(result)
+        return result
+
     
     @staticmethod
     def game_data_select_filename(connection, file_name):

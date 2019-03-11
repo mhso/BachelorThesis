@@ -163,6 +163,8 @@ def monitor_games(game_conns, network_storage, replay_storage):
         network_storage.save_network(training_step-1, network)
         FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
     else:
+        network = construct_network(game.size)
+        network_storage.save_network(0, network)
         FancyLogger.set_network_status("Waiting for data...")
 
     # Notify processes that network is ready.

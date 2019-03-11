@@ -23,6 +23,7 @@ if __name__ == "__main__":
     from view.graph import GraphHandler
     import constants
     import sys
+    import os
 
 def construct_network(size, model=None):
     FancyLogger.start_timing()
@@ -271,10 +272,22 @@ def prepare_training(game, p1, p2, **kwargs):
         self_play.play_loop(game, p1, p2, 0)
 
 def save_perform_data(data, ai, step):
-    pickle.dump(data, open("../resources/misc/perform_eval_{}_{}.bin".format(ai, step), "wb"))
+    location = "../resources/misc/"
+    filename = "perform_eval_{}_{}.bin".format(ai, step)
+
+    if not os.path.exists((location)):
+            os.makedirs((location))
+
+    pickle.dump(data, open(location + filename, "wb"))
 
 def save_loss(loss, step):
-    pickle.dump(loss, open("../resources/misc/loss_{}.bin".format(step), "wb"))
+    location = "../resources/misc/"
+    filename = "loss_{}.bin".format(step)
+
+    if not os.path.exists((location)):
+            os.makedirs((location))
+
+    pickle.dump(loss, open(location + filename, "wb"))
 
 def load_perform_data(ai, step):
     try:

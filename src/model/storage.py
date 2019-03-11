@@ -137,12 +137,13 @@ class ReplayStorage:
 
     def load_game_from_sql(self):
         sql_conn = SqlUtil.connect()
-        games = SqlUtil.game_data_select_newest_games(sql_conn)
+        games = SqlUtil.game_data_select_newest_games(sql_conn) #games from sql, arranged as an array of tuples, each tuple containing (bin_data,(nothing for some reason))
 
-        #game = SqlUtil.game_data_select_filename(sql_conn, filename)
-        #unpickled_game = pickle.loads(game)
-        #print("Game selected from sql database table")
-        #return unpickled_game
+        for g in games:
+            game = g[0]
+            self.buffer.append(game)
+
+        print("Games selected from sql database table, and inserted into replay_buffer")
 
 
     def __str__(self):
@@ -219,13 +220,13 @@ class NetworkStorage:
             else:
                 print("file was found, but something else went wrong")
 
-    def sql_insert_blob(self, filename, network):
+    def save_network_to_sql(self, network):
         data = pickle.dumps(network) #TODO: change this to appropriate method
         sql_conn = SqlUtil.connect()
         SqlUtil.game_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "sql blob testing",  data)
         print("Game inserted into sql database table")
 
-    def sql_select_filename(self, filename):
+    def load_newest_network_from_sql(self):
         sql_conn = SqlUtil.connect()
         network = SqlUtil.game_data_select_filename(sql_conn, filename) #TODO: change this to appropriate method
         unpickled_game = pickle.loads(network)

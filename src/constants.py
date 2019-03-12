@@ -18,7 +18,7 @@ DEFAULT_BOARD_SIZE = 4
 # |***********************************|
 # Max number of moves in Latrunculi before a draw
 # is assigned.
-LATRUNCULI_MAX_MOVES = 10
+LATRUNCULI_MAX_MOVES = 3
 
 # Number of training steps for the neural network.
 TRAINING_STEPS = 10000

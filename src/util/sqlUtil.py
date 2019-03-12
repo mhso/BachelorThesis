@@ -68,6 +68,28 @@ class SqlUtil(object):
         print(result)
         return result
 
+
+    @staticmethod
+    def network_data_insert_row(connection, hostname, filename, description, bin_data):
+        mycursor = connection.cursor()
+        sql = "INSERT INTO game_data (hostname, filename, description, bin_data) VALUES (%s, %s, %s, %s)"
+        row = (hostname, filename, description, bin_data)
+    
+        mycursor.execute(sql, row)
+        connection.commit()
+
+
+    @staticmethod
+    def network_data_select_newest_network(connection):
+        mycursor = connection.cursor()
+        sql = "SELECT filename FROM game_data ORDER BY id DESC LIMIT 1"
+        print(sql)
+        mycursor.execute(sql)
+        result = mycursor.fetchone()
+        print(result)
+        return result
+
+
     
     @staticmethod
     def game_data_select_filename(connection, file_name):

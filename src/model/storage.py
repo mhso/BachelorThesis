@@ -135,7 +135,7 @@ class ReplayStorage:
         SqlUtil.game_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "sql blob testing",  data)
         print("Game inserted into sql database table")
 
-    def load_game_from_sql(self):
+    def load_games_from_sql(self):
         sql_conn = SqlUtil.connect()
         games = SqlUtil.game_data_select_newest_games(sql_conn) #games from sql, arranged as an array of tuples, each tuple containing (bin_data,(nothing for some reason))
 
@@ -221,14 +221,17 @@ class NetworkStorage:
                 print("file was found, but something else went wrong")
 
     def save_network_to_sql(self, network):
-        data = pickle.dumps(network) #TODO: change this to appropriate method
+        filename = "network"
+        data = pickle.dumps(network.model)
         sql_conn = SqlUtil.connect()
-        SqlUtil.game_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "sql blob testing",  data)
-        print("Game inserted into sql database table")
+        SqlUtil.network_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "saved neural network",  data)
+        print("Network inserted into sql database table")
 
     def load_newest_network_from_sql(self):
         sql_conn = SqlUtil.connect()
-        network = SqlUtil.game_data_select_filename(sql_conn, filename) #TODO: change this to appropriate method
-        unpickled_game = pickle.loads(network)
-        print("Game selected from sql database table")
-        return unpickled_game
+        network_tuple = SqlUtil.network_data_select_newest_network(sql_conn) #dont know what datatype is returned from fetchone(), it seems to be a tuple
+        print(network_tuple)
+        network = network_tuple[5]
+        unpickled_network_model = pickle.loads(network)
+        print("Newest network selected from sql database table")
+        return unpickled_network_model

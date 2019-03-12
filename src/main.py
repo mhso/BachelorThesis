@@ -170,13 +170,12 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     """
     FancyLogger.start_timing()
     training_step = initialize_network(game, network_storage)
+    FancyLogger.total_games = len(replay_storage.buffer)
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
 
     # Notify processes that network is ready.
     for conn in game_conns:
         conn.send("go")
-
-    FancyLogger.total_games = len(replay_storage.buffer)
 
     eval_queue = []
     queue_size = constants.GAME_THREADS

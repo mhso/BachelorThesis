@@ -46,13 +46,13 @@ class MCTS_Basic(GameAI):
 
     def __init__(self, game, playouts=800):
         super().__init__(game)
-        if self.game.size > 3:
+        if playouts is not None:
+            self.ITERATIONS = playouts
+        elif self.game.size > 3:
             playout_options = [800, 200, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
-        if playouts is not None:
-            self.ITERATIONS = playouts
 
         print("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES), flush=True)
 
@@ -179,14 +179,18 @@ class MCTS_Basic(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(original_node.state, node)
-            self.back_propagate(node, -value if node.state.player == original_node.state.player else value)
+            if not original_node.state.player:
+                value = -value if node.state.player != original_node.state.player else value
+            elif node.state.player == original_node.state.player:
+                value = -value
+            self.back_propagate(node, value)
 
             node = original_node
 
         for node in original_node.children.values():
             log(node.pretty_desc())
 
-        best_node = max(original_node.children.values(), key=lambda n: n.mean_value)
+        best_node = max(original_node.children.values(), key=lambda n: n.visits)
 
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))

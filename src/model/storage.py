@@ -102,7 +102,7 @@ class ReplayStorage:
 
         try:
             if step is None:
-                current_step = len(glob(folder_name))-1
+                current_step = len(glob(folder_name + folder_nn_no_version + "*"))-1
             else:
                 current_step = step
 
@@ -121,7 +121,7 @@ class ReplayStorage:
                     else:
                         break
                 step_counter -= 1
-            print("Saved games were loaded from files")
+            print(f"{file_counter} saved games were loaded from files")
         except IOError:
             print("something went wrong when trying to load games into buffer")
 
@@ -165,9 +165,10 @@ class NetworkStorage:
         self.networks[step] = network
         if len(self.networks) > constants.MAX_NETWORK_STORAGE:
             new_dict = dict()
-            for i, k in self.networks:
-                if i > 0:
-                    new_dict[k] = self.networks[k]
+            lowest_step = min(self.networks)
+            for s, n in self.networks.items():
+                if s != lowest_step:
+                    new_dict[s] = n
             self.networks = new_dict
         self.curr_step = step
 

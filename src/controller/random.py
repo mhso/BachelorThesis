@@ -13,7 +13,7 @@ class Random(GameAI):
         index = int(uniform(0, len(actions)))
         chosen = actions[index]
 
-        self.game.store_random_statistics({a: uniform() for a in actions})
+        #self.game.store_random_statistics({a: uniform() for a in actions})
 
         log("Random action: {}".format(chosen))
         return self.game.result(state, chosen)

@@ -25,11 +25,6 @@ if __name__ == "__main__":
     import sys
     import os
 
-def construct_network(size, model=None):
-    FancyLogger.start_timing()
-    network = NeuralNetwork(size, model=model)
-    return network
-
 def train_network(network_storage, replay_storage, iteration):
     """
     Trains the network by sampling a batch of data
@@ -112,7 +107,7 @@ def game_over(conn, training_step, new_games, perform_started, replay_storage, n
                 perform_started[k] = False
     return False, new_games, training_step
 
-def evaluate_games(eval_queue, network_storage):
+def evaluate_games(game, eval_queue, network_storage):
     """
     Evaluate a queue of games using the latest neural network.
     """
@@ -121,7 +116,9 @@ def evaluate_games(eval_queue, network_storage):
     policies, values = network_storage.latest_network().evaluate(arr)
     for i, c in enumerate(eval_queue):
         # Send result to all processes in the queue.
-        c[0].send(((policies[0][i], policies[1][i]), values[i]))
+        g_name = type(game).__name__
+        logits = policies[i] if g_name != "Latrunculi" else (policies[0][i], policies[1][i])
+        c[0].send((logits, values[i][0]))
 
 def load_all_perform_data():
     perf_mini = load_perform_data("minimax", None)
@@ -131,25 +128,16 @@ def load_all_perform_data():
     perf_rand = load_perform_data("random", None)
     if perf_rand:
         for t_step, data in perf_rand:
-            show_performance_data("Versus Random", 1, t_step, data) 
+            show_performance_data("Versus Random", 1, t_step, data)
     perf_mcts = load_perform_data("mcts", None)
     if perf_mcts:
         for t_step, data in perf_mcts:
-            show_performance_data("Versus MCTS", 2, t_step, data)                  
+            show_performance_data("Versus MCTS", 2, t_step, data)
 
-def monitor_games(game_conns, network_storage, replay_storage):
-    """
-    Listen for updates from self-play processes.
-    These include:
-        - requests for network evaluation.
-        - the result of a terminated game.
-        - the result of performance evaluation games.
-        - logging events.
-    """
+def initialize_network(game, network_storage):
     training_step = 0
     # Construct the initial network.
     #if the -l option is selected, load a network from files
-    model = None
     if "-l" in argv:
         model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
         training_step = network_storage.curr_step+1
@@ -161,13 +149,28 @@ def monitor_games(game_conns, network_storage, replay_storage):
         load_all_perform_data()
 
         GraphHandler.plot_data("Training Loss", "Training Loss", None, losses)
-        network = construct_network(game.size, model)
+        FancyLogger.start_timing()
+        network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step-1, network)
         FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
     else:
-        network = construct_network(game.size)
+        network = NeuralNetwork(game)
         network_storage.save_network(0, network)
         FancyLogger.set_network_status("Waiting for data...")
+    return training_step
+
+def monitor_games(game_conns, game, network_storage, replay_storage):
+    """
+    Listen for updates from self-play processes.
+    These include:
+        - requests for network evaluation.
+        - the result of a terminated game.
+        - the result of performance evaluation games.
+        - logging events.
+    """
+    FancyLogger.start_timing()
+    training_step = initialize_network(game, network_storage)
+    FancyLogger.set_game_and_size(type(game).__name__, game.size)
 
     # Notify processes that network is ready.
     for conn in game_conns:
@@ -190,7 +193,7 @@ def monitor_games(game_conns, network_storage, replay_storage):
                     # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
                     if len(eval_queue) == queue_size:
-                        evaluate_games(eval_queue, network_storage)
+                        evaluate_games(game, eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":
                     FancyLogger.increment_total_games()
@@ -217,8 +220,20 @@ def monitor_games(game_conns, network_storage, replay_storage):
                         perform_data[2].append(val)
 
                     handle_performance_data(training_step, perform_data, perform_size)
-        except EOFError:
-            pass
+        except KeyboardInterrupt:
+            for conn in game_conns:
+                conn.close()
+            print("Exiting...")
+            return
+        """
+        except (EOFError, TypeError) as e:
+            print(e)
+            return
+        except Exception as e:
+            print(type(e))
+            print(e)
+            return
+        """
 
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
@@ -259,7 +274,7 @@ def prepare_training(game, p1, p2, **kwargs):
 
         if pipes != []:
             # Start monitor thread.
-            monitor = Thread(target=monitor_games, args=(pipes, network_storage, replay_storage))
+            monitor = Thread(target=monitor_games, args=(pipes, game, network_storage, replay_storage))
             monitor.start()
 
         if plot_data:

@@ -418,9 +418,9 @@ class Latrunculi(Game):
 
         # Structure data as a 4x4x4 stack.
         if state.player:
-            return np.array([pos_pieces, pos_captured, neg_pieces, neg_captured]).reshape((4, 4, -1))
+            return np.array([pos_pieces, pos_captured, neg_pieces, neg_captured]).reshape((self.size, self.size, -1))
         else:
-            return np.array([neg_pieces, neg_captured, pos_pieces, pos_captured]).reshape((4, 4, -1))
+            return np.array([neg_pieces, neg_captured, pos_pieces, pos_captured]).reshape((self.size, self.size, -1))
 
     def map_logits(self, actions, logits):
         """

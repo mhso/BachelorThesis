@@ -27,6 +27,9 @@ class Node():
             self.action, self.visits, self.value, "%.3f" % self.mean_value, "%.3f" % self.prior_prob)
 
     def __str__(self):
+        return self.pretty_desc()
+
+    def crazy_print(self):
         children = ", ".join([str(c) for c in self.children.values()])
         return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
             self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
@@ -46,13 +49,10 @@ class MCTS(GameAI):
 
     def __init__(self, game, playouts=None):
         super().__init__(game)
-        if self.game.size > 3:
-            playout_options = [800, 200, 35, 20, 10, 5, 5]
-            max_moves = [300, 1200, 1600, 2400, 5000, 5000, 5000]
-            self.ITERATIONS = playout_options[self.game.size-4]
-            self.MAX_MOVES = max_moves[self.game.size-4]
-        if playouts is not None:
+        if playouts:
             self.ITERATIONS = playouts
+        else:
+            self.ITERATIONS = constants.MCTS_ITERATIONS
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 
@@ -160,28 +160,28 @@ class MCTS(GameAI):
         super.__doc__
         log("MCTS is calculating the best move...")
 
-        original_node = Node(state, None)
-        self.evaluate(original_node)
+        root_node = Node(state, None)
+        self.evaluate(root_node)
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
         # number of mean value (value/visits) are chosen as the best action.
         for i in range(self.ITERATIONS):
-            node = self.select(original_node)
+            node = self.select(root_node)
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
-            self.back_propagate(node, -value if node.state.player == original_node.state.player else value)
+            self.back_propagate(node, -value if node.state.player == root_node.state.player else value)
 
-            node = original_node
+            node = root_node
 
-        for node in original_node.children.values():
+        for node in root_node.children.values():
             log(node.pretty_desc())
 
-        best_node = self.choose_action(original_node)
+        best_node = self.choose_action(root_node)
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
-        self.game.store_search_statistics(best_node)
+        self.game.store_search_statistics(root_node)
         return best_node.state
 
     def __str__(self):

@@ -236,7 +236,7 @@ def prepare_training(game, p1, p2, **kwargs):
     network_storage = kwargs.get("network_storage", None)
     replay_storage = kwargs.get("replay_storage", None)
 
-    if gui is not None or plot_data or constants.GAME_THREADS > 1:
+    if gui is not None or plot_data or self_play.is_mcts(p1) or self_play.is_mcts(p2):
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,
         # create seperate thread(s) to run the AI game logic in.
@@ -400,7 +400,7 @@ if __name__ == "__main__":
 
     NETWORK_STORAGE = None
     REPLAY_STORAGE = None
-    if type(p_white).__name__ == "MCTS" or type(p_black).__name__ == "MCTS":
+    if self_play.is_mcts(p_white) or self_play.is_mcts(p_black):
         NETWORK_STORAGE = NetworkStorage()
         REPLAY_STORAGE = ReplayStorage()
         
@@ -411,9 +411,9 @@ if __name__ == "__main__":
         """
 
         if constants.RANDOM_INITIAL_GAMES:
-            if type(p_white).__name__ == "MCTS":
+            if self_play.is_mcts(p_white):
                 p_white = self_play.get_ai_algorithm("Random", game, ".")
-            if type(p_black).__name__ == "MCTS":
+            if self_play.is_mcts(p_black):
                 p_black = self_play.get_ai_algorithm("Random", game, ".")
     elif constants.GAME_THREADS > 1:
         # If we are not playing with MCTS,

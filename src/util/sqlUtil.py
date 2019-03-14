@@ -62,10 +62,8 @@ class SqlUtil(object):
     def game_data_select_newest_games(connection):
         mycursor = connection.cursor()
         sql = "SELECT bin_data FROM game_data ORDER BY id DESC LIMIT {}".format(constants.MAX_GAME_STORAGE)
-        #print(sql)
         mycursor.execute(sql)
         result = mycursor.fetchall()
-        #print(result)
         return result
 
 
@@ -84,10 +82,8 @@ class SqlUtil(object):
     def network_data_select_newest_network(connection):
         mycursor = connection.cursor()
         sql = "SELECT bin_data FROM network_data ORDER BY id DESC LIMIT 1"
-        print(sql)
         mycursor.execute(sql)
         result = mycursor.fetchone()
-        print(result)
         return result
 
 

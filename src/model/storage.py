@@ -5,8 +5,6 @@ training and self-play, as well as replay buffers generated from self-play.
 import numpy as np
 import constants
 import pickle
-#import io
-#from io import BytesIO
 import os
 from model.neural import NeuralNetwork, DummyNetwork
 from glob import glob
@@ -140,12 +138,8 @@ class ReplayStorage:
 
         for g in games:
             game = g[0]
-            #print(game)
-            print("game has been extracted")
             if game is not None:
-                print("game is not none")
                 unpickledGame = pickle.loads(game)
-                #print(unpickledGame)
                 self.buffer.append(unpickledGame)
 
         print("Games selected from sql database table, and inserted into replay_buffer")
@@ -240,8 +234,6 @@ class NetworkStorage:
     def load_newest_network_from_sql(self):
         sql_conn = SqlUtil.connect()
         network_tuple = SqlUtil.network_data_select_newest_network(sql_conn) #dont know what datatype is returned from fetchone(), it seems to be a tuple
-        print("!!!!!!!!!!!")
-        print(network_tuple)
         network_config = network_tuple[0]
 
         config = pickle.loads(network_config)

@@ -27,6 +27,8 @@ class NeuralNetwork:
         self.game = game
         if model:
             self.model = model
+            if not self.model._is_compiled:
+                self.compile_model(self.model)
             return
         # Clean up from previous TF graphs.
         reset_default_graph()
@@ -81,11 +83,14 @@ class NeuralNetwork:
         outputs.append(value)
 
         self.model = Model(inputs=inp, outputs=outputs)
+        self.compile_model(self.model)
+        self.model._make_predict_function()
+
+    def compile_model(self, model):
         self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
                                          decay=constants.WEIGHT_DECAY,
                                          momentum=constants.MOMENTUM),
                            loss='mean_squared_error')
-        self.model._make_predict_function()
 
     def input_layer(self, game):
         game_type = type(game).__name__

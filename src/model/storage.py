@@ -10,7 +10,7 @@ import pickle
 import os
 from model.neural import NeuralNetwork, DummyNetwork
 from glob import glob
-from keras.models import save_model, load_model
+from keras.models import save_model, load_model, Model
 from util.sqlUtil import SqlUtil
 from util.timerUtil import TimerUtil
 
@@ -141,7 +141,13 @@ class ReplayStorage:
 
         for g in games:
             game = g[0]
-            self.buffer.append(game)
+            #print(game)
+            print("game has been extracted")
+            if game is not None:
+                print("game is not none")
+                unpickledGame = pickle.loads(game)
+                #print(unpickledGame)
+                self.buffer.append(unpickledGame)
 
         print("Games selected from sql database table, and inserted into replay_buffer")
 
@@ -211,9 +217,9 @@ class NetworkStorage:
                 current_step = step
             version_nn = str(current_step)
 
-            network = load_model(folder_name + file_name + str(version_nn), None, True)
+            network_model = load_model(folder_name + file_name + str(version_nn), None, True)
             print("Neural Network was loaded from file")
-            return network
+            return network_model
         except IOError:
             if not os.path.exists((folder_name + file_name + str(version_nn))):
                 print("network file was not found: " + folder_name + file_name + str(version_nn))
@@ -221,8 +227,12 @@ class NetworkStorage:
                 print("file was found, but something else went wrong")
 
     def save_network_to_sql(self, network):
+        print("save_network_to_sql called")
         filename = "network"
-        data = pickle.dumps(network.model)
+        
+        config = network.model.get_config()
+        data = pickle.dumps(config)
+        
         sql_conn = SqlUtil.connect()
         SqlUtil.network_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "saved neural network",  data)
         print("Network inserted into sql database table")
@@ -230,8 +240,11 @@ class NetworkStorage:
     def load_newest_network_from_sql(self):
         sql_conn = SqlUtil.connect()
         network_tuple = SqlUtil.network_data_select_newest_network(sql_conn) #dont know what datatype is returned from fetchone(), it seems to be a tuple
+        print("!!!!!!!!!!!")
         print(network_tuple)
-        network = network_tuple[5]
-        unpickled_network_model = pickle.loads(network)
+        network_config = network_tuple[0]
+
+        config = pickle.loads(network_config)
+        network_model = Model.from_config(config)
         print("Newest network selected from sql database table")
-        return unpickled_network_model
+        return network_model

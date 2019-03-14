@@ -44,9 +44,11 @@ def train_network(network_storage, replay_storage, iteration):
     loss = network.train(inputs, expected_out)
     if not iteration % constants.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
+        print("before if-statement")
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network)
         if "-ds" in argv:
+            print("if-statement triggered")
             network_storage.save_network_to_sql(network)
         if "-s" or "-ds" in argv:
             save_loss(loss[0], iteration)

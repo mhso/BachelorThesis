@@ -34,14 +34,3 @@ def run_tests():
     dictionary[state.stringify()] = "wow"
 
     assertion.assert_equal("wow", dictionary[state.stringify()], "state hashing")
-
-    # ==================================
-    # Test performance evalution
-    storage = ReplayStorage()
-    for i in range(10):
-        storage.save_perform_eval_data(i/10)
-
-    test_t = Thread(target=test_graph, args=(storage,))
-    test_t.start()
-
-    Graph.run(title="Test stuff", x_label="Step", y_label="Win ratio")

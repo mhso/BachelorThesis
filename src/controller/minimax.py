@@ -94,7 +94,7 @@ def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
 
 class Minimax(GameAI):
     def evaluate_board(self, state, depth):
-        if "-eval" == argv[len(argv)-3]:
+        if len(argv) > 2 and "-eval" == argv[len(argv)-3]:
             test_version = argv[len(argv)-2]
             return evaluate_board_jit_test(state.board, state.player, depth, test_version)
         else:

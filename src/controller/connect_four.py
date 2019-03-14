@@ -63,9 +63,9 @@ class Connect_Four(Game):
         for kernel in self.terminal_kernels:
             conv = convolve2d(state.board, kernel, mode="valid")
             if (conv == 4).sum() > 0:
-                return 1
+                return 1 if player else -1
             elif (conv == -4).sum() > 0:
-                return -1
+                return -1 if player else 1
         return 0
 
     def clone(self):

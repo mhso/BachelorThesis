@@ -147,7 +147,6 @@ def initialize_network(game, network_storage):
         model = network_storage.load_newest_network_from_sql()
 
     if "-l" in argv or "-dl" in argv:
-        print("this should not trigger!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         training_step = network_storage.curr_step+1
         FancyLogger.set_training_step(training_step)
         # Load previously saved network loss + performance data.
@@ -419,7 +418,7 @@ if __name__ == "__main__":
     if self_play.is_mcts(p_white) or self_play.is_mcts(p_black):
         NETWORK_STORAGE = NetworkStorage()
         REPLAY_STORAGE = ReplayStorage()
-        
+
         """
         if "-dl" in options:
             REPLAY_STORAGE.load_game_from_sql()

@@ -31,4 +31,5 @@ def assert_all_equal(expected_l, result_l, name):
             str_list_exp = ", ".join([str(v) for v in expected_l])
             str_list_res = ", ".join([str(v) for v in result_l])
             print_failed(name, "expected [{}], but got [{}]".format(str_list_exp, str_list_res))
-            break
+            return
+    print_passed(name)

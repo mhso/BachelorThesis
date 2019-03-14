@@ -42,12 +42,12 @@ class MCTS_Basic(GameAI):
 
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
-    MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
 
     def __init__(self, game, playouts=800):
         super().__init__(game)
         if playouts is not None:
             self.ITERATIONS = playouts
+            self.MAX_MOVES = 5000
         elif self.game.size > 3:
             playout_options = [800, 200, 35, 20, 10, 5, 5]
             max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
@@ -179,11 +179,8 @@ class MCTS_Basic(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(original_node.state, node)
-            if not original_node.state.player:
-                value = -value if node.state.player != original_node.state.player else value
-            elif node.state.player == original_node.state.player:
-                value = -value
-            self.back_propagate(node, value)
+            #print(f"OG is: {original_node.state.player}, we are: {node.state.player}, value is: {value}")
+            self.back_propagate(node, -value if node.state.player == original_node.state.player else value)
 
             node = original_node
 

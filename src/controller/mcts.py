@@ -165,15 +165,11 @@ class MCTS(GameAI):
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
         # number of mean value (value/visits) are chosen as the best action.
-        for i in range(self.ITERATIONS):
+        for _ in range(self.ITERATIONS):
             node = self.select(root_node)
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
-            if not root_node.state.player:
-                value = -value if node.state.player != root_node.state.player else value
-            elif node.state.player == root_node.state.player:
-                value = -value
             self.back_propagate(node, value)
 
             node = root_node

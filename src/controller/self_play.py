@@ -91,7 +91,7 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
     if "-t" in argv:
         print("Game over! Winner: {}, time spent: {} s".format(winner, time() - time_game))
     if connection:
-        connection.send(("log", ["Game over! Winner: {}".format(winner), getpid()]))
+        connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
 
     # Return resulting state of game.
     return state

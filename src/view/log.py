@@ -72,7 +72,7 @@ class FancyLogger:
     def pp():
         global debug
         if not debug:
-            #clear_console()
+            clear_console()
             print("-=-=- Network status -=-=-")
             print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
             print(FancyLogger.network_status)

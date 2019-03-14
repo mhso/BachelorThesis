@@ -39,11 +39,9 @@ def train_network(network_storage, replay_storage, iteration):
     loss = network.train(inputs, expected_out)
     if not iteration % constants.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
-        print("before if-statement")
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network, game_name)
         if "-ds" in argv:
-            print("if-statement triggered")
             network_storage.save_network_to_sql(network)
         if "-s" in argv or "-ds" in argv:
             save_loss(loss[0], iteration)
@@ -301,7 +299,7 @@ def prepare_training(game, p1, p2, **kwargs):
         self_play.play_loop(game, p1, p2, 0)
 
 def save_perform_data(data, ai, step):
-    location = "../resources/misc/"
+    location = "../resources/" + game_name + "/misc/"
     filename = "perform_eval_{}_{}.bin".format(ai, step)
 
     if not os.path.exists((location)):
@@ -310,7 +308,7 @@ def save_perform_data(data, ai, step):
     pickle.dump(data, open(location + filename, "wb"))
 
 def save_loss(loss, step):
-    location = "../resources/misc/"
+    location = "../resources/" + game_name + "/misc/"
     filename = "loss_{}.bin".format(step)
 
     if not os.path.exists((location)):
@@ -321,7 +319,7 @@ def save_loss(loss, step):
 def load_perform_data(ai, step):
     try:
         data = None
-        path = "../resources/misc/perform_eval_"
+        path = "../resources/" + game_name + "/misc/perform_eval_"
         if step:
             data = pickle.load(open("{}{}_{}.bin".format(path, ai, step), "rb"))
         else:
@@ -342,8 +340,9 @@ def load_loss(step):
     Loads network training loss for given training step.
     If no such data exists, returns 1.
     """
+
     try:
-        loss = pickle.load(open("../resources/misc/loss_{}.bin".format(step), "rb"))
+        loss = pickle.load(open("../resources/" + game_name + "/misc/loss_{}.bin".format(step), "rb"))
         return loss
     except IOError:
         return 1

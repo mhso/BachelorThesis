@@ -43,7 +43,6 @@ class MCTS(GameAI):
     state_map = dict()
     connection = None
 
-    EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
 
@@ -171,7 +170,11 @@ class MCTS(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
-            self.back_propagate(node, -value if node.state.player == root_node.state.player else value)
+            if not root_node.state.player:
+                value = -value if node.state.player != root_node.state.player else value
+            elif node.state.player == root_node.state.player:
+                value = -value
+            self.back_propagate(node, value)
 
             node = root_node
 

@@ -60,33 +60,34 @@ class ReplayStorage:
     def full_buffer(self):
         return len(self.buffer) == constants.BATCH_SIZE
 
-    def save_replay(self, game, step):
+    def save_replay(self, game, step, game_type):
         """
         serializes a game, and saves it to a file,
         under the correct neural network version,
         given by the step parameter.
         """
-        folder_name = "../resources/replays/"
+        folder_name = "../resources/"
+        data_type = "/replays/"
         version_nn = str(step)
         folder_nn = "NNv" + version_nn + "/"
         file_name = "game"
         file_extension = ".bin"
 
-        number_of_files = (glob(folder_name + folder_nn + "*" + file_extension)).__len__()
+        number_of_files = (glob(folder_name + game_type + data_type + folder_nn + "*" + file_extension)).__len__()
         game_number = number_of_files+1
 
-        if not os.path.exists((folder_name + folder_nn)):
-            os.makedirs((folder_name + folder_nn))
+        if not os.path.exists((folder_name + game_type + data_type + folder_nn)):
+            os.makedirs((folder_name + game_type + data_type + folder_nn))
 
         try:
-            new_file = open((folder_name + folder_nn + file_name + str(game_number) + file_extension), "xb")
+            new_file = open((folder_name + game_type + data_type + folder_nn + file_name + str(game_number) + file_extension), "xb")
             pickle.dump(game, new_file)
             new_file.close()
             print("game was saved to file")
         except IOError:
             print("something went wrong, when trying to save a replay")
 
-    def load_replay(self, step):
+    def load_replay(self, step, game_type):
         """
         method for loading saved games back into Replay Storage buffer.
         The method selects the newest NN version, where the amount of saved games
@@ -94,20 +95,21 @@ class ReplayStorage:
         it then loads the games directly into the buffer.
         The "step" parameter, defines the newest NN version we are interested in.
         """
-        folder_name = "../resources/replays/"
+        folder_name = "../resources/"
+        data_type = "/replays/"
         folder_nn_no_version = "NNv"
         file_extension = ".bin"
 
         try:
             if step is None:
-                current_step = len(glob(folder_name + folder_nn_no_version + "*"))-1
+                current_step = len(glob(folder_name + game_type + data_type + folder_nn_no_version + "*"))-1
             else:
                 current_step = step
 
             step_counter = current_step
             file_counter = 0
             while step_counter >= 0 and file_counter < constants.MAX_GAME_STORAGE:
-                file_list = glob(folder_name + folder_nn_no_version + str(step_counter) + "/" + "*" + file_extension)
+                file_list = glob(folder_name + game_type + data_type + folder_nn_no_version + str(step_counter) + "/" + "*" + file_extension)
 
                 for f in file_list:
                     if file_counter < constants.MAX_GAME_STORAGE:
@@ -177,46 +179,48 @@ class NetworkStorage:
         network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
         self.save_network(self.curr_step, network)
 
-    def save_network_to_file(self, step, network):
+    def save_network_to_file(self, step, network, game_type):
         """
         serializes the Neural Network, and saves it to a file,
         under the correct version, given by the step parameter
         """
-        folder_name = "../resources/networks/"
+        folder_name = "../resources/"
+        data_type = "/networks/"
         version_nn = str(step)
         file_name = "network"
 
-        if not os.path.exists((folder_name)):
-            os.makedirs((folder_name))
+        if not os.path.exists((folder_name + game_type + data_type)):
+            os.makedirs((folder_name + game_type + data_type))
         try:
-            save_model(network.model, (folder_name + file_name + str(version_nn)), True, True)
+            save_model(network.model, (folder_name + game_type + data_type + file_name + str(version_nn)), True, True)
             print("Neural Network was saved to file")
         except IOError:
             print("saving the network failed")
 
-    def load_network_from_file(self, step):
+    def load_network_from_file(self, step, game_type):
         """
         Deserializes the Neural Network,
         and loads it from a file, based on the given step number.
         This network is then returned.
         """
-        folder_name = "../resources/networks/"
+        folder_name = "../resources/"
+        data_type = "/networks/"
         file_name = "network"
 
         try:
             if step is None:
-                current_step = len(glob(folder_name + "*"))-1
+                current_step = len(glob(folder_name + game_type + data_type + "*"))-1
                 self.curr_step = current_step
             else:
                 current_step = step
             version_nn = str(current_step)
 
-            network_model = load_model(folder_name + file_name + str(version_nn), None, True)
+            network_model = load_model(folder_name + game_type + data_type + file_name + str(version_nn), None, True)
             print("Neural Network was loaded from file")
             return network_model
         except IOError:
-            if not os.path.exists((folder_name + file_name + str(version_nn))):
-                print("network file was not found: " + folder_name + file_name + str(version_nn))
+            if not os.path.exists((folder_name + game_type + data_type + file_name + str(version_nn))):
+                print("network file was not found: " + folder_name + game_type + data_type + file_name + str(version_nn))
             else:
                 print("file was found, but something else went wrong")
 

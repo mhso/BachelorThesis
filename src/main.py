@@ -41,11 +41,11 @@ def train_network(network_storage, replay_storage, iteration):
         network_storage.save_network(iteration, network)
         print("before if-statement")
         if "-s" in argv:
-            network_storage.save_network_to_file(iteration, network)
+            network_storage.save_network_to_file(iteration, network, game_name)
         if "-ds" in argv:
             print("if-statement triggered")
             network_storage.save_network_to_sql(network)
-        if "-s" or "-ds" in argv:
+        if "-s" in argv or "-ds" in argv:
             save_loss(loss[0], iteration)
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
     GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
@@ -144,11 +144,12 @@ def initialize_network(game, network_storage):
     # Construct the initial network.
     #if the -l option is selected, load a network from files
     if "-l" in argv:
-        model = network_storage.load_network_from_file(None) #TODO: replace None with the argument for NN version
+        model = network_storage.load_network_from_file(None, game_name) #TODO: replace None with the argument for NN version
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
-    if "-l" or "-dl" in argv:
+    if "-l" in argv or "-dl" in argv:
+        print("this should not trigger!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         training_step = network_storage.curr_step+1
         FancyLogger.set_training_step(training_step)
         # Load previously saved network loss + performance data.
@@ -207,7 +208,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     FancyLogger.increment_total_games()
                     replay_storage.save_game(val)
                     if "-s" in argv:
-                        replay_storage.save_replay(val, training_step)
+                        replay_storage.save_replay(val, training_step, game_name)
                     if "-ds" in argv:
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
@@ -281,7 +282,7 @@ def prepare_training(game, p1, p2, **kwargs):
         #if "-l" option is selected load old replays from file
         #else if "-ld" option is selected load old replays sql database
         if "-l" in argv:
-            replay_storage.load_replay(None) #TODO: replace None with the argument for NN version
+            replay_storage.load_replay(None, game_name) #TODO: replace None with the argument for NN version
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 

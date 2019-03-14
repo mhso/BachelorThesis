@@ -23,10 +23,8 @@ class NeuralNetwork:
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
-    def __init__(self, board_size, action_space=4, model=None):
-        self.action_space = action_space
-        self.board_size = board_size
-        self.lock = Lock()
+    def __init__(self, game, model=None):
+        self.game = game
         if model:
             self.model = model
             return
@@ -41,7 +39,7 @@ class NeuralNetwork:
         #config.gpu_options.visible_device_list = "0"
         set_session(Session(config=config))
 
-        inp = Input((board_size, board_size, 4))
+        inp = self.input_layer(game)
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
@@ -62,17 +60,7 @@ class NeuralNetwork:
         policy = BatchNormalization()(policy)
         policy = Activation("relu")(policy)
 
-        # Split into...
-        # ...move policies.
-        policy_moves = Conv2D(action_space, kernel_size=3, strides=1, padding="same",
-                              kernel_initializer="random_uniform",
-                              bias_initializer="random_uniform")(policy)
-        policy_moves = BatchNormalization()(policy_moves)
-
-        # ...delete captured pieces policy.
-        policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
-                               kernel_initializer="random_uniform",
-                               bias_initializer="random_uniform")(policy)
+        outputs = self.policy_layers(game, policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
         value = Conv2D(1, kernel_size=1, strides=1, kernel_initializer="random_uniform",
@@ -90,7 +78,9 @@ class NeuralNetwork:
                       bias_initializer="random_uniform")(value)
         value = Activation("tanh")(value)
 
-        self.model = Model(inputs=inp, outputs=[policy_moves, policy_delete, value])
+        outputs.append(value)
+
+        self.model = Model(inputs=inp, outputs=outputs)
         self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
                                          decay=constants.WEIGHT_DECAY,
                                          momentum=constants.MOMENTUM),
@@ -98,10 +88,38 @@ class NeuralNetwork:
         self.model._make_predict_function()
 
     def input_layer(self, game):
-        pass
+        game_type = type(game).__name__
+        input_depth = 1
+        if game_type == "Latrunculi":
+            input_depth = 4
+        elif game_type == "Connect_Four":
+            input_depth = 2
+        self.input_stacks = input_depth
+        return Input((game.size, game.size, input_depth))
 
-    def output_layers(self, game):
-        pass
+    def policy_layers(self, game, prev):
+        game_type = type(game).__name__
+        if game_type == "Latrunculi":
+            # Split into...
+            # ...move policies.
+            policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same",
+                                  kernel_initializer="random_uniform",
+                                  bias_initializer="random_uniform")(prev)
+            policy_moves = BatchNormalization()(policy_moves)
+
+            # ...delete captured pieces policy.
+            policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
+                                   kernel_initializer="random_uniform",
+                                   bias_initializer="random_uniform")(prev)
+            return [policy_moves, policy_delete]
+        if game_type == "Connect_Four":
+            # Vector of probabilities for all squares.
+            policy = Flatten()(prev)
+            policy = Dense(game.size*game.size,
+                           kernel_initializer="random_uniform",
+                           bias_initializer="random_uniform")(policy)
+            return [policy]
+        return []
 
     def save_as_image(self):
         plot_model(self.model, to_file='../resources/model_graph.png', show_shapes=True)
@@ -117,23 +135,25 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
-        self.lock.acquire()
         if len(inp.shape) < 4:
-            inp = np.array([inp]).reshape((-1, 4, 4, 4))
+            size = self.game.size
+            inp = np.array([inp]).reshape((-1, size, size, self.input_stacks))
         output = self.model.predict(inp)
-        self.lock.release()
+        game_type = type(self.game).__name__
 
         policy_moves = output[0][:]
         policy_moves -= np.min(policy_moves)
         policy_moves /= np.ptp(policy_moves)
 
-        policy_delete = output[1][:]
-        policy_delete -= np.min(policy_delete)
-        peaks = np.ptp(policy_delete)
-        if peaks:
-            policy_delete /= peaks
+        if game_type == "Latrunculi":
+            policy_delete = output[1][:]
+            policy_delete -= np.min(policy_delete)
+            peaks = np.ptp(policy_delete)
+            if peaks:
+                policy_delete /= peaks
 
-        return ((policy_moves, policy_delete), output[2][:])
+            return ((policy_moves, policy_delete), output[2][:])
+        return policy_moves, output[1][:]
 
     def train(self, inputs, expected_out):
         """

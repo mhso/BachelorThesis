@@ -47,18 +47,17 @@ class ReplayStorage:
         # Draw random state index values from all chosen games.
         state_indices = [(g, np.random.randint(0, len(g.history))) for g in batch]
         images = []
-        out1 = []
-        out2 = []
-        out3 = []
+        expected_outputs = [[], [], []] if type(self.buffer[0]).__name__ == "Latrunculi" else [[], []]
         # Create input/expected output data for neural network training.
         for game, index in state_indices:
             images.append(game.structure_data(game.history[index]))
             target_value, policies = game.make_target(index)
-            target_policy_moves, target_policy_remove = game.map_actions(policies)
-            out1.append(target_policy_moves)
-            out2.append(target_policy_remove)
-            out3.append(target_value)
-        return np.array(images), [np.array(out1), np.array(out2), np.array(out3)]
+            target_policies = game.map_actions(policies)
+            for i in range(len(target_policies)):
+                expected_outputs[i].append(target_policies[i])
+            expected_outputs[-1].append(target_value)
+        expected_outputs = [np.array(arr) for arr in expected_outputs]
+        return np.array(images), expected_outputs
 
     def full_buffer(self):
         return len(self.buffer) == constants.BATCH_SIZE
@@ -103,7 +102,7 @@ class ReplayStorage:
 
         try:
             if step is None:
-                current_step = len(glob(folder_name))-1
+                current_step = len(glob(folder_name + folder_nn_no_version + "*"))-1
             else:
                 current_step = step
 
@@ -122,7 +121,7 @@ class ReplayStorage:
                     else:
                         break
                 step_counter -= 1
-            print("Saved games were loaded from files")
+            print(f"{file_counter} saved games were loaded from files")
         except IOError:
             print("something went wrong when trying to load games into buffer")
 
@@ -172,9 +171,10 @@ class NetworkStorage:
         self.networks[step] = network
         if len(self.networks) > constants.MAX_NETWORK_STORAGE:
             new_dict = dict()
-            for i, k in self.networks:
-                if i > 0:
-                    new_dict[k] = self.networks[k]
+            lowest_step = min(self.networks)
+            for s, n in self.networks.items():
+                if s != lowest_step:
+                    new_dict[s] = n
             self.networks = new_dict
         self.curr_step = step
 

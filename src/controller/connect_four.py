@@ -12,6 +12,7 @@ class Connect_Four(Game):
     __observers = []
 
     def __init__(self, size, rand_seed=None):
+        Game.__init__(self)
         self.size = size
         self.terminal_kernels = [
             np.array([[1, 1, 1, 1]]),
@@ -19,10 +20,11 @@ class Connect_Four(Game):
             np.eye(4, 4),
             np.fliplr(np.eye(4, 4))
         ]
+        self.num_actions = self.size * self.size
 
     def start_state(self):
         super.__doc__
-        return State(np.zeros((self.size-1, self.size), dtype='b'), True)
+        return State(np.zeros((self.size, self.size), dtype='b'), True)
 
     def player(self, state):
         super.__doc__
@@ -33,7 +35,7 @@ class Connect_Four(Game):
         board = state.board
         action_list = []
         for x in range(0, self.size):
-            for y in range(self.size-2, -1, -1):
+            for y in range(self.size-1, -1, -1):
                 if board[y][x] == 0:
                     action_list.append(Action((y, x), None))
                     break
@@ -66,6 +68,36 @@ class Connect_Four(Game):
                 return -1
         return 0
 
+    def clone(self):
+        clone = Connect_Four(self.size)
+        clone.history = self.history
+        clone.visit_counts = self.visit_counts
+        return clone
+
     def structure_data(self, state):
         super.__doc__
-        return []
+        pos_pieces = np.where(state.board == 1, state.board, np.zeros((self.size, self.size), dtype='b'))
+        neg_pieces = -np.where(state.board == -1, state.board, np.zeros((self.size, self.size), dtype='b'))
+
+        # Structure data as a 4x4x2 stack.
+        if state.player:
+            return np.array([pos_pieces, neg_pieces]).reshape((self.size, self.size, -1))
+        else:
+            return np.array([neg_pieces, pos_pieces]).reshape((self.size, self.size, -1))
+
+    def map_logits(self, actions, logits):
+        action_map = dict()
+        policy_sum = 0
+        for action in actions:
+            y, x = action.source
+            action_map[action] = logits[y * self.size + x % self.size]
+        for action, policy in action_map.items():
+            action_map[action] = np.exp(policy/policy_sum) if policy_sum else 0
+        return action_map
+
+    def map_actions(self, target_policies):
+        policies = np.zeros((self.size * self.size))
+        for a, p in target_policies.items():
+            y, x = a.source
+            policies[y * self.size + x % self.size] = p
+        return (policies,)

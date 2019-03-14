@@ -20,6 +20,8 @@ def clear_console():
     os.system("cls" if os.name == "nt" else "clear")
 
 class FancyLogger:
+    game_name = ""
+    board_size = 4
     network_status = ""
     thread_statuses = dict()
     train_step = 0
@@ -31,6 +33,12 @@ class FancyLogger:
     @staticmethod
     def start_timing():
         FancyLogger.time_started = time()
+
+    @staticmethod
+    def set_game_and_size(game, size):
+        FancyLogger.game_name = game
+        FancyLogger.board_size = size
+        FancyLogger.pp()
 
     @staticmethod
     def set_network_status(status):
@@ -64,7 +72,12 @@ class FancyLogger:
     def pp():
         global debug
         if not debug:
+<<<<<<< HEAD
             #clear_console()
+=======
+            clear_console()
+
+>>>>>>> b52ac5587537a1a7c725273e7c1a7c815d9e85f3
             print("-=-=- Network status -=-=-")
             print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
             print(FancyLogger.network_status)
@@ -81,9 +94,13 @@ class FancyLogger:
             print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
             print("")
             print("-=-=- Self play status -=-=-")
+            print("Playing {} on an {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))
+            print("MCTS is using {} iterations.".format(constants.MCTS_ITERATIONS))
+            print("----------")
             for thread, status in FancyLogger.thread_statuses.items():
                 print("PID {}: {}".format(thread, status))
 
+            print("----------")
             print("Number of processes: {}".format(constants.GAME_THREADS))
             print("Total games generated: {}".format(FancyLogger.total_games))
             print("Time spent: {} s".format(time() - FancyLogger.time_started))

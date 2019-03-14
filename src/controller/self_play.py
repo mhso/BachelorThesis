@@ -47,6 +47,8 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
             state = player_black.execute_action(state)
             count_player_moves[1] += 1
 
+        game.history.append(state)
+
         if connection:
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
             pieces = state.count_pieces()
@@ -57,8 +59,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:
             print("Turn took {} s".format(time() - time_turn))
-
-        game.history.append(state)
 
         if force_quit(gui):
             print("{}: Forcing exit...".format(getpid()))
@@ -86,9 +86,12 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
         sql_conn = SqlUtil.connect()
         SqlUtil.evaluation_cost_insert_row(sql_conn, row)
 
-    winner = "Black" if state.player else "White"
+    util = game.utility(state, True)
+    winner = "White" if util == 1 else "Black" if util else "Draw"
     if "-t" in argv:
         print("Game over! Winner: {}, time spent: {} s".format(winner, time() - time_game))
+    if connection:
+        connection.send(("log", ["Game over! Winner: {}".format(winner), getpid()]))
 
     # Return resulting state of game.
     return state
@@ -137,7 +140,7 @@ def evaluate_model(game, player, connection):
 
     connection.send(("perform_mcts", eval_mcts))
 
-def get_game(game_name, size, rand_seed, wildcard):
+def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()
     if lower == wildcard:
         game_name = constants.DEFAULT_GAME
@@ -150,7 +153,7 @@ def get_game(game_name, size, rand_seed, wildcard):
         print("Unknown game, name must equal name of game class.")
         return None, "unknown"
 
-def get_ai_algorithm(algorithm, game, wildcard):
+def get_ai_algorithm(algorithm, game, wildcard="."):
     lower = algorithm.lower()
     if lower == wildcard:
         algorithm = constants.DEFAULT_AI
@@ -166,9 +169,6 @@ def get_ai_algorithm(algorithm, game, wildcard):
 def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=None):
     """
     Run a given number of game iterations with a given AI.
-    After each game iteration, if the model is MCTS,
-    we save the model for later use. If 'load' is true,
-    we load these MCTS models.
     """
     if iteration == 0 and connection:
         # Wait for initial construction/compilation of network.
@@ -186,7 +186,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         if connection:
             # Save game to be used for neural network training.
             connection.send(("game_over", game.clone()))
-            game.populate_board("random")
+            game.__init__(game.size, "random")
             if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
                     and iteration >= constants.RANDOM_INITIAL_GAMES // constants.GAME_THREADS):
                 # We are done with random game generation,
@@ -202,7 +202,6 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
             evaluate_model(game, p1, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)
     except KeyboardInterrupt:
-        print("Process {}: Exiting by interrupt...".format(getpid()))
         if gui is not None:
             gui.close()
         if plot_data:

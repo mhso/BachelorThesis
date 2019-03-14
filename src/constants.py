@@ -18,10 +18,14 @@ DEFAULT_BOARD_SIZE = 4
 # |***********************************|
 # Max number of moves in Latrunculi before a draw
 # is assigned.
+<<<<<<< HEAD
 LATRUNCULI_MAX_MOVES = 3
+=======
+LATRUNCULI_MAX_MOVES = 200
+>>>>>>> b52ac5587537a1a7c725273e7c1a7c815d9e85f3
 
 # Number of training steps for the neural network.
-TRAINING_STEPS = 10000
+TRAINING_STEPS = 100
 
 # Number of initial random games to produce before
 # beginning network training.
@@ -34,7 +38,7 @@ GAME_ITERATIONS = -1
 
 # Amount of games to run in parallel during training.
 # 1 = no parallel games.
-GAME_THREADS = 1
+GAME_THREADS = 8
 
 # How many games to generate per training run.
 # Default is to run training every time all processes
@@ -85,6 +89,9 @@ RES_LAYERS = 11
 # |***********************************|
 # |           MCTS OPTIONS            |
 # |***********************************|
+# Number of iterations per action taken.
+MCTS_ITERATIONS = 800
+
 # Base exploration constant. This basically defines how much the visit
 # count for a node in MCTS should count towards it's UCB score. Lowering
 # this number means that when the visit count of a node increases, it's

@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 
 class Game(ABC):
     __observers = []
+    action_type = "single"
 
     def __init__(self, history=None):
         self.history = history or []

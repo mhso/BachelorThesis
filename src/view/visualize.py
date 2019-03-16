@@ -122,9 +122,13 @@ class Gui():
         if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
             self.draw_status_text("Selected source coords: ({})".format(coords))
+        elif self.game.action_type == "single":
+            if self.is_legal_move(coords, None):
+                self.make_move(self.state, Action(coords, None))
+                self.mouseclick_move_list.clear()
         else:
             if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
-                self.make_move(self.state, coords, coords)
+                self.make_move(self.state, Action(coords, coords))
             elif len(self.mouseclick_move_list) == 1:
                 if self.mouseclick_move_list[0] == coords:
                     self.mouseclick_move_list.pop()
@@ -136,7 +140,7 @@ class Gui():
                         self.draw_status_text("Selected destination coords: ({})".format(coords))
                         self.mouseclick_move_list.append(coords)
 
-                        self.make_move(self.state, self.mouseclick_move_list[0], self.mouseclick_move_list[1])
+                        self.make_move(self.state, Action(self.mouseclick_move_list[0], self.mouseclick_move_list[1]))
                         self.mouseclick_move_list.clear()
 
             elif len(self.mouseclick_move_list) > 2:
@@ -330,22 +334,26 @@ class Gui():
         self.draw_board(state.board)
         # self.draw_status_text(self.canvas, "Nice move")
 
-    def make_move(self, state, source, dest):
+    def make_move(self, state, action):
         """
         Move a piece from source to dest on the board.
         Get the new state, and notify any listener about
         the new state.
         """
+        source, dest = action.source, action.dest
         log("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
         self.draw_status_text("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
 
-        result = self.game.result(state, Action(source, dest))
+        result = self.game.result(state, action)
         self.state = result
         self.update(result)
 
         if self.listener is not None:
             self.listener.action_made(result)
             self.listener = None
+        new_actions = self.game.actions(result)
+        if new_actions == [None]:
+            self.make_move(result, None)
 
     def add_action_listener(self, listener):
         """

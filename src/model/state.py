@@ -50,6 +50,8 @@ class Action:
         self.dest = dest
 
     def __eq__(self, other):
+        if not self or not other:
+            return True
         return self.source == other.source and self.dest == other.dest
 
     def __hash__(self):

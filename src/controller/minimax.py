@@ -126,7 +126,11 @@ class Minimax(GameAI):
         actions = self.game.actions(state)
         best_action = None
         highest_value = -10000
-        depth = 10-self.game.size if self.game.size < 8 else 3
+        game_name = type(self.game).__name__
+        if game_name == "Latrunculi":
+            depth = 12-self.game.size if self.game.size < 8 else 5
+        else:
+            depth = 15-self.game.size
 
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:

@@ -215,8 +215,8 @@ def fast_utility(board, player):
     return 0
 
 class Latrunculi(Game):
-    size = 8
     rand_seed_used = None
+    action_type = "dual"
 
     def populate_board(self, seed):
         board = np.zeros((self.size, self.size), 'b')

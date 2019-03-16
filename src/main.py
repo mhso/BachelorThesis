@@ -40,7 +40,7 @@ def train_network(network_storage, replay_storage, iteration):
     if not iteration % constants.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
         if "-s" in argv:
-            network_storage.save_network_to_file(iteration, network, game_name)
+            network_storage.save_network_to_file(iteration, network, GAME_NAME)
         if "-ds" in argv:
             network_storage.save_network_to_sql(network)
         if "-s" in argv or "-ds" in argv:
@@ -142,7 +142,7 @@ def initialize_network(game, network_storage):
     # Construct the initial network.
     #if the -l option is selected, load a network from files
     if "-l" in argv:
-        model = network_storage.load_network_from_file(None, game_name) #TODO: replace None with the argument for NN version
+        model = network_storage.load_network_from_file(None, GAME_NAME) #TODO: replace None with the argument for NN version
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
@@ -205,7 +205,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     FancyLogger.increment_total_games()
                     replay_storage.save_game(val)
                     if "-s" in argv:
-                        replay_storage.save_replay(val, training_step, game_name)
+                        replay_storage.save_replay(val, training_step, GAME_NAME)
                     if "-ds" in argv:
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
@@ -233,15 +233,9 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                 conn.close()
             print("Exiting...")
             return
-        """
-        except (EOFError, TypeError) as e:
+        except EOFError as e:
             print(e)
             return
-        except Exception as e:
-            print(type(e))
-            print(e)
-            return
-        """
 
 def prepare_training(game, p1, p2, **kwargs):
     # Extract arguments.
@@ -279,7 +273,7 @@ def prepare_training(game, p1, p2, **kwargs):
         #if "-l" option is selected load old replays from file
         #else if "-ld" option is selected load old replays sql database
         if "-l" in argv:
-            replay_storage.load_replay(None, game_name) #TODO: replace None with the argument for NN version
+            replay_storage.load_replay(None, GAME_NAME) #TODO: replace None with the argument for NN version
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 
@@ -298,7 +292,7 @@ def prepare_training(game, p1, p2, **kwargs):
         self_play.play_loop(game, p1, p2, 0)
 
 def save_perform_data(data, ai, step):
-    location = "../resources/" + game_name + "/misc/"
+    location = "../resources/" + GAME_NAME + "/misc/"
     filename = "perform_eval_{}_{}.bin".format(ai, step)
 
     if not os.path.exists((location)):
@@ -307,7 +301,7 @@ def save_perform_data(data, ai, step):
     pickle.dump(data, open(location + filename, "wb"))
 
 def save_loss(loss, step):
-    location = "../resources/" + game_name + "/misc/"
+    location = "../resources/" + GAME_NAME + "/misc/"
     filename = "loss_{}.bin".format(step)
 
     if not os.path.exists((location)):
@@ -318,7 +312,7 @@ def save_loss(loss, step):
 def load_perform_data(ai, step):
     try:
         data = None
-        path = "../resources/" + game_name + "/misc/perform_eval_"
+        path = "../resources/" + GAME_NAME + "/misc/perform_eval_"
         if step:
             data = pickle.load(open("{}{}_{}.bin".format(path, ai, step), "rb"))
         else:
@@ -341,81 +335,95 @@ def load_loss(step):
     """
 
     try:
-        loss = pickle.load(open("../resources/" + game_name + "/misc/loss_{}.bin".format(step), "rb"))
+        loss = pickle.load(open("../resources/" + GAME_NAME + "/misc/loss_{}.bin".format(step), "rb"))
         return loss
     except IOError:
         return 1
 
+def invalid_args(args, options, wildcard):
+    if ("MCTS" in args or len(args) - len(options) == 1
+             or args[0] == wildcard or args[1] == wildcard):
+        if "-g" in options:
+            return "Can't use GUI during MCTS/NN training"
+        if "Human" in args:
+            return "Can't play as human during MCTS/NN training"
+    return None
+
 if __name__ == "__main__":
     # Load arguments for running the program.
     # The args, in order, correspond to the variables below.
-    player1 = "."
-    player2 = "."
-    game_name = "."
-    board_size = constants.DEFAULT_BOARD_SIZE
-    rand_seed = "random"
+    WILDCARD = "."
+    PLAYER_1 = WILDCARD
+    PLAYER_2 = WILDCARD
+    GAME_NAME = WILDCARD
+    BOARD_SIZE = constants.DEFAULT_BOARD_SIZE
+    RAND_SEED = "random"
 
-    wildcard = "."
-    option_list = ["-s", "-l", "-v", "-t", "-g", "-p", "-ds", "-dl"]
+    OPTION_LIST = ["-s", "-l", "-v", "-t", "-g", "-p", "-ds", "-dl"]
     options = []
     args = []
     # Seperate arguments from options.
     for s in argv:
-        if s in option_list:
+        if s in OPTION_LIST:
             options.append(s)
         else:
             args.append(s)
 
+    ARGS_ERROR = invalid_args(argv, options, WILDCARD)
+    if ARGS_ERROR:
+        print(f"Error: conflicting arguments. {ARGS_ERROR}.")
+        exit(0)
+
     argc = len(args)
     if argc > 1:
         if args[1] in ("-help", "-h"):
-            print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [options...]".format(args[0]))
-            print("Write '{}' in place of any argument to use default value".format(wildcard))
+            print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [<options>]".format(args[0]))
+            print("Write '{}' in place of any argument to use default value".format(WILDCARD))
             print("Options: -v (verbose), -t (time operations), -s (save models), -l (load models), -g (use GUI), -p (plot data)")
             print("Fx. 'python {} Minimax MCTS Latrunculi . 42 -g'".format(args[0]))
             exit(0)
-        player1 = args[1] # Algorithm playing as player 1.
+        PLAYER_1 = args[1] # Algorithm playing as player 1.
 
         if argc == 2 or argc == 3:
-            game = Latrunculi(board_size)
+            GAME = Latrunculi(BOARD_SIZE)
             if argc == 2: # If only one player is given, player 2 will be the same algorithm.
-                player2 = player1
+                PLAYER_2 = PLAYER_1
         if argc > 2:
-            player2 = args[2] # Algorithm playing as player 2.
+            PLAYER_2 = args[2] # Algorithm playing as player 2.
 
             if argc > 3:
-                game_name = args[3] # Game to play.
+                GAME_NAME = args[3] # Game to play.
                 if argc > 4:
-                    if args[4] != wildcard:
-                        board_size = int(args[4]) # Size of board.
+                    if args[4] != WILDCARD:
+                        BOARD_SIZE = int(args[4]) # Size of board.
 
-                    if argc > 5 and args[5] != wildcard:
+                    if argc > 5 and args[5] != WILDCARD:
                         if args[5] != "random":
-                            rand_seed = int(args[5])
+                            RAND_SEED = int(args[5])
                         else:
-                            rand_seed = args[5] # Use numpy-determined random seed.
+                            RAND_SEED = args[5] # Use numpy-determined random seed.
 
-    game = self_play.get_game(game_name, board_size, rand_seed, wildcard)
-    p_white = self_play.get_ai_algorithm(player1, game, wildcard)
-    p_black = self_play.get_ai_algorithm(player2, game, wildcard)
+    GAME = self_play.get_game(GAME_NAME, BOARD_SIZE, RAND_SEED, WILDCARD)
+    P_WHITE = self_play.get_ai_algorithm(PLAYER_1, GAME, WILDCARD)
+    P_BLACK = self_play.get_ai_algorithm(PLAYER_2, GAME, WILDCARD)
 
     print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
-        type(game).__name__, board_size, board_size, type(p_white).__name__, type(p_black).__name__), flush=True)
-    player1 = player1.lower()
-    player2 = player2.lower()
+        type(GAME).__name__, BOARD_SIZE, BOARD_SIZE, type(P_WHITE).__name__, type(P_BLACK).__name__), flush=True)
+    PLAYER_1 = PLAYER_1.lower()
+    PLAYER_2 = PLAYER_2.lower()
 
     gui = None
-    if "-g" in options or player1 == "human" or player2 == "human":
-        gui = Gui(game)
-        game.register_observer(gui)
-        if player1 == "human":
-            p_white.gui = gui
-        if player2 == "human":
-            p_black.gui = gui
+    if "-g" in options or PLAYER_1 == "human" or PLAYER_2 == "human":
+        gui = Gui(GAME)
+        GAME.register_observer(gui)
+        if PLAYER_1 == "human":
+            P_WHITE.gui = gui
+        if PLAYER_2 == "human":
+            P_BLACK.gui = gui
 
     NETWORK_STORAGE = None
     REPLAY_STORAGE = None
-    if self_play.is_mcts(p_white) or self_play.is_mcts(p_black):
+    if self_play.is_mcts(P_WHITE) or self_play.is_mcts(P_BLACK):
         NETWORK_STORAGE = NetworkStorage()
         REPLAY_STORAGE = ReplayStorage()
 
@@ -426,17 +434,17 @@ if __name__ == "__main__":
         """
 
         if constants.RANDOM_INITIAL_GAMES:
-            if self_play.is_mcts(p_white):
-                p_white = self_play.get_ai_algorithm("Random", game, ".")
-            if self_play.is_mcts(p_black):
-                p_black = self_play.get_ai_algorithm("Random", game, ".")
+            if self_play.is_mcts(P_WHITE):
+                P_WHITE = self_play.get_ai_algorithm("Random", GAME, ".")
+            if self_play.is_mcts(P_BLACK):
+                P_BLACK = self_play.get_ai_algorithm("Random", GAME, ".")
     elif constants.GAME_THREADS > 1:
         # If we are not playing with MCTS,
         # disable multi-threading.
         constants.GAME_THREADS = 1
 
     print("Main PID: {}".format(getpid()))
-    prepare_training(game, p_white, p_black,
+    prepare_training(GAME, P_WHITE, P_BLACK,
                      gui=gui,
                      plot_data="-p" in options,
                      network_storage=NETWORK_STORAGE,

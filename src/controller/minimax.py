@@ -5,6 +5,7 @@ from controller.game_ai import GameAI
 from view.log import log
 from numba import jit
 from sys import argv
+from time import time
 
 @jit(nopython=True)
 def evaluate_board_jit(board, player, depth):
@@ -74,15 +75,6 @@ def eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_we
     capture_diff = (captured_enemy - captured_player) * capture_weight
     return raw_diff + capture_diff + bonus
 
-# @jit(nopython=True)
-# def eval_test_version_type2(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus):
-#     if other_pieces == 0:
-#         piece_bonus = int(player_pieces/0.5) * kill_weight
-#     else:
-#         piece_bonus = int(player_pieces/other_pieces) * kill_weight
-#     captured_bonus = int(captured_enemy-captured_player) * capture_weight
-#     return piece_bonus + captured_bonus + bonus
-
 @jit(nopython=True)
 def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
     worth = max(next_depth, worth) if maxing_player else min(next_depth, worth)
@@ -93,6 +85,17 @@ def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
     return beta, alpha, worth
 
 class Minimax(GameAI):
+    def __init__(self, game):
+        GameAI.__init__(self, game)
+        self.tpt = dict() # Transposition table.
+
+        game_name = type(self.game).__name__
+        if game_name == "Latrunculi":
+            self.MAX_DEPTH = 12-self.game.size if self.game.size < 8 else 5
+        else:
+            self.MAX_DEPTH = 15-self.game.size
+        log(f"Minimax is using a max search depth of {self.MAX_DEPTH}")
+
     def evaluate_board(self, state, depth):
         if len(argv) > 2 and "-eval" == argv[len(argv)-3]:
             test_version = argv[len(argv)-2]
@@ -100,15 +103,22 @@ class Minimax(GameAI):
         else:
             return evaluate_board_jit(state.board, state.player, depth)
 
+    def cutoff(self, depth):
+        return not depth
+
     def minimax(self, state, depth, maxing_player, alpha, beta):
         """
         Minimax algorithm with alpha-beta pruning.
         """
-        if depth == 0 or self.game.terminal_test(state):
-            if not maxing_player:
+        if self.cutoff(depth) or self.game.terminal_test(state):
+            if not maxing_player and (self.player != state.player):
                 state.player = not state.player
             return self.evaluate_board(state, depth)
 
+        state_hash = state.stringify()
+        val = self.tpt.get(state_hash, None)
+        if val is not None:
+            return val
         actions = self.game.actions(state)
 
         worth = -10000 if maxing_player else 10000
@@ -118,24 +128,22 @@ class Minimax(GameAI):
             beta, alpha, worth = minimax_jit(maxing_player, next_depth, worth, alpha, beta)
 
             if beta <= alpha:
-                return worth
+                break
+        self.tpt[state_hash] = worth
         return worth
 
     def execute_action(self, state):
         super.__doc__
+        self.player = state.player
         actions = self.game.actions(state)
         best_action = None
         highest_value = -10000
-        game_name = type(self.game).__name__
-        if game_name == "Latrunculi":
-            depth = 12-self.game.size if self.game.size < 8 else 5
-        else:
-            depth = 15-self.game.size
 
+        self.time_started = time()
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:
             result = self.game.result(state, action)
-            value = self.minimax(result, depth, False, -10000, 10000)
+            value = self.minimax(result, self.MAX_DEPTH, False, -10000, 10000)
             if value > highest_value:
                 highest_value = value
                 best_action = action

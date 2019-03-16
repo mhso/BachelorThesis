@@ -111,6 +111,16 @@ def evaluate_against_ai(game, player, other, num_games, connection=None):
         game.reset()
     return wins/num_games # Return ratio of games won.
 
+def minimax_for_game(game):
+    game_name = type(game).__name__
+    if game_name == "Latrunculi":
+        return "Minimax"
+    if game_name == "Connect_Four":
+        return "Minimax_CF"
+    if game_name == "Othello":
+        return "Minimax_Othello"
+    return "unknown"
+
 def evaluate_model(game, player, connection):
     """
     Evaluate MCTS/NN model against three different AI
@@ -119,9 +129,7 @@ def evaluate_model(game, player, connection):
     connection.send(("log", ["Evaluating against Minimax", getpid()]))
 
     eval_minimax = evaluate_against_ai(game, player,
-                                       get_ai_algorithm(
-                                           "Minimax" if type(game).__name__ == "Latrunculi"
-                                           else "Minimax_CF", game, "."),
+                                       get_ai_algorithm(minimax_for_game(game), game, "."),
                                        constants.EVAL_ITERATIONS, connection)
 
     connection.send(("perform_mini", eval_minimax))

@@ -74,7 +74,10 @@ class FancyLogger:
         if not debug:
             clear_console()
             print("-=-=- Network status -=-=-")
-            print("Network is using {} conv filters and {} residual layers".format(constants.CONV_FILTERS, constants.RES_LAYERS))
+            network_string = f"Network is using {constants.CONV_FILTERS} conv filters, "
+            network_string += f"{constants.RES_LAYERS} residual layers "
+            network_string += f"and a batch size of {constants.BATCH_SIZE}."
+            print(network_string)
             print(FancyLogger.network_status)
 
             num_symbols = int(20 * FancyLogger.train_ratio)

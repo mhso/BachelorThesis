@@ -283,9 +283,10 @@ def prepare_training(game, p1, p2, **kwargs):
             monitor.start()
 
         if plot_data:
-            graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate") # Start graph window in main thread.
-            graph_2.run("top-r")
+            graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate", gui is None) # Start graph window in main thread.
+            if gui is None:
+                graph_2.run("top-r")
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
@@ -347,6 +348,8 @@ def invalid_args(args, options, wildcard):
             return "Can't use GUI during MCTS/NN training"
         if "Human" in args:
             return "Can't play as human during MCTS/NN training"
+    elif "-l" in args or "-s" in args:
+        return "Can't save/load models or games when not training"
     return None
 
 if __name__ == "__main__":

@@ -61,7 +61,6 @@ class Othello(Game):
     def __init__(self, size, rand_seed=None):
         Game.__init__(self)
         self.size = size
-        self.populate_board()
         self.num_actions = self.size * self.size
 
     def populate_board(self):
@@ -76,7 +75,14 @@ class Othello(Game):
 
     def start_state(self):
         super.__doc__
-        return self.init_state
+        board = np.zeros((self.size, self.size), dtype="b")
+        half = self.size // 2
+        board[half][half-1] = 1
+        board[half-1][half] = 1
+        board[half][half] = -1
+        board[half-1][half-1] = -1
+        pieces = [(half, half-1), (half-1, half), (half, half), (half-1, half-1)]
+        return State(board, True, pieces=pieces)
 
     def player(self, state):
         super.__doc__

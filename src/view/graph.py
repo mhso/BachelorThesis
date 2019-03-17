@@ -11,7 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 class Graph:
     persist = False
 
-    def __init__(self, title, gui_parent=None, x_label=None, y_label=None):
+    def __init__(self, title, gui_parent=None, same_window=True, x_label=None, y_label=None):
         self.persist = True # Set to False if graph should reset between every game.
         self.data = dict()
         self.changed_plots = dict()
@@ -20,6 +20,9 @@ class Graph:
         self.stop_event = Event()
         self.parent = gui_parent
         self.root = tk.Tk() if gui_parent is None else gui_parent.root
+        window = None if same_window else tk.Toplevel(self.root)
+        if window:
+            window.title("Graphs")
 
         figure = plt.figure.Figure()
         self.ax = figure.add_subplot(111)
@@ -30,7 +33,7 @@ class Graph:
         if y_label:
             self.ax.set_ylabel(y_label)
 
-        self.canvas = FigureCanvasTkAgg(figure, master=self.root)
+        self.canvas = FigureCanvasTkAgg(figure, master=self.root if same_window else window)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
@@ -150,8 +153,8 @@ class GraphHandler:
         root_graph.root.after(200, lambda g: GraphHandler.update_graphs(g), root_graph)
 
     @staticmethod
-    def new_graph(title, gui_parent=None, x_label=None, y_label=None):
-        graph = Graph(title, gui_parent, x_label, y_label)
+    def new_graph(title, gui_parent=None, x_label=None, y_label=None, same_window=True):
+        graph = Graph(title, gui_parent, same_window, x_label, y_label)
         GraphHandler.graphs[title] = graph
         graph.root.after(200, lambda g: GraphHandler.update_graphs(g), graph)
         return graph
@@ -170,7 +173,7 @@ class GraphHandler:
 
     @staticmethod
     def closed():
-        for graph in GraphHandler.graphs.items():
+        for graph in GraphHandler.graphs.values():
             if graph.stop_event.is_set():
                 return True
         return False

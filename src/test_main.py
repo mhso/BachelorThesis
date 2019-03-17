@@ -1,6 +1,7 @@
 from testing import assertion
 from testing import test_latrunculi
 from testing import test_cnnct_four
+from testing import test_othello
 from testing import test_minimax
 from testing import test_mcts
 from testing import test_misc
@@ -14,6 +15,8 @@ print("{}-=-=-=- LATRUNCULI GAME TESTS -=-=-=-{}".format(YELLOW, RESET))
 test_latrunculi.run_tests()
 print("{}-=-=-=-=- CONNECT FOUR TESTS -=-=-=-=-{}".format(YELLOW, RESET))
 test_cnnct_four.run_tests()
+print("{}-=-=-=-=-=- OTHELLO TESTS -=-=-=-=-=-{}".format(YELLOW, RESET))
+test_othello.run_tests()
 print("{}-=-=-=-=-=- MINIMAX TESTS -=-=-=-=-=-{}".format(YELLOW, RESET))
 test_minimax.run_tests()
 print("{}-=-=-=-=-=-=- MCTS TESTS -=-=-=-=-=-=-{}".format(YELLOW, RESET))

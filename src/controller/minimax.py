@@ -119,15 +119,18 @@ class Minimax(GameAI):
         """
         Minimax algorithm with alpha-beta pruning.
         """
+        # Look up the current state in our transposition table.
+        # If it exists, return the associated value.
+        state_hash = state.stringify()
+        val = self.tpt.get(state_hash, None)
+        if val is not None:
+            return val
+
         if self.cutoff(depth) or self.game.terminal_test(state):
             if not maxing_player and (self.player != state.player):
                 state.player = not state.player
             return self.evaluate_board(state, depth)
 
-        state_hash = state.stringify()
-        val = self.tpt.get(state_hash, None)
-        if val is not None:
-            return val
         actions = self.game.actions(state)
         if actions == [None]:
             # Handle 'pass' case.

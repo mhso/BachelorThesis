@@ -51,7 +51,7 @@ class Action:
 
     def __eq__(self, other):
         if not self or not other:
-            return True
+            return not self and not other
         return self.source == other.source and self.dest == other.dest
 
     def __hash__(self):

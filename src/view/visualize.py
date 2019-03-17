@@ -19,7 +19,6 @@ from view.log import log
 
 class Gui():
     game        = None
-    state       = None
     root        = None
     canvas      = None
     listener    = None
@@ -225,10 +224,7 @@ class Gui():
         self.text_field.insert(tk.END, text)
 
     def player_color(self, player):
-        if player:
-            return "White"
-        else:
-            return "Black"
+        return "White" if player else "Black"
 
     # Returns image variable
     def select_piece_type(self, value):
@@ -332,7 +328,19 @@ class Gui():
 
         self.canvas_remove_tags(['board_field', 'status_text'])
         self.draw_board(state.board)
-        # self.draw_status_text(self.canvas, "Nice move")
+
+    def show_move(self, state, action):
+        player_color = self.player_color(state.player)
+        if action:
+            source, dest = action.source, action.dest
+            log("{} moved from {} to {}".format(player_color, source, dest))
+            self.draw_status_text("{} moved from {} to {}".format(player_color, source, dest))
+        else:
+            log("{} has no moves, pass made.".format(player_color))
+            self.draw_status_text("{} passed".format(player_color))
+
+        result = self.game.result(state, action)
+        self.update(result)
 
     def make_move(self, state, action):
         """
@@ -340,20 +348,15 @@ class Gui():
         Get the new state, and notify any listener about
         the new state.
         """
-        source, dest = action.source, action.dest
-        log("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
-        self.draw_status_text("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
+        self.show_move(state, action)
 
-        result = self.game.result(state, action)
-        self.state = result
-        self.update(result)
+        new_actions = self.game.actions(self.state)
+        if new_actions == [None] and not self.game.terminal_test(self.state):
+            self.show_move(self.state, None) # Simulate 'pass' move.
 
         if self.listener is not None:
-            self.listener.action_made(result)
+            self.listener.action_made(self.state)
             self.listener = None
-        new_actions = self.game.actions(result)
-        if new_actions == [None]:
-            self.make_move(result, None)
 
     def add_action_listener(self, listener):
         """

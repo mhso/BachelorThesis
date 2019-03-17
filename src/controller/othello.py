@@ -131,6 +131,7 @@ class Othello(Game):
         if actions_cp == [None]:
             state.player = not state.player
             actions_op = self.actions(state)
+            state.player = not state.player
             if actions_op == [None]:
                 return True
         return False

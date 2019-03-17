@@ -153,6 +153,8 @@ class Othello(Game):
     def map_logits(self, actions, logits):
         action_map = dict()
         policy_sum = 0
+        if actions == [None]:
+            return action_map
         for action in actions:
             y, x = action.source
             action_map[action] = logits[y * self.size + x % self.size]

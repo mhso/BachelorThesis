@@ -88,8 +88,9 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
 
     util = game.utility(state, True)
     winner = "White" if util == 1 else "Black" if util else "Draw"
+    log("Game over! Winner: {}".format(winner))
     if "-t" in argv:
-        print("Game over! Winner: {}, time spent: {} s".format(winner, time() - time_game))
+        print("Game took: {} s".format(time() - time_game))
     if connection:
         connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
 
@@ -129,7 +130,7 @@ def evaluate_model(game, player, connection):
     connection.send(("log", ["Evaluating against Minimax", getpid()]))
 
     eval_minimax = evaluate_against_ai(game, player,
-                                       get_ai_algorithm(minimax_for_game(game), game, "."),
+                                       get_ai_algorithm("Minimax", game, "."),
                                        constants.EVAL_ITERATIONS, connection)
 
     connection.send(("perform_mini", eval_minimax))
@@ -162,6 +163,8 @@ def get_game(game_name, size, rand_seed, wildcard="."):
         return None, "unknown"
 
 def get_ai_algorithm(algorithm, game, wildcard="."):
+    if algorithm == "Minimax":
+        algorithm = minimax_for_game(game)
     lower = algorithm.lower()
     if lower == wildcard:
         algorithm = constants.DEFAULT_AI

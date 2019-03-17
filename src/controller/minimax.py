@@ -85,6 +85,8 @@ def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
     return beta, alpha, worth
 
 class Minimax(GameAI):
+    time_started = 0
+
     def __init__(self, game):
         GameAI.__init__(self, game)
         self.tpt = dict() # Transposition table.
@@ -97,6 +99,13 @@ class Minimax(GameAI):
         log(f"Minimax is using a max search depth of {self.MAX_DEPTH}")
 
     def evaluate_board(self, state, depth):
+        """
+        Evaluate board using game specific heurstics.
+        This class implements Minimax for Latrunculi.
+        Minimax implementations for other games (Connect Four,
+        Othello) need only derive from this class and overwrite
+        this method.
+        """
         if len(argv) > 2 and "-eval" == argv[len(argv)-3]:
             test_version = argv[len(argv)-2]
             return evaluate_board_jit_test(state.board, state.player, depth, test_version)
@@ -120,6 +129,10 @@ class Minimax(GameAI):
         if val is not None:
             return val
         actions = self.game.actions(state)
+        if actions == [None]:
+            # Handle 'pass' case.
+            result = self.game.result(state, None)
+            return self.minimax(result, depth-1, not maxing_player, alpha, beta)
 
         worth = -10000 if maxing_player else 10000
         for action in actions:

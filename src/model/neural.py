@@ -97,7 +97,7 @@ class NeuralNetwork:
         input_depth = 1
         if game_type == "Latrunculi":
             input_depth = 4
-        elif game_type == "Connect_Four":
+        else:
             input_depth = 2
         self.input_stacks = input_depth
         return Input((game.size, game.size, input_depth))
@@ -117,7 +117,7 @@ class NeuralNetwork:
                                    kernel_initializer="random_uniform",
                                    bias_initializer="random_uniform")(prev)
             return [policy_moves, policy_delete]
-        if game_type == "Connect_Four":
+        else:
             # Vector of probabilities for all squares.
             policy = Flatten()(prev)
             policy = Dense(game.size*game.size,

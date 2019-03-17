@@ -64,7 +64,7 @@ class Minimax_Othello(Minimax):
         return -reward if player == -1 else reward
 
     def evaluate_board(self, state, depth):
-        player = 1 if state else -1
+        player = 1 if state.player else -1
         board = state.board
         num_moves = self.eval_moves(state)
         pieces = state.pieces

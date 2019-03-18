@@ -10,6 +10,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class Graph:
     persist = False
+    save_to_file = True
 
     def __init__(self, title, gui_parent=None, same_window=True, x_label=None, y_label=None):
         self.persist = True # Set to False if graph should reset between every game.
@@ -88,6 +89,9 @@ class Graph:
 
             self.canvas.draw()
             self.changed_plots[label] = False
+        if self.save_to_file:
+            title = self.ax.get_title().lower().replace(" ", "_")
+            self.ax.get_figure().savefig(f"../resources/graph_{title}.png")
 
     def clear(self):
         # Reset graph window.

@@ -86,6 +86,7 @@ def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
 
 class Minimax(GameAI):
     time_started = 0
+    player = None
 
     def __init__(self, game):
         GameAI.__init__(self, game)

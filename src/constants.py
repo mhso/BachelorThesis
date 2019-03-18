@@ -43,11 +43,11 @@ GAMES_PER_TRAINING = 8
 
 # How often to evaluate model against base AI's
 # during training, default is every 5th training iteration.
-EVAL_CHECKPOINT = 7
+EVAL_CHECKPOINT = 15
 
 # How many games to play against base AI's while
 # evaluating model performance (per process).
-EVAL_ITERATIONS = 1
+EVAL_ITERATIONS = 2
 
 # |***********************************|
 # |      NEURAL NETWORK OPTIONS       |
@@ -86,7 +86,7 @@ RES_LAYERS = 11
 # |           MCTS OPTIONS            |
 # |***********************************|
 # Number of iterations per action taken.
-MCTS_ITERATIONS = 800
+MCTS_ITERATIONS = 100
 
 # Base exploration constant. This basically defines how much the visit
 # count for a node in MCTS should count towards it's UCB score. Lowering

@@ -74,15 +74,19 @@ class Game(ABC):
         Return terminal value of given state at index, as well as
         probability distribution for actions at that state.
         """
-        state = self.history[state_index]
-        return (self.utility(state, state.player), self.visit_counts[state_index])
+        terminal_state = self.history[-1]
+        return (self.utility(terminal_state, terminal_state.player),
+                self.visit_counts[state_index])
 
     def store_search_statistics(self, node):
-        sum_visits = sum(child.visits for child in node.children.values())
-        self.visit_counts.append({
-            a: node.children[a].visits / sum_visits
-            for a in node.children
-        })
+        if node is None:
+            self.visit_counts.append({None: 0})
+        else:
+            sum_visits = sum(child.visits for child in node.children.values())
+            self.visit_counts.append({
+                a: node.children[a].visits / sum_visits
+                for a in node.children
+            })
 
     def store_random_statistics(self, rand_stats):
         self.visit_counts.append(rand_stats)

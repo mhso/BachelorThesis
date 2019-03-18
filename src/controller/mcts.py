@@ -121,6 +121,9 @@ class MCTS(GameAI):
         # Get network evaluation from main process.
         self.connection.send(("evaluate", self.game.structure_data(state)))
         policy_logits, value = self.connection.recv()
+        
+        if actions == [None]: # Only action is a 'pass'.
+            return value
 
         logit_map = self.game.map_logits(actions, policy_logits)
         policy_sum = sum(logit_map.values())
@@ -161,6 +164,9 @@ class MCTS(GameAI):
 
         root_node = Node(state, None)
         self.evaluate(root_node)
+        if root_node.children == {}: # State has no actions (children).
+            self.game.store_search_statistics(None)
+            return self.game.result(state, None) # Simulate pass.
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest

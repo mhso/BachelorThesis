@@ -94,7 +94,9 @@ class Minimax(GameAI):
         game_name = type(self.game).__name__
         if game_name == "Latrunculi":
             self.MAX_DEPTH = 12-self.game.size if self.game.size < 8 else 5
-        else:
+        elif game_name == "Connect_Four":
+            self.MAX_DEPTH = 13-self.game.size
+        elif game_name == "Othello":
             self.MAX_DEPTH = 15-self.game.size
         log(f"Minimax is using a max search depth of {self.MAX_DEPTH}")
 

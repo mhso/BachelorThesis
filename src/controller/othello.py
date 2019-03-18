@@ -88,19 +88,6 @@ class Othello(Game):
         super.__doc__
         return state.player
 
-    def capture_in_dir(self, board, player, x, y, i, j):
-        captures = 1
-        other_player = -player
-        xc = x+i
-        yc = y+j
-        while self.size > xc >= 0 and self.size > yc >= 0 and board[yc][xc] == other_player:
-            xc += i
-            yc += j
-            captures += 1
-        if captures and self.size > xc >= 0 and self.size > yc >= 0 and board[yc][xc] == player:
-            return captures
-        return 0
-
     def actions(self, state):
         super.__doc__
         action_list = []
@@ -172,6 +159,8 @@ class Othello(Game):
     def map_actions(self, target_policies):
         policies = np.zeros((self.size * self.size))
         for a, p in target_policies.items():
+            if a is None:
+                continue
             y, x = a.source
             policies[y * self.size + x % self.size] = p
         return (policies,)

@@ -187,7 +187,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     eval_queue = []
     queue_size = constants.GAME_THREADS
     perform_data = [[], [], []]
-    perform_size = constants.EVAL_ITERATIONS * constants.GAME_THREADS
+    perform_size = constants.GAME_THREADS
     perform_started = {conn: True for conn in game_conns}
     new_games = 0
 

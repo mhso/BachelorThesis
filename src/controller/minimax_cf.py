@@ -1,8 +1,12 @@
+from time import time
 from scipy.signal import convolve2d
 from controller.minimax import Minimax
 from numpy import nditer
 
 class Minimax_CF(Minimax):
+    def cutoff(self, depth):
+        return super().cutoff(depth) or time() - self.time_started > 15
+
     def has_connection(self, conv, num_connected):
         return(conv == num_connected).sum() > 0
 

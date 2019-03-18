@@ -36,8 +36,6 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
     time_begin = timeGame.get_datetime_str()
     count_player_moves = [0,0]
     while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
-        num_white, num_black = state.count_pieces()
-        log("Num of pieces, White: {} Black: {}".format(num_white, num_black))
         time_turn = time()
 
         if game.player(state):
@@ -49,9 +47,10 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
 
         game.history.append(state)
 
+        pieces = state.count_pieces()
+        log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
         if connection:
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
-            pieces = state.count_pieces()
             thread_status = ("Moves: {}. {}'s turn ({}), ".format(len(game.history), ai_name,
                                                                   state.str_player()) +
                              "pieces: w: {}, b: {}. Turn took {} s".format(pieces[0], pieces[1],

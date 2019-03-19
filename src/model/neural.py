@@ -35,11 +35,11 @@ class NeuralNetwork:
         clear_session()
 
         # Config options, to stop TF from eating all GPU memory.
-        Config = ConfigProto()
-        Config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
-        Config.gpu_options.allow_growth = True
+        nn_config = ConfigProto()
+        nn_config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
+        nn_config.gpu_options.allow_growth = True
         #Config.gpu_options.visible_device_list = "0"
-        set_session(Session(Config=Config))
+        set_session(Session(config=nn_config))
 
         inp = self.input_layer(game)
 

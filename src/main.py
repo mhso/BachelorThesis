@@ -90,7 +90,6 @@ def game_over(conn, training_step, new_games, alert_perform, replay_storage, net
     """
     if alert_perform.get(conn, False):
         # Tell the process to start running perform eval games.
-        alert_perform[conn] = False
         conn.send("eval_perform")
     else:
         # Nothing of note happens, indicate that process should carry on as usual.
@@ -275,7 +274,7 @@ def prepare_training(game, p1, p2, **kwargs):
             if gui is None:
                 #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
                 game_thread = Process(target=self_play.play_loop,
-                                      name=f"Self-play {(i+1):02d}",
+                                      name=f"Actor {(i+1):02d}",
                                       args=(game, p1, p2, 0, gui, plot_data, config, child))
             else:
                 pipes = []

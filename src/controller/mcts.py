@@ -168,6 +168,8 @@ class MCTS(GameAI):
             self.game.store_search_statistics(None)
             return self.game.result(state, None) # Simulate pass.
 
+        self.add_exploration_noise(root_node)
+
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
         # number of mean value (value/visits) are chosen as the best action.

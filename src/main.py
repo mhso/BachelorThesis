@@ -17,11 +17,11 @@ if __name__ == "__main__":
     from controller.latrunculi import Latrunculi
     from controller import self_play
     from model.storage import ReplayStorage, NetworkStorage
-    from model.neural import NeuralNetwork, DummyNetwork
+    from model.neural import NeuralNetwork
     from view.log import FancyLogger
     from view.visualize import Gui
     from view.graph import GraphHandler
-    import constants
+    from config import Config
     import sys
     import os
 
@@ -37,7 +37,7 @@ def train_network(network_storage, replay_storage, iteration):
     inputs, expected_out = replay_storage.sample_batch()
 
     loss = network.train(inputs, expected_out)
-    if not iteration % constants.SAVE_CHECKPOINT:
+    if not iteration % Config.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
         if "-s" in argv:
             network_storage.save_network_to_file(iteration, network, GAME_NAME)
@@ -49,7 +49,6 @@ def train_network(network_storage, replay_storage, iteration):
     GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
 
 def show_performance_data(ai, index, step, data):
-    # Get result of eval against minimax.
     avg_data = sum(data) / len(data)
     values = [None, None, None]
     values[index] = avg_data
@@ -80,7 +79,7 @@ def handle_performance_data(step, perform_data, perform_size):
             save_perform_data(perform_data[2], "mcts", step) # Save to file.
         perform_data[2] = []
 
-def game_over(conn, training_step, new_games, perform_started, replay_storage, network_storage):
+def game_over(conn, training_step, new_games, alert_perform, replay_storage, network_storage):
     """
     Handle cases for when a game is completed on a process.
     These include:
@@ -89,25 +88,25 @@ def game_over(conn, training_step, new_games, perform_started, replay_storage, n
         - Check if training is finished.
     @returns True or false, indicating whether training is complete.
     """
-    if not perform_started[conn]:
+    if alert_perform.get(conn, False):
         # Tell the process to start running perform eval games.
-        perform_started[conn] = True
+        alert_perform[conn] = False
         conn.send("eval_perform")
     else:
         # Nothing of note happens, indicate that process should carry on as usual.
         conn.send(None)
-    if new_games >= constants.GAMES_PER_TRAINING:
+    if new_games >= Config.GAMES_PER_TRAINING:
         # Tell the network to train on a batch of games.
         train_network(network_storage, replay_storage, training_step)
         training_step += 1
         new_games = 0
-        if training_step == constants.TRAINING_STEPS:
+        if training_step == Config.TRAINING_STEPS:
             FancyLogger.set_network_status("Training finished!")
             return True, new_games, training_step
-        if not training_step % constants.EVAL_CHECKPOINT:
+        if not training_step % Config.EVAL_CHECKPOINT:
             # Indicate that the process should run performance evaluation games.
-            for k in perform_started.keys():
-                perform_started[k] = False
+            for k in alert_perform.keys():
+                alert_perform[k] = True
     return False, new_games, training_step
 
 def evaluate_games(game, eval_queue, network_storage):
@@ -137,12 +136,24 @@ def load_all_perform_data():
         for t_step, data in perf_mcts:
             show_performance_data("Versus MCTS", 2, t_step, data)
 
+def parse_load_step(args):
+    index = args.index("-l")
+    step = None
+    if index < len(args)-1:
+        try:
+            step = int(args[index+1])
+            print(step)
+        except ValueError:
+            pass
+    return step
+
 def initialize_network(game, network_storage):
     training_step = 0
     # Construct the initial network.
     #if the -l option is selected, load a network from files
     if "-l" in argv:
-        model = network_storage.load_network_from_file(None, GAME_NAME) #TODO: replace None with the argument for NN version
+        step = parse_load_step(argv)
+        model = network_storage.load_network_from_file(step, GAME_NAME) #TODO: replace None with the argument for NN version
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
@@ -185,10 +196,10 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         conn.send("go")
 
     eval_queue = []
-    queue_size = constants.GAME_THREADS
+    queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
-    perform_size = constants.GAME_THREADS
-    perform_started = {conn: True for conn in game_conns}
+    perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
+    alert_perform = {conn: False for conn in game_conns[:perform_size]}
     new_games = 0
 
     while True:
@@ -210,7 +221,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
                     finished, new_games, training_step = game_over(conn, training_step, new_games,
-                                                                   perform_started, replay_storage,
+                                                                   alert_perform, replay_storage,
                                                                    network_storage)
                     if finished:
                         for c in game_conns:
@@ -243,16 +254,17 @@ def prepare_training(game, p1, p2, **kwargs):
     plot_data = kwargs.get("plot_data", False)
     network_storage = kwargs.get("network_storage", None)
     replay_storage = kwargs.get("replay_storage", None)
+    config = kwargs.get("config", None)
 
     if gui is not None or plot_data or self_play.is_mcts(p1) or self_play.is_mcts(p2):
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,
         # create seperate thread(s) to run the AI game logic in.
-        if constants.GAME_THREADS > 1:
+        if Config.GAME_THREADS > 1:
             # Don't use plot/GUI if several games are played.
             gui = None
         pipes = []
-        for i in range(constants.GAME_THREADS):
+        for i in range(Config.GAME_THREADS):
             if i > 0: # Make copies of game and players.
                 game = self_play.get_game(type(game).__name__, game.size, "random", ".")
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
@@ -263,7 +275,7 @@ def prepare_training(game, p1, p2, **kwargs):
             if gui is None:
                 #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
                 game_thread = Process(target=self_play.play_loop,
-                                      args=(game, p1, p2, 0, gui, plot_data, child))
+                                      args=(game, p1, p2, 0, gui, plot_data, config, child))
             else:
                 pipes = []
                 game_thread = Thread(target=self_play.play_loop,
@@ -273,7 +285,8 @@ def prepare_training(game, p1, p2, **kwargs):
         #if "-l" option is selected load old replays from file
         #else if "-ld" option is selected load old replays sql database
         if "-l" in argv:
-            replay_storage.load_replay(None, GAME_NAME) #TODO: replace None with the argument for NN version
+            step = parse_load_step(argv)
+            replay_storage.load_replay(step, GAME_NAME) #TODO: replace None with the argument for NN version
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 
@@ -334,7 +347,6 @@ def load_loss(step):
     Loads network training loss for given training step.
     If no such data exists, returns 1.
     """
-
     try:
         loss = pickle.load(open("../resources/" + GAME_NAME + "/misc/loss_{}.bin".format(step), "rb"))
         return loss
@@ -353,16 +365,20 @@ def invalid_args(args, options, wildcard):
     return None
 
 if __name__ == "__main__":
+    # Load Config from file if present.
+    if "-c" in argv:
+        cfg = Config.from_file("../resources/Config.txt")
+
     # Load arguments for running the program.
     # The args, in order, correspond to the variables below.
     WILDCARD = "."
     PLAYER_1 = WILDCARD
     PLAYER_2 = WILDCARD
     GAME_NAME = WILDCARD
-    BOARD_SIZE = constants.DEFAULT_BOARD_SIZE
+    BOARD_SIZE = Config.DEFAULT_BOARD_SIZE
     RAND_SEED = "random"
 
-    OPTION_LIST = ["-s", "-l", "-v", "-t", "-g", "-p", "-ds", "-dl"]
+    OPTION_LIST = ["-s", "-l", "-v", "-t", "-c", "-g", "-p", "-ds", "-dl"]
     options = []
     args = []
     # Seperate arguments from options.
@@ -382,7 +398,9 @@ if __name__ == "__main__":
         if args[1] in ("-help", "-h"):
             print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [<options>]".format(args[0]))
             print("Write '{}' in place of any argument to use default value".format(WILDCARD))
-            print("Options: -v (verbose), -t (time operations), -s (save models), -l (load models), -g (use GUI), -p (plot data)")
+            print(f"Default values: '{Config.DEFAULT_AI}', '{Config.DEFAULT_AI}', "+
+                  f"'{Config.DEFAULT_GAME}', '{Config.DEFAULT_BOARD_SIZE}', 'random'")
+            print(f"Options: {OPTION_LIST}")
             print("Fx. 'python {} Minimax MCTS Latrunculi . 42 -g'".format(args[0]))
             exit(0)
         PLAYER_1 = args[1] # Algorithm playing as player 1.
@@ -436,19 +454,20 @@ if __name__ == "__main__":
             sys.exit("test")
         """
 
-        if constants.RANDOM_INITIAL_GAMES:
+        if Config.RANDOM_INITIAL_GAMES:
             if self_play.is_mcts(P_WHITE):
                 P_WHITE = self_play.get_ai_algorithm("Random", GAME, ".")
             if self_play.is_mcts(P_BLACK):
                 P_BLACK = self_play.get_ai_algorithm("Random", GAME, ".")
-    elif constants.GAME_THREADS > 1:
+    elif Config.GAME_THREADS > 1:
         # If we are not playing with MCTS,
         # disable multi-threading.
-        constants.GAME_THREADS = 1
+        Config.GAME_THREADS = 1
 
     print("Main PID: {}".format(getpid()))
     prepare_training(GAME, P_WHITE, P_BLACK,
                      gui=gui,
                      plot_data="-p" in options,
                      network_storage=NETWORK_STORAGE,
-                     replay_storage=REPLAY_STORAGE)
+                     replay_storage=REPLAY_STORAGE,
+                     config=cfg)

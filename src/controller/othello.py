@@ -1,7 +1,7 @@
 import numpy as np
+from numba import jit
 from controller.game import Game
 from model.state import State, Action
-from numba import jit
 
 @jit(nopython=True)
 def capture_in_dir(board, player, x, y, i, j, size):

@@ -3,9 +3,9 @@ minimax: Implements Minimax with Alpha-Beta pruning for playing a game.
 """
 from controller.game_ai import GameAI
 from view.log import log
-from numba import jit
 from sys import argv
 from time import time
+from numba import jit
 
 @jit(nopython=True)
 def evaluate_board_jit(board, player, depth):

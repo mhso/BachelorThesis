@@ -7,9 +7,7 @@ May be run in a seperate process.
 from os import getpid
 from sys import argv
 from time import time, sleep
-from sys import argv
-from multiprocessing import Process
-import constants
+from config import Config
 from view.log import log, FancyLogger
 from view.graph import GraphHandler
 from util.timerUtil import TimerUtil
@@ -21,7 +19,7 @@ def force_quit(gui):
 def is_mcts(ai):
     return type(ai).__name__ == "MCTS"
 
-def play_game(game, player_white, player_black, gui=None, connection=None):
+def play_game(game, player_white, player_black, config, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
     """
@@ -35,7 +33,7 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
     timeGame.start_timing()
     time_begin = timeGame.get_datetime_str()
     count_player_moves = [0,0]
-    while not game.terminal_test(state) and counter < constants.LATRUNCULI_MAX_MOVES:
+    while not game.terminal_test(state) and counter < config.LATRUNCULI_MAX_MOVES:
         time_turn = time()
 
         if game.player(state):
@@ -65,9 +63,9 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
 
         if gui is not None:
             if type(player_white).__name__ != "Human" and not state.player:
-                sleep(constants.GUI_AI_SLEEP)
+                sleep(config.GUI_AI_SLEEP)
             elif type(player_black).__name__ != "Human" and state.player:
-                sleep(constants.GUI_AI_SLEEP)
+                sleep(config.GUI_AI_SLEEP)
             gui.update(state)
         counter += 1
     timeGame.stop_timing()
@@ -96,7 +94,7 @@ def play_game(game, player_white, player_black, gui=None, connection=None):
     # Return resulting state of game.
     return state
 
-def evaluate_against_ai(game, player, other, num_games, connection=None):
+def evaluate_against_ai(game, player, other, num_games, config, connection=None):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -106,7 +104,7 @@ def evaluate_against_ai(game, player, other, num_games, connection=None):
     """
     wins = 0
     for _ in range(num_games):
-        result = play_game(game, player, other, connection=connection)
+        result = play_game(game, player, other, config, connection=connection)
         wins += game.utility(result, True)
         game.reset()
     return wins/num_games # Return ratio of games won.
@@ -121,37 +119,38 @@ def minimax_for_game(game):
         return "Minimax_Othello"
     return "unknown"
 
-def evaluate_model(game, player, connection):
+def evaluate_model(game, player, config, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
     connection.send(("log", ["Evaluating against Minimax", getpid()]))
+    num_games = Config.EVAL_ITERATIONS // Config.EVAL_PROCESSES
 
     eval_minimax = evaluate_against_ai(game, player,
                                        get_ai_algorithm("Minimax", game, "."),
-                                       constants.EVAL_ITERATIONS, connection)
+                                       num_games, config, connection)
 
     connection.send(("perform_mini", eval_minimax))
     connection.send(("log", ["Evaluating against Random", getpid()]))
 
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
-                                      constants.EVAL_ITERATIONS, connection)
+                                      num_games, config, connection)
 
     connection.send(("perform_rand", eval_random))
     connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
 
     eval_mcts = evaluate_against_ai(game, player,
                                     get_ai_algorithm("MCTS_Basic", game, "."),
-                                    constants.EVAL_ITERATIONS, connection)
+                                    num_games, config, connection)
 
     connection.send(("perform_mcts", eval_mcts))
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()
     if lower == wildcard:
-        game_name = constants.DEFAULT_GAME
+        game_name = Config.DEFAULT_GAME
         lower = game_name.lower()
     try:
         module = __import__("controller.{}".format(lower), fromlist=["{}".format(game_name)])
@@ -166,7 +165,7 @@ def get_ai_algorithm(algorithm, game, wildcard="."):
         algorithm = minimax_for_game(game)
     lower = algorithm.lower()
     if lower == wildcard:
-        algorithm = constants.DEFAULT_AI
+        algorithm = Config.DEFAULT_AI
         lower = algorithm.lower()
     try:
         module = __import__("controller.{}".format(lower), fromlist=["{}".format(algorithm)])
@@ -176,10 +175,13 @@ def get_ai_algorithm(algorithm, game, wildcard="."):
         print("Unknown AI algorithm, name must equal name of AI class.")
         return None, "unknown"
 
-def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=None):
+def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, connection=None):
     """
     Run a given number of game iterations with a given AI.
     """
+    cfg = config
+    if not cfg:
+        cfg = Config()
     if iteration == 0 and connection:
         # Wait for initial construction/compilation of network.
         if is_mcts(p1):
@@ -187,18 +189,18 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         if is_mcts(p2):
             p2.connection = connection
         connection.recv()
-    if iteration == constants.GAME_ITERATIONS:
+    if iteration == cfg.GAME_ITERATIONS:
         print("{} is done with training!".format(getpid()))
         return
     try:
-        play_game(game, p1, p2, gui, connection)
+        play_game(game, p1, p2, cfg, gui, connection)
 
         if connection:
             # Save game to be used for neural network training.
             connection.send(("game_over", game.clone()))
             game.__init__(game.size, "random")
-            if (type(p1).__name__ == "Random" and constants.RANDOM_INITIAL_GAMES
-                    and iteration >= constants.RANDOM_INITIAL_GAMES // constants.GAME_THREADS):
+            if (type(p1).__name__ == "Random" and cfg.RANDOM_INITIAL_GAMES
+                    and iteration >= cfg.RANDOM_INITIAL_GAMES // cfg.GAME_THREADS):
                 # We are done with random game generation,
                 # moving on to actual self-play.
                 p1 = get_ai_algorithm("MCTS", game, ".")
@@ -209,8 +211,8 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, connection=Non
         game.reset() # Reset game history.
         if is_mcts(p1) and connection and connection.recv():
             # Evaluate performance of trained model against other AIs.
-            evaluate_model(game, p1, connection)
-        play_loop(game, p1, p2, iteration+1, gui, plot_data, connection)
+            evaluate_model(game, p1, cfg, connection)
+        play_loop(game, p1, p2, iteration+1, gui, plot_data, config, connection)
     except KeyboardInterrupt:
         if gui is not None:
             gui.close()

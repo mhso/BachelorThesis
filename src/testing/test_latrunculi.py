@@ -1,12 +1,11 @@
 from numpy.random import uniform
 from time import time
+import numpy as np
 from testing import assertion
 from controller.latrunculi import Latrunculi
 from model.state import Action
 from util.excelUtil import ExcelUtil
 from util.sqlUtil import SqlUtil
-import numpy as np
-import scipy
 
 def run_tests():
     # Test initial board setup.

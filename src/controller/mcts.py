@@ -4,7 +4,7 @@ mcts: Monte Carlo Tree Search.
 ------------------------------------
 """
 import numpy as np
-import constants
+from config import Config
 from controller.game_ai import GameAI
 from view.log import log
 
@@ -51,14 +51,14 @@ class MCTS(GameAI):
         if playouts:
             self.ITERATIONS = playouts
         else:
-            self.ITERATIONS = constants.MCTS_ITERATIONS
+            self.ITERATIONS = Config.MCTS_ITERATIONS
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 
     def ucb_score(self, node, parent_visits):
         # PUCT formula.
-        #e_base = constants.EXPLORE_BASE
-        #e_init = constants.EXPLORE_INIT
+        #e_base = Config.EXPLORE_BASE
+        #e_init = Config.EXPLORE_INIT
         #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
         explore_val = 1.27 # TODO: Maybe change later.
         val = node.mean_value + (
@@ -138,7 +138,7 @@ class MCTS(GameAI):
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
 
-        if len(self.game.history) < constants.NUM_SAMPLING_MOVES:
+        if len(self.game.history) < Config.NUM_SAMPLING_MOVES:
             # Perform softmax random selection of available actions,
             # based on visit counts.
             sum_visits = sum(visit_counts)
@@ -153,8 +153,8 @@ class MCTS(GameAI):
         exploration of new nodes. Not currently used.
         """
         actions = node.children.keys()
-        noise = np.random.gamma(constants.NOISE_BASE, 1, len(actions))
-        frac = constants.NOISE_FRACTION
+        noise = np.random.gamma(Config.NOISE_BASE, 1, len(actions))
+        frac = Config.NOISE_FRACTION
         for a, n in zip(actions, noise):
             node.children[a].prior_prob *= (1 - frac) + n * frac
 

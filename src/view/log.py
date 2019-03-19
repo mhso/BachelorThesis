@@ -5,9 +5,8 @@ log: Log stuff, models (neural & mcts) and board to console and/or file.
 """
 from sys import argv
 from time import time
-from threading import Lock
-import constants
 import os
+from config import Config
 
 debug = "-v" in argv
 
@@ -48,7 +47,7 @@ class FancyLogger:
     @staticmethod
     def set_training_step(step):
         FancyLogger.train_step = step
-        FancyLogger.train_ratio = step / constants.TRAINING_STEPS
+        FancyLogger.train_ratio = step / Config.TRAINING_STEPS
         FancyLogger.pp()
 
     @staticmethod
@@ -72,18 +71,18 @@ class FancyLogger:
     def pp():
         global debug
         if not debug:
-            #clear_console()
+            clear_console()
             print("-=-=- Network status -=-=-")
-            network_string = f"Network is using {constants.CONV_FILTERS} conv filters, "
-            network_string += f"{constants.RES_LAYERS} residual layers "
-            network_string += f"and a batch size of {constants.BATCH_SIZE}."
+            network_string = f"Network is using {Config.CONV_FILTERS} conv filters, "
+            network_string += f"{Config.RES_LAYERS} residual layers "
+            network_string += f"and a batch size of {Config.BATCH_SIZE}."
             print(network_string)
             print(FancyLogger.network_status)
 
             num_symbols = int(20 * FancyLogger.train_ratio)
             progress_str = "▓" * num_symbols
             remain = "▒" * (20 - num_symbols)
-            print("Training progress: {} {}/{}".format(progress_str + remain, FancyLogger.train_step, constants.TRAINING_STEPS))
+            print("Training progress: {} {}/{}".format(progress_str + remain, FancyLogger.train_step, Config.TRAINING_STEPS))
             print("")
 
             print("-=-=- Latest evaluation statuses -=-=-")
@@ -93,12 +92,12 @@ class FancyLogger:
             print("")
             print("-=-=- Self play status -=-=-")
             print("Playing {} on an {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))
-            print("MCTS is using {} iterations.".format(constants.MCTS_ITERATIONS))
+            print("MCTS is using {} iterations.".format(Config.MCTS_ITERATIONS))
             print("----------")
             for thread, status in FancyLogger.thread_statuses.items():
                 print("PID {}: {}".format(thread, status))
 
             print("----------")
-            print("Number of processes: {}".format(constants.GAME_THREADS))
+            print("Number of processes: {}".format(Config.GAME_THREADS))
             print("Total games generated: {}".format(FancyLogger.total_games))
             print("Time spent: {} s".format(time() - FancyLogger.time_started))

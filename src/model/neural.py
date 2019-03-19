@@ -16,7 +16,7 @@ from keras.models import save_model, Model
 from keras.utils.vis_utils import plot_model
 import numpy as np
 from model.residual import Residual
-import constants
+from config import Config
 
 class NeuralNetwork:
     """
@@ -35,25 +35,25 @@ class NeuralNetwork:
         clear_session()
 
         # Config options, to stop TF from eating all GPU memory.
-        config = ConfigProto()
-        config.gpu_options.per_process_gpu_memory_fraction = constants.MAX_GPU_FRACTION
-        config.gpu_options.allow_growth = True
-        #config.gpu_options.visible_device_list = "0"
-        set_session(Session(config=config))
+        Config = ConfigProto()
+        Config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
+        Config.gpu_options.allow_growth = True
+        #Config.gpu_options.visible_device_list = "0"
+        set_session(Session(Config=Config))
 
         inp = self.input_layer(game)
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
-        out = Conv2D(constants.CONV_FILTERS, kernel_size=3, strides=1, padding="same",
+        out = Conv2D(Config.CONV_FILTERS, kernel_size=3, strides=1, padding="same",
                      kernel_initializer="random_uniform",
                      bias_initializer="random_uniform")(inp)
         out = BatchNormalization()(out)
         out = Activation("relu")(out)
 
         # Residual layers, 19 in total.
-        for _ in range(constants.RES_LAYERS):
-            out = Residual(constants.CONV_FILTERS, constants.CONV_FILTERS, out)
+        for _ in range(Config.RES_LAYERS):
+            out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
         policy = Conv2D(2, kernel_size=1, strides=1, padding="same",
@@ -71,7 +71,7 @@ class NeuralNetwork:
         value = Activation("relu")(value)
 
         value = Flatten()(value)
-        value = Dense(constants.CONV_FILTERS, kernel_initializer="random_uniform",
+        value = Dense(Config.CONV_FILTERS, kernel_initializer="random_uniform",
                       bias_initializer="random_uniform")(value) # Linear layer.
         value = Activation("relu")(value)
 
@@ -87,9 +87,9 @@ class NeuralNetwork:
         self.model._make_predict_function()
 
     def compile_model(self, model):
-        self.model.compile(optimizer=SGD(lr=constants.LEARNING_RATE,
-                                         decay=constants.WEIGHT_DECAY,
-                                         momentum=constants.MOMENTUM),
+        self.model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
+                                         decay=Config.WEIGHT_DECAY,
+                                         momentum=Config.MOMENTUM),
                            loss='mean_squared_error')
 
     def input_layer(self, game):

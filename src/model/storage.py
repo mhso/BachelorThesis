@@ -3,7 +3,7 @@ storage: Stores/saves/loads neural network models for use in
 training and self-play, as well as replay buffers generated from self-play.
 """
 import numpy as np
-import constants
+from config import Config
 import pickle
 import os
 from model.neural import NeuralNetwork, DummyNetwork
@@ -17,8 +17,8 @@ class ReplayStorage:
     This class manages the saving/loading of replays from games.
     """
     def __init__(self):
-        self.max_games = constants.MAX_GAME_STORAGE
-        self.batch_size = constants.BATCH_SIZE
+        self.max_games = Config.MAX_GAME_STORAGE
+        self.batch_size = Config.BATCH_SIZE
         self.buffer = []
 
     def save_game(self, game):
@@ -58,7 +58,7 @@ class ReplayStorage:
         return np.array(images), expected_outputs
 
     def full_buffer(self):
-        return len(self.buffer) == constants.BATCH_SIZE
+        return len(self.buffer) == Config.BATCH_SIZE
 
     def save_replay(self, game, step, game_type):
         """
@@ -108,11 +108,11 @@ class ReplayStorage:
 
             step_counter = current_step
             file_counter = 0
-            while step_counter >= 0 and file_counter < constants.MAX_GAME_STORAGE:
+            while step_counter >= 0 and file_counter < Config.MAX_GAME_STORAGE:
                 file_list = glob(folder_name + game_type + data_type + folder_nn_no_version + str(step_counter) + "/" + "*" + file_extension)
 
                 for f in file_list:
-                    if file_counter < constants.MAX_GAME_STORAGE:
+                    if file_counter < Config.MAX_GAME_STORAGE:
                         open_file = open(f, "rb")
                         game = pickle.load(open_file)
                         self.buffer.append(game)
@@ -165,7 +165,7 @@ class NetworkStorage:
 
     def save_network(self, step, network):
         self.networks[step] = network
-        if len(self.networks) > constants.MAX_NETWORK_STORAGE:
+        if len(self.networks) > Config.MAX_NETWORK_STORAGE:
             new_dict = dict()
             lowest_step = min(self.networks)
             for s, n in self.networks.items():
@@ -176,7 +176,7 @@ class NetworkStorage:
 
     def replace_dummy_network(self):
         old_network = self.latest_network()
-        network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
+        #network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
         self.save_network(self.curr_step, network)
 
     def save_network_to_file(self, step, network, game_type):
@@ -228,8 +228,8 @@ class NetworkStorage:
         print("save_network_to_sql called")
         filename = "network"
         
-        config = network.model.get_config()
-        data = pickle.dumps(config)
+        Config = network.model.get_Config()
+        data = pickle.dumps(Config)
         
         sql_conn = SqlUtil.connect()
         SqlUtil.network_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "saved neural network",  data)
@@ -238,9 +238,9 @@ class NetworkStorage:
     def load_newest_network_from_sql(self):
         sql_conn = SqlUtil.connect()
         network_tuple = SqlUtil.network_data_select_newest_network(sql_conn) #dont know what datatype is returned from fetchone(), it seems to be a tuple
-        network_config = network_tuple[0]
+        network_Config = network_tuple[0]
 
-        config = pickle.loads(network_config)
-        network_model = Model.from_config(config)
+        Config = pickle.loads(network_Config)
+        network_model = Model.from_Config(Config)
         print("Newest network selected from sql database table")
         return network_model

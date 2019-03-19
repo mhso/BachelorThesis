@@ -1,6 +1,5 @@
 import mysql.connector
-import constants
-
+from config import Config
 
 class SqlUtil(object):
 
@@ -61,7 +60,7 @@ class SqlUtil(object):
     @staticmethod
     def game_data_select_newest_games(connection):
         mycursor = connection.cursor()
-        sql = "SELECT bin_data FROM game_data ORDER BY id DESC LIMIT {}".format(constants.MAX_GAME_STORAGE)
+        sql = "SELECT bin_data FROM game_data ORDER BY id DESC LIMIT {}".format(Config.MAX_GAME_STORAGE)
         mycursor.execute(sql)
         result = mycursor.fetchall()
         return result

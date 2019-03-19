@@ -275,6 +275,7 @@ def prepare_training(game, p1, p2, **kwargs):
             if gui is None:
                 #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
                 game_thread = Process(target=self_play.play_loop,
+                                      name=f"Self-play {(i+1):02d}",
                                       args=(game, p1, p2, 0, gui, plot_data, config, child))
             else:
                 pipes = []
@@ -286,7 +287,7 @@ def prepare_training(game, p1, p2, **kwargs):
         #else if "-ld" option is selected load old replays sql database
         if "-l" in argv:
             step = parse_load_step(argv)
-            replay_storage.load_replay(step, GAME_NAME) #TODO: replace None with the argument for NN version
+            replay_storage.load_replay(step, GAME_NAME)
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 

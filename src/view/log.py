@@ -95,7 +95,7 @@ class FancyLogger:
             print("MCTS is using {} iterations.".format(Config.MCTS_ITERATIONS))
             print("----------")
             for thread, status in FancyLogger.thread_statuses.items():
-                print("PID {}: {}".format(thread, status))
+                print("{}: {}".format(thread, status))
 
             print("----------")
             print("Number of processes: {}".format(Config.GAME_THREADS))

@@ -176,7 +176,7 @@ class MCTS(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
-            self.back_propagate(node, value)
+            self.back_propagate(node, -value if node.state.player == root_node.state.player else value)
 
             node = root_node
 

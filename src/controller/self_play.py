@@ -4,7 +4,6 @@ self_play: Run game iterations, with any combination of players.
 May be run in a seperate process.
 ----------------------------------------------------------------
 """
-from os import getpid
 from sys import argv
 from time import time, sleep
 from config import Config
@@ -12,12 +11,16 @@ from view.log import log, FancyLogger
 from view.graph import GraphHandler
 from util.timerUtil import TimerUtil
 from util.sqlUtil import SqlUtil
+from multiprocessing import current_process
 
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
 
 def is_mcts(ai):
     return type(ai).__name__ == "MCTS"
+
+def getpid():
+    return current_process().name
 
 def play_game(game, player_white, player_black, config, gui=None, connection=None):
     """

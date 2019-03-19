@@ -5,6 +5,7 @@ mcts: Monte Carlo Tree Search.
 """
 import numpy as np
 from controller.game_ai import GameAI
+from config import Config
 from view.log import log
 from view.graph import Graph
 
@@ -43,7 +44,7 @@ class MCTS_Basic(GameAI):
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
 
-    def __init__(self, game, playouts=None):
+    def __init__(self, game, playouts=Config.MCTS_ITERATIONS):
         super().__init__(game)
         if playouts is not None:
             self.ITERATIONS = playouts

@@ -86,8 +86,8 @@ class FancyLogger:
             print("")
 
             print("-=-=- Latest evaluation statuses -=-=-")
-            print("Against Minimax: {}".format(FancyLogger.performance_values[0]))
-            print("Against Random: {}".format(FancyLogger.performance_values[1]))
+            print("Against Random: {}".format(FancyLogger.performance_values[0]))
+            print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
             print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
             print("")
             print("-=-=- Self play status -=-=-")

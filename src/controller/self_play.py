@@ -124,21 +124,21 @@ def evaluate_model(game, player, config, connection):
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
-    connection.send(("log", ["Evaluating against Minimax", getpid()]))
-    num_games = Config.EVAL_ITERATIONS // Config.EVAL_PROCESSES
-
-    eval_minimax = evaluate_against_ai(game, player,
-                                       get_ai_algorithm("Minimax", game, "."),
-                                       num_games, config, connection)
-
-    connection.send(("perform_mini", eval_minimax))
     connection.send(("log", ["Evaluating against Random", getpid()]))
+    num_games = config.EVAL_GAMES // config.EVAL_PROCESSES
 
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
                                       num_games, config, connection)
 
     connection.send(("perform_rand", eval_random))
+    connection.send(("log", ["Evaluating against Minimax", getpid()]))
+
+    eval_minimax = evaluate_against_ai(game, player,
+                                       get_ai_algorithm("Minimax", game, "."),
+                                       num_games, config, connection)
+
+    connection.send(("perform_mini", eval_minimax))
     connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
 
     eval_mcts = evaluate_against_ai(game, player,
@@ -212,7 +212,7 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
         if is_mcts(p1) and connection and connection.recv():
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, cfg, connection)
-        play_loop(game, p1, p2, iteration+1, gui, plot_data, config, connection)
+        play_loop(game, p1, p2, iteration+1, gui, plot_data, cfg, connection)
     except KeyboardInterrupt:
         if gui is not None:
             gui.close()

@@ -4,7 +4,6 @@ Constants for days.
 class Config():
     def __init__(self, kvargs=None):
         if kvargs:
-            static_vars = vars(Config)
             for k, v in kvargs.items():
                 setattr(Config, k, v)
                 self.__setattr__(k, v)
@@ -53,13 +52,13 @@ class Config():
     # during training, default is every 5th training iteration.
     EVAL_CHECKPOINT = 15
 
-    # How many games to play against base AI's while
-    # evaluating model performance.
+    # How many games to play against each base AI
+    # while evaluating model performance.
     # Should be a multiple of EVAL_PROCESSES (below).
-    EVAL_ITERATIONS = 16
+    EVAL_GAMES = 16
 
     # How many processes that should run evaluation games.
-    EVAL_PROCESSES = 2
+    EVAL_PROCESSES = 4
 
     # |***********************************|
     # |      NEURAL NETWORK OPTIONS       |

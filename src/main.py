@@ -64,14 +64,14 @@ def handle_performance_data(step, perform_data, perform_size):
     p2 = perform_data[1]
     p3 = perform_data[2]
     if len(p1) >= perform_size:
-        show_performance_data("Versus Minimax", 0, step, p1)
+        show_performance_data("Versus Random", 0, step, p1)
         if "-s" in argv:
-            save_perform_data(perform_data[0], "minimax", step) # Save to file.
+            save_perform_data(perform_data[0], "random", step) # Save to file.
         perform_data[0] = []
     elif len(p2) >= perform_size:
-        show_performance_data("Versus Random", 1, step, p2)
+        show_performance_data("Versus Minimax", 1, step, p2)
         if "-s" in argv:
-            save_perform_data(perform_data[1], "random", step) # Save to file.
+            save_perform_data(perform_data[1], "minimax", step) # Save to file.
         perform_data[1] = []
     elif len(p3) >= perform_size:
         show_performance_data("Versus MCTS", 2, step, p3)
@@ -123,14 +123,14 @@ def evaluate_games(game, eval_queue, network_storage):
         c[0].send((logits, values[i][0]))
 
 def load_all_perform_data():
-    perf_mini = load_perform_data("minimax", None)
-    if perf_mini:
-        for t_step, data in perf_mini:
-            show_performance_data("Versus Minimax", 0, t_step, data)
     perf_rand = load_perform_data("random", None)
     if perf_rand:
         for t_step, data in perf_rand:
-            show_performance_data("Versus Random", 1, t_step, data)
+            show_performance_data("Versus Random", 0, t_step, data)
+    perf_mini = load_perform_data("minimax", None)
+    if perf_mini:
+        for t_step, data in perf_mini:
+            show_performance_data("Versus Minimax", 1, t_step, data)
     perf_mcts = load_perform_data("mcts", None)
     if perf_mcts:
         for t_step, data in perf_mcts:
@@ -199,7 +199,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
     perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
-    alert_perform = {conn: False for conn in game_conns[:perform_size]}
+    alert_perform = {conn: False for conn in game_conns[-perform_size:]}
     new_games = 0
 
     while True:
@@ -231,9 +231,9 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     FancyLogger.set_thread_status(val[1], val[0])
                 elif status[:7] == "perform":
                     # Get performance data from games against alternate AIs.
-                    if status == "perform_mini":
+                    if status == "perform_rand":
                         perform_data[0].append(val)
-                    elif status == "perform_rand":
+                    elif status == "perform_mini":
                         perform_data[1].append(val)
                     elif status == "perform_mcts":
                         perform_data[2].append(val)

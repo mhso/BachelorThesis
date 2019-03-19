@@ -366,6 +366,7 @@ def invalid_args(args, options, wildcard):
 
 if __name__ == "__main__":
     # Load Config from file if present.
+    cfg = None
     if "-c" in argv:
         cfg = Config.from_file("../resources/Config.txt")
 

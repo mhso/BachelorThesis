@@ -97,7 +97,7 @@ class Config():
     # |           MCTS OPTIONS            |
     # |***********************************|
     # Number of iterations per action taken.
-    MCTS_ITERATIONS = 300
+    MCTS_ITERATIONS = 1000
 
     # Base exploration constant. This basically defines how much the visit
     # count for a node in MCTS should count towards it's UCB score. Lowering

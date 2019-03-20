@@ -121,7 +121,9 @@ class MCTS(GameAI):
         # Get network evaluation from main process.
         self.connection.send(("evaluate", self.game.structure_data(state)))
         policy_logits, value = self.connection.recv()
-        
+        if self.game.terminal_test(state):
+            value = self.game.utility(state, state.player)
+
         if actions == [None]: # Only action is a 'pass'.
             return value
 
@@ -150,7 +152,7 @@ class MCTS(GameAI):
     def add_exploration_noise(self, node):
         """
         Add noise to prior value of node, to encourage
-        exploration of new nodes. Not currently used.
+        exploration of new nodes.
         """
         actions = node.children.keys()
         noise = np.random.gamma(Config.NOISE_BASE, 1, len(actions))
@@ -178,7 +180,8 @@ class MCTS(GameAI):
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
-            self.back_propagate(node, -value if node.state.player == root_node.state.player else value)
+
+            self.back_propagate(node, value)#value if node.state.player == root_node.state.player else -value)
 
             node = root_node
 

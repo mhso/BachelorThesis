@@ -103,7 +103,7 @@ class NeuralNetwork:
         else:
             input_depth = 2
         self.input_stacks = input_depth
-        return Input((game.size, game.size, input_depth))
+        return Input((input_depth, game.size, game.size))
 
     def policy_layers(self, game, prev):
         game_type = type(game).__name__
@@ -141,13 +141,14 @@ class NeuralNetwork:
         """
         if len(inp.shape) < 4:
             size = self.game.size
-            inp = np.array([inp]).reshape((-1, size, size, self.input_stacks))
+            inp = np.array([inp]).reshape((-1, self.input_stacks, size, size))
         output = self.model.predict(inp)
         game_type = type(self.game).__name__
 
         policy_moves = output[0][:]
         policy_moves -= np.min(policy_moves)
-        policy_moves /= np.ptp(policy_moves)
+        peaks = np.ptp(policy_moves)
+        policy_moves /= peaks
 
         if game_type == "Latrunculi":
             policy_delete = output[1][:]

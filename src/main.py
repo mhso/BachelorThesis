@@ -197,8 +197,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     eval_queue = []
     queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
-    perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
-    alert_perform = {conn: False for conn in game_conns[-perform_size:]}
+    perform_size = Config.EVAL_GAMES if Config.GAME_THREADS > 1 else 1
+    alert_perform = {conn: False for conn in game_conns[-Config.EVAL_PROCESSES:]}
     new_games = 0
 
     while True:

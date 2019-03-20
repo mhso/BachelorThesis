@@ -70,7 +70,7 @@ class Config():
     SAVE_CHECKPOINT = 1
 
     # Amount of games stored, at one time, in replay storage.
-    MAX_GAME_STORAGE = 10000 # Is 1 million in AlphaZero, scale accordingly.
+    MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.
 
     # Amount of netwroks stored at one time in network storage.
     MAX_NETWORK_STORAGE = 10
@@ -93,11 +93,18 @@ class Config():
     # Number of residual layers.
     RES_LAYERS = 11
 
+    # Use bias.
+    USE_BIAS = False
+
+    # Kernel initializer.
+    # Options:0 'uniform', 'normal'.
+    WEIGHT_INITIALIZER = "uniform"
+
     # |***********************************|
     # |           MCTS OPTIONS            |
     # |***********************************|
     # Number of iterations per action taken.
-    MCTS_ITERATIONS = 1000
+    MCTS_ITERATIONS = 300
 
     # Base exploration constant. This basically defines how much the visit
     # count for a node in MCTS should count towards it's UCB score. Lowering
@@ -135,7 +142,7 @@ class Config():
                 for line in lines:
                     kv_split = line.split("=")
                     k = kv_split[0].strip()
-                    v = try_num(kv_split[1].strip())
+                    v = try_parse(kv_split[1].strip())
                     kv_args[k] = v
                 return Config(kv_args)
         except FileNotFoundError:
@@ -143,7 +150,7 @@ class Config():
         except IOError:
             print("Error: Invalid config file!")
 
-def try_num(val):
+def try_parse(val):
     try:
         to_int = int(val)
         return to_int
@@ -152,4 +159,7 @@ def try_num(val):
             to_float = float(val)
             return to_float
         except ValueError:
+            lower = val.lower()
+            if lower in ("true", "false"):
+                return lower == "true"
             return val

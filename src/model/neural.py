@@ -13,7 +13,7 @@ from keras.layers.core import Activation
 from keras.optimizers import SGD
 from keras.models import Sequential
 from keras.models import save_model, Model
-from keras.initializers import random_uniform
+from keras.initializers import random_uniform, random_normal
 from keras.utils.vis_utils import plot_model
 import numpy as np
 from model.residual import Residual
@@ -47,7 +47,8 @@ class NeuralNetwork:
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
         out = Conv2D(Config.CONV_FILTERS, kernel_size=3, strides=1, padding="same",
-                     kernel_initializer=self.get_initializer(0, 1), use_bias=False)(inp)
+                     kernel_initializer=self.get_initializer(0, 1, Config.BATCH_SIZE),
+                     use_bias=Config.USE_BIAS)(inp)
         out = BatchNormalization()(out)
         out = Activation("relu")(out)
 
@@ -56,34 +57,37 @@ class NeuralNetwork:
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = Conv2D(2, kernel_size=1, strides=1, padding="same")(out)
+        policy = Conv2D(2, kernel_size=1, strides=1, padding="same", use_bias=Config.USE_BIAS)(out)
         policy = BatchNormalization()(policy)
         policy = Activation("relu")(policy)
 
         outputs = self.policy_layers(game, policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
-        value = Conv2D(1, kernel_size=1, strides=1)(out)
+        value = Conv2D(1, kernel_size=1, strides=1, use_bias=Config.USE_BIAS)(out)
         value = BatchNormalization()(value)
         value = Activation("relu")(value)
 
         value = Flatten()(value)
-        value = Dense(Config.CONV_FILTERS)(value) # Linear layer.
+        value = Dense(Config.CONV_FILTERS, use_bias=Config.USE_BIAS)(value) # Linear layer.
         value = Activation("relu")(value)
 
         # Final value layer. Outputs probability of win/loss/draw as value between -1 and 1.
-        value = Dense(1, kernel_initializer=self.get_initializer(-1, 1), use_bias=False)(value)
+        value = Dense(1, kernel_initializer=self.get_initializer(-1, 1, Config.CONV_FILTERS),
+                         use_bias=Config.USE_BIAS)(value)
         value = Activation("tanh")(value)
 
         outputs.append(value)
 
         self.model = Model(inputs=inp, outputs=outputs)
         self.compile_model(self.model)
-        #print(self.model.get_weights())
         self.model._make_predict_function()
 
-    def get_initializer(self, min_val, max_val):
-        return random_uniform(-1, 1)
+    def get_initializer(self, min_val, max_val, inputs=10):
+        if Config.WEIGHT_INITIALIZER == "uniform":
+            return random_uniform(-1, 1)
+        if Config.WEIGHT_INITIALIZER == "normal":
+            return random_normal(0, 1/np.sqrt(inputs)) # Stddev = 1/sqrt(inputs)
 
     def compile_model(self, model):
         self.model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
@@ -106,17 +110,18 @@ class NeuralNetwork:
         if game_type == "Latrunculi":
             # Split into...
             # ...move policies.
-            policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same", use_bias=False)(prev)
+            policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same", use_bias=Config.USE_BIAS)(prev)
             policy_moves = BatchNormalization()(policy_moves)
 
             # ...delete captured pieces policy.
-            policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same", use_bias=False)(prev)
+            policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same", use_bias=Config.USE_BIAS)(prev)
             return [policy_moves, policy_delete]
         else:
             # Vector of probabilities for all squares.
             policy = Flatten()(prev)
             policy = Dense(game.size*game.size,
-                           kernel_initializer=self.get_initializer(0, 1), use_bias=False)(policy)
+                           kernel_initializer=self.get_initializer(0, 1, Config.CONV_FILTERS * Config.BATCH_SIZE),
+                           use_bias=Config.USE_BIAS)(policy)
             return [policy]
         return []
 

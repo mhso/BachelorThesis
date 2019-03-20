@@ -135,6 +135,7 @@ def evaluate_model(game, player, config, connection):
                                       num_games, config, connection)
 
     connection.send(("perform_rand", eval_random))
+    """
     connection.send(("log", ["Evaluating against Minimax", getpid()]))
 
     eval_minimax = evaluate_against_ai(game, player,
@@ -149,6 +150,7 @@ def evaluate_model(game, player, config, connection):
                                     num_games, config, connection)
 
     connection.send(("perform_mcts", eval_mcts))
+    """
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()

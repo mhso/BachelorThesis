@@ -14,7 +14,7 @@ class Node():
     visits = 0
     value = 0
     mean_value = 0
-
+    
     def __init__(self, state, action, prior_prob=0, parent=None):
         self.state = state
         self.action = action
@@ -71,7 +71,7 @@ class MCTS(GameAI):
         """
         Select a node to run simulations from.
         Nodes are chosen according to how they maximize
-        the PUCT formula = Q(i) + c * P(i) * sqrt (N(i) / (1 + n(i))
+        the PUCT formula = Q(i) + c * P(i) * sqrt (N(i)) / (1 + n(i)
         Where
             - Q(i) = mean value of node (node value / node visits).
             - c = exploration rate.

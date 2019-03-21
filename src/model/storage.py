@@ -203,8 +203,8 @@ class NetworkStorage:
 
             #save macro network
             if (step % Config.SAVE_CHECKPOINT_MACRO) == 0:
-            save_model(network.model, (folder_name + game_type + data_type2 + file_name + str(version_nn)), True, True)
-            print("Neural Network was saved to file in the macroNetworks folder")
+                save_model(network.model, (folder_name + game_type + data_type2 + file_name + str(version_nn)), True, True)
+                print("Neural Network was saved to file in the macroNetworks folder")
             
             #delete files, so we only save the 10 newest NN's
             step_to_remove = step - Config.MAX_NETWORK_STORAGE

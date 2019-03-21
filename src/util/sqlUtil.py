@@ -86,6 +86,17 @@ class SqlUtil(object):
         return result
 
 
+    @staticmethod
+    def eval_data_insert_row(connection, hostname, filename, description, bin_data):
+        mycursor = connection.cursor()
+        sql = "INSERT INTO eval_data (hostname, filename, description, bin_data) VALUES (%s, %s, %s, %s)"
+        row = (hostname, filename, description, bin_data)
+    
+        mycursor.execute(sql, row)
+        connection.commit()
+        print("done with eval data commit")
+
+
     
     @staticmethod
     def game_data_select_filename(connection, file_name):

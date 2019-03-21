@@ -89,8 +89,10 @@ def game_over(conn, training_step, new_games, alert_perform, replay_storage, net
         - Check if training is finished.
     @returns True or false, indicating whether training is complete.
     """
+    t_step = training_step
     if alert_perform.get(conn, False):
         # Tell the process to start running perform eval games.
+        alert_perform[conn] = False
         conn.send("eval_perform")
     else:
         # Nothing of note happens, indicate that process should carry on as usual.
@@ -98,16 +100,16 @@ def game_over(conn, training_step, new_games, alert_perform, replay_storage, net
     if new_games >= Config.GAMES_PER_TRAINING:
         # Tell the network to train on a batch of games.
         train_network(network_storage, replay_storage, training_step)
-        training_step += 1
+        t_step = training_step + 1
         new_games = 0
-        if training_step == Config.TRAINING_STEPS:
+        if t_step == Config.TRAINING_STEPS:
             FancyLogger.set_network_status("Training finished!")
-            return True, new_games, training_step
-        if not training_step % Config.EVAL_CHECKPOINT:
-            # Indicate that the process should run performance evaluation games.
-            for k in alert_perform.keys():
+            return True, new_games, t_step
+        if not t_step % Config.EVAL_CHECKPOINT:
+            # Indicate that the processes should run performance evaluation games.
+            for k in alert_perform:
                 alert_perform[k] = True
-    return False, new_games, training_step
+    return False, new_games, t_step
 
 def evaluate_games(game, eval_queue, network_storage):
     """
@@ -142,7 +144,6 @@ def parse_load_step(args):
     if index < len(args)-1:
         try:
             step = int(args[index+1])
-            print(step)
         except ValueError:
             pass
     return step
@@ -198,7 +199,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     eval_queue = []
     queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
-    perform_size = Config.EVAL_GAMES if Config.GAME_THREADS > 1 else 1
+    perform_size = Config.GAME_THREADS if Config.GAME_THREADS > 1 else 1
     alert_perform = {conn: False for conn in game_conns[-Config.EVAL_PROCESSES:]}
     new_games = 0
 
@@ -221,8 +222,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
                     finished, new_games, training_step = game_over(conn, training_step, new_games,
-                                                                   alert_perform, replay_storage,
-                                                                   network_storage)
+                                                                alert_perform, replay_storage,
+                                                                network_storage)
                     if finished:
                         for c in game_conns:
                             c.close()

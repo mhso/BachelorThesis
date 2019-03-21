@@ -7,6 +7,8 @@ from sys import argv
 from time import time
 import os
 from config import Config
+import datetime
+import math
 
 debug = "-v" in argv
 
@@ -100,4 +102,5 @@ class FancyLogger:
             print("----------")
             print("Number of processes: {}".format(Config.GAME_THREADS))
             print("Total games generated: {}".format(FancyLogger.total_games))
-            print("Time spent: {} s".format(time() - FancyLogger.time_started))
+            timeSpent= time() - FancyLogger.time_started
+            print("Time spent: {0:.3f} s [{1}]".format(timeSpent, datetime.timedelta(seconds=math.ceil(timeSpent))))

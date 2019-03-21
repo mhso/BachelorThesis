@@ -49,7 +49,7 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
             thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
                              f"{ai_name}'s turn ({state.str_player()}), " +
-                             f"pieces: w: {align_with_spacing(pieces[0],2)}," +
+                             f"pieces: w: {align_with_spacing(pieces[0],2)}, " +
                              f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s")
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:

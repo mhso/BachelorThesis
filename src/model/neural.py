@@ -95,7 +95,7 @@ class NeuralNetwork:
         model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                     decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
-                      loss=losses,
+                      loss=loss_funcs,
                       metrics=["accuracy"])
 
     #softmax_cross_entropy_with_logits_v2

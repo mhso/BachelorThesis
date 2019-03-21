@@ -214,12 +214,14 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
                 p2.connection = connection
 
         game.reset() # Reset game history.
-        con_recv = connection.recv()
-        print(f"#### Connnection recieved: {con_recv}")
-        if is_mcts(p1) and connection and con_recv == "eval_perform":
-            # Evaluate performance of trained model against other AIs.
-            evaluate_model(game, p1, cfg, connection)
-        play_loop(game, p1, p2, iteration+1, gui, plot_data, cfg, connection)
+        try:
+            if is_mcts(p1) and connection and connection.recv():
+                # Evaluate performance of trained model against other AIs.
+                evaluate_model(game, p1, cfg, connection)
+            play_loop(game, p1, p2, iteration+1, gui, plot_data, cfg, connection)
+        except EOFError:
+            print("f{getpid()}: Monitor process has exited... This is probably fine.")
+            exit(0)
     except KeyboardInterrupt:
         if gui is not None:
             gui.close()

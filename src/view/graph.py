@@ -24,8 +24,10 @@ class Graph:
         window = None if same_window else tk.Toplevel(self.root)
         if window:
             window.title("Graphs")
-
-        figure = plt.figure.Figure()
+        w, h, x, y = self.get_window_geometry("top-r")
+        inches_h = (h * 0.285) / 80
+        inches_w = (w*0.4) / 80
+        figure = plt.figure.Figure(figsize=(inches_w, inches_h) if same_window else (3, 3))
         self.ax = figure.add_subplot(111)
         if title:
             self.ax.set_title(title)
@@ -35,15 +37,19 @@ class Graph:
             self.ax.set_ylabel(y_label)
 
         self.canvas = FigureCanvasTkAgg(figure, master=self.root if same_window else window)
+    
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        self.canvas.get_tk_widget().pack(anchor=tk.CENTER, side=tk.TOP, fill=tk.BOTH, expand=True)
 
+        if same_window:
+            figure.set_size_inches(inches_w, inches_h, forward=True)
+            self.root.geometry("{}x{}+{}+{}".format(w, h, x, y))
         self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
 
     def get_window_geometry(self, pos):
         sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()        
-        ww, wh = int(sw // 1.25), int(sh // 2.1)
+        sh = self.root.winfo_screenheight()
+        ww, wh = int(sw // 2), int(sh / 1.085)
         x, y = 100, 100
         if pos:
             if pos == "top-r":
@@ -57,14 +63,12 @@ class Graph:
                 y = sh - wh - 10
         return (ww, wh, x, y)
 
-    def run(self, pos=None):
+    def run(self):
         """
         Start the mainloop of the underlying
         Tkinter window for this graph.
         """
         self.root.title("Graphs")
-        w, h, x, y = self.get_window_geometry(pos)
-        self.root.geometry("{}x{}+{}+{}".format(w, h, x, y))
         tk.mainloop()
 
     def check_change(self):

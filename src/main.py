@@ -198,7 +198,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     eval_queue = []
     queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
-    perform_size = Config.GAME_THREADS if Config.GAME_THREADS > 1 else 1
+    perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
     alert_perform = {conn: False for conn in game_conns[-Config.EVAL_PROCESSES:]}
     new_games = 0
 
@@ -300,7 +300,7 @@ def prepare_training(game, p1, p2, **kwargs):
             graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
             graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate", gui is None) # Start graph window in main thread.
             if gui is None:
-                graph_2.run("top-r")
+                graph_2.run()
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:

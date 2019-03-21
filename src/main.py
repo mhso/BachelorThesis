@@ -35,7 +35,7 @@ def train_network(network_storage, replay_storage, iteration):
 
     FancyLogger.set_training_step((iteration+1))
     inputs, expected_out = replay_storage.sample_batch()
-
+    
     loss = network.train(inputs, expected_out)
     if not iteration % Config.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
@@ -45,6 +45,7 @@ def train_network(network_storage, replay_storage, iteration):
             network_storage.save_network_to_sql(network)
         if "-s" in argv or "-ds" in argv:
             save_loss(loss[0], iteration)
+
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
     GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
 

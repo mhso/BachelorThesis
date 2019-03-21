@@ -53,8 +53,8 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
         if connection:
             turnTook = '{0:.3f}'.format((time() - time_turn))
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
-            thread_status = (f"Moves: {len(game.history)}. {ai_name}'s turn ({state.str_player()}), " +
-                             f"pieces: w: {pieces[0]}, b: {pieces[1]}. Turn took {turnTook} s")
+            thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}. {ai_name}'s turn ({state.str_player()}), " +
+                             f"pieces: w: {align_with_spacing(pieces[0],2)}, b: {align_with_spacing(pieces[1],2)}. Turn took {turnTook} s")
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:
             turnTook = '{0:.3f}'.format((time() - time_turn))
@@ -96,6 +96,15 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
 
     # Return resulting state of game.
     return state
+
+def align_with_spacing(number, total_lenght):
+    '''
+    Used for adding spaces before the 'number', so that the total lenght of the return string matches 'total_lenght'
+    '''
+    val = ""
+    for _ in range(len(str(number)), total_lenght):
+        val += " "
+    return "{}{}".format(val, str(number))
 
 def evaluate_against_ai(game, player, other, num_games, config, connection=None):
     """

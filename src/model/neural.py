@@ -93,7 +93,7 @@ class NeuralNetwork:
         self.model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                          decay=Config.WEIGHT_DECAY,
                                          momentum=Config.MOMENTUM),
-                           loss='mean_squared_error')
+                           loss="mean_squared_error")
 
     def input_layer(self, game):
         game_type = type(game).__name__

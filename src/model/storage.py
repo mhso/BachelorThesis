@@ -186,14 +186,35 @@ class NetworkStorage:
         """
         folder_name = "../resources/"
         data_type = "/networks/"
+        data_type2 = "/macroNetworks/"
         version_nn = str(step)
         file_name = "network"
 
         if not os.path.exists((folder_name + game_type + data_type)):
             os.makedirs((folder_name + game_type + data_type))
+        if not os.path.exists((folder_name + game_type + data_type2)):
+            os.makedirs((folder_name + game_type + data_type2))
+
         try:
+            #save the network as a file
             save_model(network.model, (folder_name + game_type + data_type + file_name + str(version_nn)), True, True)
             print("Neural Network was saved to file")
+            file_list = glob(folder_name + game_type + data_type + "*")
+
+            #save macro network
+            #if True: #(step % Config.SAVE_CHECKPOINT_MACRO) == 0:
+            save_model(network.model, (folder_name + game_type + data_type2 + file_name + str(version_nn)), True, True)
+            print("Neural Network was saved to file in the macroNetworks folder")
+            
+            #delete files, so we only save the 10 newest NN's
+            step_to_remove = step - Config.MAX_NETWORK_STORAGE
+            #the +1 int he first condition of the loop, is in order to prevent the loop from running n times, every time.
+            while len(file_list) > (Config.MAX_NETWORK_STORAGE + 1) and step_to_remove >= 0: 
+                s = str(step_to_remove)
+                os.remove(folder_name + game_type + data_type + file_name + s)
+                step_to_remove -= 1
+                print("old network was deleted")
+
         except IOError:
             print("saving the network failed")
 
@@ -209,10 +230,17 @@ class NetworkStorage:
 
         try:
             if step is None:
-                current_step = len(glob(folder_name + game_type + data_type + "*"))-1
+                #gets the most recently created network's path, and finds its step count, based on file name, and sets current_step to this int. 
+                list_of_files = glob(folder_name + game_type + data_type + "*")
+                latest_file = max(list_of_files, key=os.path.getmtime)
+                s = os.path.basename(latest_file)
+                step_string = s.replace(file_name, "")
+                current_step = int(step_string, base=10)
                 self.curr_step = current_step
             else:
+                #if a step is given, use this step
                 current_step = step
+                self.curr_step = current_step
             version_nn = str(current_step)
 
             network_model = load_model(folder_name + game_type + data_type + file_name + str(version_nn), None, True)
@@ -224,12 +252,42 @@ class NetworkStorage:
             else:
                 print("file was found, but something else went wrong")
 
+
+    def load_macro_network_from_file(self, step, game_type):
+        """
+        Deserializes the Neural Network, from the macro folder,
+        and loads it from a file, based on the given step number.
+        This network is then returned.
+        """
+        folder_name = "../resources/"
+        data_type = "/macroNetworks/"
+        file_name = "network"
+
+        try:
+            if step is None:
+                current_step = len(glob(folder_name + game_type + data_type + "*"))-1
+                self.curr_step = current_step
+            elif step % Config.SAVE_CHECKPOINT_MACRO != 0:
+                current_step = step - (step % Config.SAVE_CHECKPOINT_MACRO)
+            else:
+                current_step = step
+            version_nn = str(current_step)
+
+            network_model = load_model(folder_name + game_type + data_type + file_name + str(version_nn), None, True)
+            print("Macro Neural Network was loaded from file")
+            return network_model
+        except IOError:
+            if not os.path.exists((folder_name + game_type + data_type + file_name + str(version_nn))):
+                print("macro network file was not found: " + folder_name + game_type + data_type + file_name + str(version_nn))
+            else:
+                print("file was found, but something else went wrong")
+
     def save_network_to_sql(self, network):
         print("save_network_to_sql called")
         filename = "network"
         
-        Config = network.model.get_Config()
-        data = pickle.dumps(Config)
+        config = network.model.get_config()
+        data = pickle.dumps(config)
         
         sql_conn = SqlUtil.connect()
         SqlUtil.network_data_insert_row(sql_conn, TimerUtil.get_computer_hostname(), filename, "saved neural network",  data)
@@ -238,9 +296,9 @@ class NetworkStorage:
     def load_newest_network_from_sql(self):
         sql_conn = SqlUtil.connect()
         network_tuple = SqlUtil.network_data_select_newest_network(sql_conn) #dont know what datatype is returned from fetchone(), it seems to be a tuple
-        network_Config = network_tuple[0]
+        network_config = network_tuple[0]
 
-        Config = pickle.loads(network_Config)
-        network_model = Model.from_Config(Config)
+        config = pickle.loads(network_config)
+        network_model = Model.from_config(config)
         print("Newest network selected from sql database table")
         return network_model

@@ -18,6 +18,7 @@ from keras.utils.vis_utils import plot_model
 import numpy as np
 from model.residual import Residual
 from config import Config
+from keras import losses
 
 class NeuralNetwork:
     """
@@ -93,8 +94,10 @@ class NeuralNetwork:
         self.model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                          decay=Config.WEIGHT_DECAY,
                                          momentum=Config.MOMENTUM),
-                           loss="mean_squared_error")
+                                         loss=[losses.binary_crossentropy, losses.mean_squared_error],
+                                         metrics=['accuracy'])
 
+    #softmax_cross_entropy_with_logits_v2
     def input_layer(self, game):
         game_type = type(game).__name__
         input_depth = 1

@@ -6,12 +6,12 @@ May be run in a seperate process.
 """
 from sys import argv
 from time import time, sleep
+from multiprocessing import current_process
 from config import Config
-from view.log import log, FancyLogger
+from view.log import log
 from view.graph import GraphHandler
 from util.timerUtil import TimerUtil
 from util.sqlUtil import SqlUtil
-from multiprocessing import current_process
 
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
@@ -32,33 +32,29 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
     if gui is not None:
         sleep(1)
         gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
-    timeGame = TimerUtil()
-    timeGame.start_timing()
-    time_begin = timeGame.get_datetime_str()
-    count_player_moves = [0,0]
     while not game.terminal_test(state) and counter < config.LATRUNCULI_MAX_MOVES:
         time_turn = time()
 
         if game.player(state):
             state = player_white.execute_action(state)
-            count_player_moves[0] += 1
         else:
             state = player_black.execute_action(state)
-            count_player_moves[1] += 1
 
         game.history.append(state)
 
         pieces = state.count_pieces()
         log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
         if connection:
-            turnTook = '{0:.3f}'.format((time() - time_turn))
+            turn_took = '{0:.3f}'.format((time() - time_turn))
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
-            thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}. {ai_name}'s turn ({state.str_player()}), " +
-                             f"pieces: w: {align_with_spacing(pieces[0],2)}, b: {align_with_spacing(pieces[1],2)}. Turn took {turnTook} s")
+            thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
+                             f"{ai_name}'s turn ({state.str_player()}), " +
+                             f"pieces: w: {align_with_spacing(pieces[0],2)}," +
+                             f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s")
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:
-            turnTook = '{0:.3f}'.format((time() - time_turn))
-            print(f"Turn took {turnTook} s")
+            turn_took = '{0:.3f}'.format((time() - time_turn))
+            print(f"Turn took {turn_took} s")
 
         if force_quit(gui):
             print("{}: Forcing exit...".format(getpid()))
@@ -71,20 +67,6 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
                 sleep(config.GUI_AI_SLEEP)
             gui.update(state)
         counter += 1
-    timeGame.stop_timing()
-    if False:
-        evalUsed = "standard"
-        test_name = "n/a"
-        if "-eval" in argv[len(argv)-3]:
-            evalUsed = argv[len(argv)-2]
-            test_name = argv[len(argv)-1]
-        pieces = state.count_pieces()
-        row = SqlUtil.evaluation_cost_row(time_begin, timeGame.get_computer_hostname(), getpid(), test_name, "Latrunculi Eval: {}".format(evalUsed),
-                                                                game.seed_used(), type(player_white).__name__, type(player_black).__name__,
-                                                                int(count_player_moves[0]), int(count_player_moves[1]),
-                                                                int(pieces[0]), int(pieces[1]), timeGame.time_duration())
-        sql_conn = SqlUtil.connect()
-        SqlUtil.evaluation_cost_insert_row(sql_conn, row)
 
     util = game.utility(state, True)
     winner = "White" if util == 1 else "Black" if util else "Draw"
@@ -98,9 +80,10 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
     return state
 
 def align_with_spacing(number, total_lenght):
-    '''
-    Used for adding spaces before the 'number', so that the total lenght of the return string matches 'total_lenght'
-    '''
+    """
+    Used for adding spaces before the 'number',
+    so that the total lenght of the return string matches 'total_length'.
+    """
     val = ""
     for _ in range(len(str(number)), total_lenght):
         val += " "

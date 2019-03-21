@@ -3,22 +3,18 @@
 neural: Neural Network wrapper.
 -------------------------------
 """
-from threading import Lock
-from os import getpid
-from tensorflow import Session, ConfigProto, reset_default_graph, get_default_graph
+import numpy as np
+from tensorflow import Session, ConfigProto, reset_default_graph
+from keras import losses
 from keras.backend.tensorflow_backend import set_session, clear_session
-from keras.backend import get_session
 from keras.layers import Dense, Conv2D, BatchNormalization, Input, Flatten
 from keras.layers.core import Activation
 from keras.optimizers import SGD
-from keras.models import Sequential
-from keras.models import save_model, Model
+from keras.models import Model
 from keras.initializers import random_uniform, random_normal
 from keras.utils.vis_utils import plot_model
-import numpy as np
 from model.residual import Residual
 from config import Config
-from keras import losses
 
 class NeuralNetwork:
     """
@@ -75,7 +71,7 @@ class NeuralNetwork:
 
         # Final value layer. Outputs probability of win/loss/draw as value between -1 and 1.
         value = Dense(1, kernel_initializer=self.get_initializer(-1, 1, Config.CONV_FILTERS),
-                         use_bias=Config.USE_BIAS)(value)
+                      use_bias=Config.USE_BIAS)(value)
         value = Activation("tanh")(value)
 
         outputs.append(value)
@@ -86,9 +82,9 @@ class NeuralNetwork:
 
     def get_initializer(self, min_val, max_val, inputs=10):
         if Config.WEIGHT_INITIALIZER == "uniform":
-            return random_uniform(-1, 1)
+            return random_uniform(min_val, max_val)
         if Config.WEIGHT_INITIALIZER == "normal":
-            return random_normal(0, 1/np.sqrt(inputs)) # Stddev = 1/sqrt(inputs)
+            return random_normal(min_val, 1/np.sqrt(inputs)) # Stddev = 1/sqrt(inputs)
 
     def compile_model(self, model, game):
         game_name = type(game).__name__

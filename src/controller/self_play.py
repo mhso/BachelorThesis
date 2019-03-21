@@ -51,14 +51,14 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
         pieces = state.count_pieces()
         log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
         if connection:
+            turnTook = '{0:.3f}'.format((time() - time_turn))
             ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
-            thread_status = ("Moves: {}. {}'s turn ({}), ".format(len(game.history), ai_name,
-                                                                  state.str_player()) +
-                             "pieces: w: {}, b: {}. Turn took {} s".format(pieces[0], pieces[1],
-                                                                           time() - time_turn))
+            thread_status = (f"Moves: {len(game.history)}. {ai_name}'s turn ({state.str_player()}), " +
+                             f"pieces: w: {pieces[0]}, b: {pieces[1]}. Turn took {turnTook} s")
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:
-            print("Turn took {} s".format(time() - time_turn))
+            turnTook = '{0:.3f}'.format((time() - time_turn))
+            print(f"Turn took {turnTook} s")
 
         if force_quit(gui):
             print("{}: Forcing exit...".format(getpid()))
@@ -90,7 +90,7 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
     winner = "White" if util == 1 else "Black" if util else "Draw"
     log("Game over! Winner: {}".format(winner))
     if "-t" in argv:
-        print("Game took: {} s".format(time() - time_game))
+        print("Game took: {0:.3f} s".format(time() - time_game))
     if connection:
         connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
 
@@ -214,7 +214,9 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
                 p2.connection = connection
 
         game.reset() # Reset game history.
-        if is_mcts(p1) and connection and connection.recv():
+        con_recv = connection.recv()
+        print(f"#### Connnection recieved: {con_recv}")
+        if is_mcts(p1) and connection and con_recv == "eval_perform":
             # Evaluate performance of trained model against other AIs.
             evaluate_model(game, p1, cfg, connection)
         play_loop(game, p1, p2, iteration+1, gui, plot_data, cfg, connection)

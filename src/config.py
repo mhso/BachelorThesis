@@ -70,13 +70,13 @@ class Config():
     SAVE_CHECKPOINT = 1
 
     # How often to save neural network to the shared storage for macro Networks, where we save significant generations of the network.
-    SAVE_CHECKPOINT_MACRO = 4
+    SAVE_CHECKPOINT_MACRO = 100
 
     # Amount of games stored, at one time, in replay storage.
     MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.S
 
     # Amount of netwroks stored at one time in network storage.
-    MAX_NETWORK_STORAGE = 4
+    MAX_NETWORK_STORAGE = 10
 
     # Batch size for neural network input.
     BATCH_SIZE = 256

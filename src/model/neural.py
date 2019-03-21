@@ -30,7 +30,7 @@ class NeuralNetwork:
         if model:
             self.model = model
             if not self.model._is_compiled:
-                self.compile_model(self.model)
+                self.compile_model(self.model, game)
             return
         # Clean up from previous TF graphs.
         reset_default_graph()
@@ -81,7 +81,7 @@ class NeuralNetwork:
         outputs.append(value)
 
         self.model = Model(inputs=inp, outputs=outputs)
-        self.compile_model(self.model)
+        self.compile_model(self.model, game)
         self.model._make_predict_function()
 
     def get_initializer(self, min_val, max_val, inputs=10):
@@ -90,12 +90,17 @@ class NeuralNetwork:
         if Config.WEIGHT_INITIALIZER == "normal":
             return random_normal(0, 1/np.sqrt(inputs)) # Stddev = 1/sqrt(inputs)
 
-    def compile_model(self, model):
-        self.model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
-                                         decay=Config.WEIGHT_DECAY,
-                                         momentum=Config.MOMENTUM),
-                                         loss=[losses.binary_crossentropy, losses.mean_squared_error],
-                                         metrics=['accuracy'])
+    def compile_model(self, model, game):
+        game_name = type(game).__name__
+        loss_funcs = [losses.binary_crossentropy]
+        if game_name == "Latrunculi":
+            loss_funcs.append(losses.binary_crossentropy)
+        loss_funcs.append(losses.mean_squared_error)
+        model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
+                                    decay=Config.WEIGHT_DECAY,
+                                    momentum=Config.MOMENTUM),
+                      loss=losses,
+                      metrics=["accuracy"])
 
     #softmax_cross_entropy_with_logits_v2
     def input_layer(self, game):

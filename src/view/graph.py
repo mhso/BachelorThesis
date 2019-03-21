@@ -29,6 +29,7 @@ class Graph:
         inches_w = (w*0.4) / 80
         figure = plt.figure.Figure(figsize=(inches_w, inches_h) if same_window else (3, 3))
         self.ax = figure.add_subplot(111)
+        self.ax.grid(which="both", axis="both")
         if title:
             self.ax.set_title(title)
         if x_label:
@@ -37,7 +38,7 @@ class Graph:
             self.ax.set_ylabel(y_label)
 
         self.canvas = FigureCanvasTkAgg(figure, master=self.root if same_window else window)
-    
+
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(anchor=tk.CENTER, side=tk.TOP, fill=tk.BOTH, expand=True)
 

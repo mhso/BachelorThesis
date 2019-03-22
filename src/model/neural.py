@@ -23,21 +23,23 @@ class NeuralNetwork:
     """
     def __init__(self, game, model=None):
         self.game = game
-        if model:
-            self.model = model
-            if not self.model._is_compiled:
-                self.compile_model(self.model, game)
-            return
+
         # Clean up from previous TF graphs.
         reset_default_graph()
         clear_session()
 
         # Config options, to stop TF from eating all GPU memory.
         nn_config = ConfigProto()
+        #Config.gpu_options.visible_device_list = "0"
         nn_config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
         nn_config.gpu_options.allow_growth = True
-        #Config.gpu_options.visible_device_list = "0"
         set_session(Session(config=nn_config))
+
+        if model:
+            self.model = model
+            if not self.model._is_compiled:
+                self.compile_model(self.model, game)
+            return
 
         inp = self.input_layer(game)
 
@@ -78,7 +80,6 @@ class NeuralNetwork:
 
         self.model = Model(inputs=inp, outputs=outputs)
         self.compile_model(self.model, game)
-        self.model._make_predict_function()
 
     def get_initializer(self, min_val, max_val, inputs=10):
         if Config.WEIGHT_INITIALIZER == "uniform":
@@ -97,6 +98,7 @@ class NeuralNetwork:
                                     momentum=Config.MOMENTUM),
                       loss=loss_funcs,
                       metrics=["accuracy"])
+        self.model._make_predict_function()
 
     #softmax_cross_entropy_with_logits_v2
     def input_layer(self, game):
@@ -172,6 +174,7 @@ class NeuralNetwork:
         of inputted states, action/move probability distribution of inputted states).
         """
         result = self.model.train_on_batch(inputs, expected_out)
+        metrics = self.model.metrics_names
         return result
 
 class DummyNetwork(NeuralNetwork):

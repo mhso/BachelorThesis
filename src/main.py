@@ -35,7 +35,7 @@ def train_network(network_storage, replay_storage, iteration):
 
     FancyLogger.set_training_step((iteration+1))
     inputs, expected_out = replay_storage.sample_batch()
-    
+
     loss = network.train(inputs, expected_out)
     if not iteration % Config.SAVE_CHECKPOINT:
         network_storage.save_network(iteration, network)
@@ -44,10 +44,12 @@ def train_network(network_storage, replay_storage, iteration):
         if "-ds" in argv:
             network_storage.save_network_to_sql(network)
         if "-s" in argv or "-ds" in argv:
-            save_loss(loss[0], iteration)
+            save_loss(loss, iteration)
 
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
-    GraphHandler.plot_data("Training Loss", "Training Loss", iteration+1, loss[0])
+    GraphHandler.plot_data("Training Loss Combined", "Training Loss", iteration+1, loss[0])
+    GraphHandler.plot_data("Training Loss Policy", "Training Loss", iteration+1, loss[1])
+    GraphHandler.plot_data("Training Loss Value", "Training Loss", iteration+1, loss[2])
 
 def show_performance_data(ai, index, step, data):
     avg_data = sum(data) / len(data)
@@ -154,7 +156,7 @@ def initialize_network(game, network_storage):
     #if the -l option is selected, load a network from files
     if "-l" in argv:
         step = parse_load_step(argv)
-        model = network_storage.load_network_from_file(step, GAME_NAME) #TODO: replace None with the argument for NN version
+        model = network_storage.load_network_from_file(step, GAME_NAME)
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
@@ -162,12 +164,17 @@ def initialize_network(game, network_storage):
         training_step = network_storage.curr_step+1
         FancyLogger.set_training_step(training_step)
         # Load previously saved network loss + performance data.
-        losses = []
+        losses = [[], [], []]
         for i in range(training_step):
-            losses.append(load_loss(i))
+            loss_both, loss_pol, loss_val = load_loss(i)
+            losses[0].append(loss_both)
+            losses[1].append(loss_pol)
+            losses[2].append(loss_val)
         load_all_perform_data()
 
-        GraphHandler.plot_data("Training Loss", "Training Loss", None, losses)
+        GraphHandler.plot_data("Training Loss Combined", "Training Loss", None, losses[0])
+        GraphHandler.plot_data("Training Loss Policy", "Training Loss", None, losses[1])
+        GraphHandler.plot_data("Training Loss Value", "Training Loss", None, losses[2])
         FancyLogger.start_timing()
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step-1, network)
@@ -298,10 +305,12 @@ def prepare_training(game, p1, p2, **kwargs):
             monitor.start()
 
         if plot_data:
-            graph_1 = GraphHandler.new_graph("Training Loss", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Training Evaluation", graph_1, "Training Iteration", "Winrate", gui is None) # Start graph window in main thread.
+            graph_1 = GraphHandler.new_graph("Training Loss Policy", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_2 = GraphHandler.new_graph("Training Loss Value", graph_1, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_3 = GraphHandler.new_graph("Training Loss Combined", graph_2, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_4 = GraphHandler.new_graph("Training Evaluation", graph_3, "Training Iteration", "Winrate", gui is None) # Start graph window in main thread.
             if gui is None:
-                graph_2.run()
+                graph_4.run()
         if gui is not None:
             gui.run() # Start GUI on main thread.
     else:
@@ -351,7 +360,7 @@ def load_loss(step):
     """
     try:
         loss = pickle.load(open("../resources/" + GAME_NAME + "/misc/loss_{}.bin".format(step), "rb"))
-        return loss
+        return loss[0], loss[1], loss[2]
     except IOError:
         return 1
 

@@ -25,9 +25,9 @@ class Graph:
         if window:
             window.title("Graphs")
         w, h, x, y = self.get_window_geometry("top-r")
-        inches_h = (h * 0.285) / 80
-        inches_w = (w*0.4) / 80
-        figure = plt.figure.Figure(figsize=(inches_w, inches_h) if same_window else (3, 3))
+        inches_h = (h * 0.4) / 80
+        inches_w = (w * 0.4) / 80
+        figure = plt.figure.Figure(figsize=(inches_w, inches_h))
         self.ax = figure.add_subplot(111)
         self.ax.grid(which="both", axis="both")
         if title:
@@ -40,7 +40,6 @@ class Graph:
         self.canvas = FigureCanvasTkAgg(figure, master=self.root if same_window else window)
 
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(anchor=tk.CENTER, side=tk.TOP, fill=tk.BOTH, expand=True)
 
         if same_window:
             figure.set_size_inches(inches_w, inches_h, forward=True)
@@ -50,7 +49,7 @@ class Graph:
     def get_window_geometry(self, pos):
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
-        ww, wh = int(sw // 2), int(sh / 1.085)
+        ww, wh = int(sw // 1.7), int(sh / 1.085)
         x, y = 100, 100
         if pos:
             if pos == "top-r":
@@ -164,6 +163,10 @@ class GraphHandler:
     @staticmethod
     def new_graph(title, gui_parent=None, x_label=None, y_label=None, same_window=True):
         graph = Graph(title, gui_parent, same_window, x_label, y_label)
+        if len(GraphHandler.graphs) < 2:
+            graph.canvas.get_tk_widget().grid(row=len(GraphHandler.graphs), column=0)
+        else:
+            graph.canvas.get_tk_widget().grid(row=len(GraphHandler.graphs)-2, column=1)
         GraphHandler.graphs[title] = graph
         graph.root.after(200, lambda g: GraphHandler.update_graphs(g), graph)
         return graph

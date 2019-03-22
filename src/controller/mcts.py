@@ -145,7 +145,8 @@ class MCTS(GameAI):
             # based on visit counts.
             sum_visits = sum(visit_counts)
             prob_visits = [v/sum_visits for v in visit_counts]
-            exps = np.exp(prob_visits)
+            temp = 0.7
+            exps = np.exp(prob_visits) * temp
 
             return np.random.choice(child_nodes,
                                     p=exps/sum(exps))

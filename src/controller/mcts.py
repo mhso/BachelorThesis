@@ -141,11 +141,14 @@ class MCTS(GameAI):
         visit_counts = [n.visits for n in child_nodes]
 
         if len(self.game.history) < Config.NUM_SAMPLING_MOVES:
-            # Perform softmax random selection of available actions,
+            # Perform softmax sampling of available actions,
             # based on visit counts.
             sum_visits = sum(visit_counts)
+            prob_visits = [v/sum_visits for v in visit_counts]
+            exps = np.exp(prob_visits)
+
             return np.random.choice(child_nodes,
-                                    p=[v/sum_visits for v in visit_counts])
+                                    p=exps/sum(exps))
         # Return node with highest visit count.
         return max(child_nodes, key=lambda n: n.visits)
 

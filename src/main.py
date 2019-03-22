@@ -21,7 +21,7 @@ if __name__ == "__main__":
     from view.log import FancyLogger
     from view.visualize import Gui
     from view.graph import GraphHandler
-    from config import Config
+    from config import Config, set_game_specific_values
     import sys
     import os
 
@@ -430,6 +430,8 @@ if __name__ == "__main__":
     GAME = self_play.get_game(GAME_NAME, BOARD_SIZE, RAND_SEED, WILDCARD)
     P_WHITE = self_play.get_ai_algorithm(PLAYER_1, GAME, WILDCARD)
     P_BLACK = self_play.get_ai_algorithm(PLAYER_2, GAME, WILDCARD)
+
+    set_game_specific_values(cfg, GAME)
 
     print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
         type(GAME).__name__, BOARD_SIZE, BOARD_SIZE, type(P_WHITE).__name__, type(P_BLACK).__name__), flush=True)

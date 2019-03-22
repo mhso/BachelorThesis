@@ -21,7 +21,7 @@ if __name__ == "__main__":
     from view.log import FancyLogger
     from view.visualize import Gui
     from view.graph import GraphHandler
-    from config import Config
+    from config import Config, set_game_specific_values
     import sys
     import os
 
@@ -207,7 +207,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
     perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
-    alert_perform = {conn: False for conn in game_conns[-Config.EVAL_PROCESSES:]}
+    alert_perform = {conn: False for conn in game_conns[-perform_size:]}
     new_games = 0
 
     while True:
@@ -439,6 +439,8 @@ if __name__ == "__main__":
     GAME = self_play.get_game(GAME_NAME, BOARD_SIZE, RAND_SEED, WILDCARD)
     P_WHITE = self_play.get_ai_algorithm(PLAYER_1, GAME, WILDCARD)
     P_BLACK = self_play.get_ai_algorithm(PLAYER_2, GAME, WILDCARD)
+
+    set_game_specific_values(cfg, GAME)
 
     print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
         type(GAME).__name__, BOARD_SIZE, BOARD_SIZE, type(P_WHITE).__name__, type(P_BLACK).__name__), flush=True)

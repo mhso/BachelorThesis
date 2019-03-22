@@ -166,3 +166,28 @@ def try_parse(val):
             if lower in ("true", "false"):
                 return lower == "true"
             return val
+
+def set_game_specific_values(cfg, game):
+    game_name = type(game).__name__
+
+    noise = 0.3
+    sample_moves = 30
+    if game_name == "Latrunculi":
+        noise_options = [1.25, 0.7, 0.45, 0.33, 0.25]
+        sampling_options = [30, 120, 160, 240, 500]
+        noise = noise_options[8-game.size]
+        sample_moves = sampling_options[8-game.size]
+    elif game_name == "Othello":
+        noise_options = [2.5, 1.66, 1.11, 0.9, 0.7]
+        sampling_options = [2, 3, 4, 5, 7]
+        noise = noise_options[8-game.size]
+        sample_moves = sampling_options[8-game.size]
+    elif game_name == "Connect_Four":
+        sampling_options = [3, 2, 2, 2, 2]
+        noise = 10/game.size
+        sample_moves = sampling_options[8-game.size]
+    if cfg:
+        cfg.NOISE_BASE = noise
+        cfg.NUM_SAMPLING_MOVES = sample_moves
+    Config.NOISE_BASE = noise
+    Config.NUM_SAMPLING_MOVES = sample_moves

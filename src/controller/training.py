@@ -15,7 +15,7 @@ from view.log import FancyLogger
 from view.graph import GraphHandler
 from config import Config
 
-def train_network(network_storage, replay_storage, iteration, game_name):
+def train_network(network_storage, replay_storage, training_step, game_name):
     """
     Trains the network by sampling a batch of data
     from replay buffer.
@@ -23,23 +23,27 @@ def train_network(network_storage, replay_storage, iteration, game_name):
     network = network_storage.latest_network()
     FancyLogger.set_network_status("Training...")
 
-    FancyLogger.set_training_step((iteration+1))
+    FancyLogger.set_training_step((training_step+1))
     inputs, expected_out = replay_storage.sample_batch()
 
     loss = network.train(inputs, expected_out)
-    if not iteration % Config.SAVE_CHECKPOINT:
-        network_storage.save_network(iteration, network)
+    if not training_step % Config.SAVE_CHECKPOINT:
+        network_storage.save_network(training_step, network)
         if "-s" in argv:
-            network_storage.save_network_to_file(iteration, network, game_name)
+            network_storage.save_network_to_file(training_step, network, game_name)
         if "-ds" in argv:
             network_storage.save_network_to_sql(network)
         if "-s" in argv or "-ds" in argv:
-            save_loss(loss, iteration, game_name)
+            save_loss(loss, training_step, game_name)
 
     FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
-    GraphHandler.plot_data("Training Loss Combined", "Training Loss", iteration+1, loss[0])
-    GraphHandler.plot_data("Training Loss Policy", "Training Loss", iteration+1, loss[1])
-    GraphHandler.plot_data("Training Loss Value", "Training Loss", iteration+1, loss[2])
+    GraphHandler.plot_data("Training Loss Combined", "Training Loss", training_step+1, loss[0])
+    GraphHandler.plot_data("Training Loss Policy", "Training Loss", training_step+1, loss[1])
+    GraphHandler.plot_data("Training Loss Value", "Training Loss", training_step+1, loss[2])
+
+    if training_step == Config.TRAINING_STEPS:
+        return True
+    return False
 
 def show_performance_data(ai, index, step, data):
     avg_data = sum(data) / len(data)
@@ -72,7 +76,7 @@ def handle_performance_data(step, perform_data, perform_size, game_name):
             save_perform_data(perform_data[2], "mcts", step, game_name) # Save to file.
         perform_data[2] = []
 
-def game_over(conn, training_step, new_games, alert_perform, replay_storage, network_storage, game_name):
+def game_over(conn, new_games, alert_perform, perform_status):
     """
     Handle cases for when a game is completed on a process.
     These include:
@@ -81,27 +85,16 @@ def game_over(conn, training_step, new_games, alert_perform, replay_storage, net
         - Check if training is finished.
     @returns True or false, indicating whether training is complete.
     """
-    t_step = training_step
     if alert_perform.get(conn, False):
         # Tell the process to start running perform eval games.
         alert_perform[conn] = False
-        conn.send("eval_perform")
+        conn.send(perform_status)
     else:
         # Nothing of note happens, indicate that process should carry on as usual.
         conn.send(None)
     if new_games >= Config.GAMES_PER_TRAINING:
-        # Tell the network to train on a batch of games.
-        train_network(network_storage, replay_storage, training_step, game_name)
-        t_step = training_step + 1
-        new_games = 0
-        if t_step == Config.TRAINING_STEPS:
-            FancyLogger.set_network_status("Training finished!")
-            return True, new_games, t_step
-        if not t_step % Config.EVAL_CHECKPOINT:
-            # Indicate that the processes should run performance evaluation games.
-            for k in alert_perform:
-                alert_perform[k] = True
-    return False, new_games, t_step
+        return True
+    return False
 
 def evaluate_games(game, eval_queue, network_storage):
     """
@@ -199,6 +192,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     perform_data = [[], [], []]
     perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
     alert_perform = {conn: False for conn in game_conns[-perform_size:]}
+    wins_vs_rand = 0
     new_games = 0
     game_name = type(game).__name__
 
@@ -220,10 +214,21 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     if "-ds" in argv:
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
-                    finished, new_games, training_step = game_over(conn, training_step, new_games,
-                                                                   alert_perform, replay_storage,
-                                                                   network_storage, game_name)
+                    
+                    should_train = game_over(conn, new_games, alert_perform, wins_vs_rand)
+                    finished = False
+                    if should_train:
+                        # Tell network to train on a batch of data.
+                        finished = train_network(network_storage, replay_storage,
+                                                 training_step, game_name)
+                        training_step += 1
+                        new_games = 0
+                        if not finished and not training_step % Config.EVAL_CHECKPOINT:
+                            # Indicate that the processes should run performance evaluation games.
+                            for k in alert_perform:
+                                alert_perform[k] = True
                     if finished:
+                        FancyLogger.set_network_status("Training finished!")
                         for c in game_conns:
                             c.close()
                         return
@@ -232,6 +237,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                 elif status[:7] == "perform":
                     # Get performance data from games against alternate AIs.
                     if status == "perform_rand":
+                        games_played = (Config.EVAL_GAMES // Config.EVAL_PROCESSES)
+                        wins_vs_rand = wins_vs_rand + games_played if val == 1 else 0
                         perform_data[0].append(val)
                     elif status == "perform_mini":
                         perform_data[1].append(val)
@@ -253,7 +260,7 @@ def save_perform_data(data, ai, step, game_name):
     filename = "perform_eval_{}_{}.bin".format(ai, step)
 
     if not os.path.exists((location)):
-            os.makedirs((location))
+        os.makedirs((location))
 
     pickle.dump(data, open(location + filename, "wb"))
 
@@ -262,7 +269,7 @@ def save_loss(loss, step, game_name):
     filename = "loss_{}.bin".format(step)
 
     if not os.path.exists((location)):
-            os.makedirs((location))
+        os.makedirs((location))
 
     pickle.dump(loss, open(location + filename, "wb"))
 
@@ -291,7 +298,7 @@ def load_loss(step, game_name):
     If no such data exists, returns 1.
     """
     try:
-        loss = pickle.load(open("../resources/" + game_name + "/misc/loss_{}.bin".format(step), "rb"))
+        loss = pickle.load(open(f"../resources/" + game_name + "/misc/loss_{step}.bin", "rb"))
         return loss[0], loss[1], loss[2]
     except IOError:
         return 1

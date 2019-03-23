@@ -56,7 +56,7 @@ def initialize(game, p1, p2, **kwargs):
             else:
                 pipes = []
                 game_thread = Thread(target=self_play.play_loop,
-                                     args=(game, p1, p2, 0, gui, plot_data, None))
+                                     args=(game, p1, p2, 0, gui, plot_data, config, None))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file

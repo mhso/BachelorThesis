@@ -10,8 +10,6 @@ from multiprocessing import current_process
 from config import Config
 from view.log import log
 from view.graph import GraphHandler
-from util.timerUtil import TimerUtil
-from util.sqlUtil import SqlUtil
 
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
@@ -46,11 +44,14 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
         log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
         if connection:
             turn_took = '{0:.3f}'.format((time() - time_turn))
-            ai_name = type(player_white).__name__ if state.player else type(player_black).__name__
+            player = type(player_white).__name__ if state.player else type(player_black).__name__
+            other = type(player_black).__name__ if state.player else type(player_white).__name__
             thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
-                             f"{ai_name}'s turn ({state.str_player()}), " +
+                             f"{state.str_player()}'s turn, " +
                              f"pieces: w: {align_with_spacing(pieces[0],2)}, " +
                              f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s")
+            if player != "MCTS" or other != "MCTS":
+                thread_status += " - Eval vs. {}".format(player if other == "MCTS" else other)
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:
             turn_took = '{0:.3f}'.format((time() - time_turn))
@@ -114,7 +115,7 @@ def minimax_for_game(game):
         return "Minimax_Othello"
     return "unknown"
 
-def evaluate_model(game, player, config, connection):
+def evaluate_model(game, player, config, wins_vs_rand, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
@@ -127,22 +128,24 @@ def evaluate_model(game, player, config, connection):
                                       num_games, config, connection)
 
     connection.send(("perform_rand", eval_random))
-    """
-    connection.send(("log", ["Evaluating against Minimax", getpid()]))
+    if wins_vs_rand >= 24:
+        # If we have a good winrate against random,
+        # we additionally evaluate against better AIs.
+        connection.send(("log", ["Evaluating against Minimax", getpid()]))
 
-    eval_minimax = evaluate_against_ai(game, player,
-                                       get_ai_algorithm("Minimax", game, "."),
-                                       num_games, config, connection)
+        eval_minimax = evaluate_against_ai(game, player,
+                                           get_ai_algorithm("Minimax", game, "."),
+                                           num_games, config, connection)
 
-    connection.send(("perform_mini", eval_minimax))
-    connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
+        connection.send(("perform_mini", eval_minimax))
 
-    eval_mcts = evaluate_against_ai(game, player,
-                                    get_ai_algorithm("MCTS_Basic", game, "."),
-                                    num_games, config, connection)
+        connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
 
-    connection.send(("perform_mcts", eval_mcts))
-    """
+        eval_mcts = evaluate_against_ai(game, player,
+                                        get_ai_algorithm("MCTS_Basic", game, "."),
+                                        num_games, config, connection)
+
+        connection.send(("perform_mcts", eval_mcts))
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()
@@ -207,9 +210,11 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
 
         game.reset() # Reset game history.
         try:
-            if is_mcts(p1) and connection and connection.recv():
-                # Evaluate performance of trained model against other AIs.
-                evaluate_model(game, p1, cfg, connection)
+            if is_mcts(p1) and connection:
+                status = connection.recv()
+                if status is not None:
+                    # Evaluate performance of trained model against other AIs.
+                    evaluate_model(game, p1, cfg, status, connection)
             play_loop(game, p1, p2, iteration+1, gui, plot_data, cfg, connection)
         except EOFError:
             print("f{getpid()}: Monitor process has exited... This is probably fine.")

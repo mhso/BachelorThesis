@@ -1,4 +1,4 @@
-"""
+﻿"""
 ------------------------------------------------------------------------
 log: Log stuff, models (neural & mcts) and board to console and/or file.
 ------------------------------------------------------------------------
@@ -94,7 +94,7 @@ class FancyLogger:
             print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT} training step.")
             print("")
             print("-=-=- Self play status -=-=-")
-            print("Playing {} on an {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))
+            print("Playing {} on a {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))
             print("MCTS is using {} iterations.".format(Config.MCTS_ITERATIONS))
             print("----------")
             for thread, status in FancyLogger.thread_statuses.items():
@@ -103,5 +103,5 @@ class FancyLogger:
             print("----------")
             print("Number of processes: {}".format(Config.GAME_THREADS))
             print("Total games generated: {}".format(FancyLogger.total_games))
-            timeSpent= time() - FancyLogger.time_started
-            print("Time spent: {0:.3f} s [{1}]".format(timeSpent, datetime.timedelta(seconds=math.ceil(timeSpent))))
+            time_spent = time() - FancyLogger.time_started
+            print("Time spent: {0:.3f} s [{1}]".format(time_spent, datetime.timedelta(seconds=math.ceil(time_spent))))

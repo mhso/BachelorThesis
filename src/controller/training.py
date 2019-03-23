@@ -162,7 +162,7 @@ def initialize_network(game, network_storage):
         FancyLogger.start_timing()
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step-1, network)
-        FancyLogger.set_network_status("Training loss: {}".format(losses[-1]))
+        FancyLogger.set_network_status("Training loss: {}".format(losses[0][-1]))
     else:
         network = NeuralNetwork(game)
         network_storage.save_network(0, network)
@@ -298,7 +298,7 @@ def load_loss(step, game_name):
     If no such data exists, returns 1.
     """
     try:
-        loss = pickle.load(open(f"../resources/" + game_name + "/misc/loss_{step}.bin", "rb"))
+        loss = pickle.load(open(f"../resources/{game_name}/misc/loss_{step}.bin", "rb"))
         return loss[0], loss[1], loss[2]
     except IOError:
-        return 1
+        return 1, 1, 1

@@ -168,22 +168,37 @@ def try_parse(val):
             return val
 
 def set_game_specific_values(cfg, game):
+    """
+    Is called from main. Sets game specific
+    config values such as NOISE_BASE used
+    when applying Dirichlet noise.
+    """
     game_name = type(game).__name__
 
     noise = 0.3
     sample_moves = 30
     if game_name == "Latrunculi":
+        # Noise values for board sizes 4-8.
+        # Values are based on an average action space of
+        # 8, 14, 22, 30, and 40.
         noise_options = [1.25, 0.7, 0.45, 0.33, 0.25]
+        # Values for minimum moves for argmax of visits in MCTS.
+        # Values are based on the average game length of
+        # 300, 1200, 1600, 2400, and 5000.
         sampling_options = [30, 120, 160, 240, 500]
         noise = noise_options[8-game.size]
         sample_moves = sampling_options[8-game.size]
     elif game_name == "Othello":
+        # Avg actions: 4, 6, 9, 11, and 14.
         noise_options = [2.5, 1.66, 1.11, 0.9, 0.7]
+        # Avg game length: 10, 20, 30, 45, and 60.
         sampling_options = [2, 3, 4, 5, 7]
         noise = noise_options[8-game.size]
         sample_moves = sampling_options[8-game.size]
     elif game_name == "Connect_Four":
+        # Avg game length: 40, 22, 18, 15, and 10.
         sampling_options = [3, 2, 2, 2, 2]
+        # Avg actions are always equal to board size.
         noise = 10/game.size
         sample_moves = sampling_options[8-game.size]
     if cfg:

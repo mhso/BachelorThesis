@@ -136,6 +136,19 @@ class MCTS(GameAI):
 
         return value
 
+    def softmax_sample(self, child_nodes, visit_counts, tempature=0.7):
+        """
+        Perform softmax sampling on a set of nodes
+        based on a probability distribution of their
+        visit counts.
+        """
+        sum_visits = sum(visit_counts)
+        prob_visits = [v/sum_visits for v in visit_counts]
+        exps = np.exp(prob_visits) * tempature
+
+        return np.random.choice(child_nodes,
+                                p=exps/sum(exps))
+
     def choose_action(self, node):
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
@@ -143,13 +156,7 @@ class MCTS(GameAI):
         if len(self.game.history) < Config.NUM_SAMPLING_MOVES:
             # Perform softmax sampling of available actions,
             # based on visit counts.
-            sum_visits = sum(visit_counts)
-            prob_visits = [v/sum_visits for v in visit_counts]
-            temp = 0.7
-            exps = np.exp(prob_visits) * temp
-
-            return np.random.choice(child_nodes,
-                                    p=exps/sum(exps))
+            return self.softmax_sample(child_nodes, visit_counts)
         # Return node with highest visit count.
         return max(child_nodes, key=lambda n: n.visits)
 

@@ -103,6 +103,8 @@ class Config():
     # Options:0 'uniform', 'normal'.
     WEIGHT_INITIALIZER = "uniform"
 
+    REGULARIZER_CONST = 0.0001
+
     # |***********************************|
     # |           MCTS OPTIONS            |
     # |***********************************|

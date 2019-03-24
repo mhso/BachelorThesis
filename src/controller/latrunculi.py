@@ -450,11 +450,11 @@ class Latrunculi(Game):
                     index = 2 if x1>x2 else 3
 
                 logit = plane[index]
-            action_map[action] = logit
+            action_map[action] = np.exp(logit)
             policy_sum += logit
 
         for action, policy in action_map.items():
-            action_map[action] = np.exp(policy/policy_sum) if policy_sum else 0
+            action_map[action] = policy/policy_sum if policy_sum else 0
 
         return action_map
 

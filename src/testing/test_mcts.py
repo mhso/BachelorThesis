@@ -1,35 +1,35 @@
 from time import time
 from testing import assertion
-from controller.mcts_basic import MCTS_Basic, Node
+from controller.mcts import MCTS, Node
 from controller.latrunculi import Latrunculi
+from controller.othello import Othello
 
 def run_tests():
     # Test selection.
     # Test first selection.
-    game = Latrunculi(8)
-    mcts = MCTS_Basic(game)
+    game = Othello(8)
+    mcts = MCTS(game)
     state = game.start_state()
 
     actions = game.actions(state)
     root = Node(state, None, [])
-    probability = 1/len(actions)
-    child_nodes = [Node(game.result(state, action), action, probability, root) for action in actions]
+    probabilities = [0.2, 0.4, 0.1, 0.6]
+    child_nodes = {action: Node(game.result(state, action), action, prob, root) for action, prob in zip(actions, probabilities)}
     root.children = child_nodes
-    node = mcts.select(root, 0)
+    node = mcts.select(root)
 
-    assertion.assert_equal(child_nodes[0], node, "first selection")
+    assertion.assert_equal(child_nodes[actions[0]], node, "first selection")
 
     # =================================
-    # Test exploitation of promising node.
+    # Test prior selection.
     root.visits = 3
-    for child in child_nodes:
+    for child in child_nodes.values():
         child.value = 2
         child.visits = 3
 
-    child_nodes[4].value = 3
-    node = mcts.select(root, 0)
+    node = mcts.select(root)
 
-    assertion.assert_equal(child_nodes[4], node, "exploitation selection")
+    assertion.assert_equal(child_nodes[actions[3]], node, "prior selection")
 
     # =================================
     # Test exploration of less visited node.
@@ -40,7 +40,7 @@ def run_tests():
 
     child_nodes[3].value = 3
     child_nodes[3].visits = 2
-    node = mcts.select(root, 0)
+    node = mcts.select(root)
 
     assertion.assert_equal(child_nodes[3], node, "exploration selection")
 
@@ -70,7 +70,7 @@ def run_iteration_tests(log_type=None):
 
     time_b = time()
 
-    mcts = MCTS_Basic(game, 100)
+    mcts = MCTS(game, 100)
     mcts.execute_action(state)
 
     time_taken = time() - time_b

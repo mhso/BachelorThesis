@@ -9,18 +9,15 @@ from controller.game_ai import GameAI
 from view.log import log
 
 class Node():
-    action = None
-    state = None
-    visits = 0
-    value = 0
-    mean_value = 0
-    
     def __init__(self, state, action, prior_prob=0, parent=None):
         self.state = state
         self.action = action
         self.parent = parent
         self.prior_prob = prior_prob
         self.children = {}
+        self.visits = 0
+        self.value = 0
+        self.mean_value = 0
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
@@ -96,19 +93,19 @@ class MCTS(GameAI):
         node_probability = 1/len(actions) # Probability of selecting node.
         node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
 
-    def back_propagate(self, node, value):
+    def back_propagate(self, node, player, value):
         """
         After a full simulation, propagate result up the tree.
         Invert value at every node, to align 'perspective' to
         the current player of that node.
         """
         node.visits += 1
-        node.value += value
+        node.value += value if node.state.player == player else -value
         node.mean_value = node.value / node.visits
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, -value)
+        self.back_propagate(node.parent, player, value)
 
     def evaluate(self, node):
         """
@@ -129,6 +126,8 @@ class MCTS(GameAI):
 
         logit_map = self.game.map_logits(actions, policy_logits)
         policy_sum = sum(logit_map.values())
+        policy_str = [str(a) + ": " + str(p) for a, p in logit_map.items()]
+        #print(f"Player: {node.state.str_player()},\nPolicy: {policy_str}\nValue: {value}\n")
 
         # Expand node.
         for a, p in logit_map.items():
@@ -192,7 +191,7 @@ class MCTS(GameAI):
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
 
-            self.back_propagate(node, -value)
+            self.back_propagate(node, node.state.player, value)
 
             node = root_node
 

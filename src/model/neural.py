@@ -12,74 +12,85 @@ from keras.layers.core import Activation
 from keras.optimizers import SGD
 from keras.models import Model
 from keras.initializers import random_uniform, random_normal
+from keras.regularizers import l2
 from keras.utils.vis_utils import plot_model
+from keras.layers import LeakyReLU
 from model.residual import Residual
 from config import Config
+
+def set_nn_config():
+     # Clean up from previous TF graphs.
+    reset_default_graph()
+    clear_session()
+
+    # Config options, to stop TF from eating all GPU memory.
+    nn_config = ConfigProto()
+    #Config.gpu_options.visible_device_list = "0"
+    nn_config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
+    nn_config.gpu_options.allow_growth = True
+    set_session(Session(config=nn_config))
 
 class NeuralNetwork:
     """
     The dual policy network, which guides,
     and is trained by, the MCTS algorithm.
     """
+    input_stacks = 0
+
     def __init__(self, game, model=None):
         self.game = game
         if model:
+            self.input_layer(game)
             self.model = model
+            self.model._make_predict_function()
             if not self.model._is_compiled:
                 self.compile_model(self.model, game)
             return
 
-        # Clean up from previous TF graphs.
-        reset_default_graph()
-        clear_session()
-
-        # Config options, to stop TF from eating all GPU memory.
-        nn_config = ConfigProto()
-        #Config.gpu_options.visible_device_list = "0"
-        nn_config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
-        nn_config.gpu_options.allow_growth = True
-        set_session(Session(config=nn_config))
+        set_nn_config()
 
         inp = self.input_layer(game)
 
         # -=-=-=-=-=- Network 'body'. -=-=-=-=-=-
         # First convolutional layer.
-        out = Conv2D(Config.CONV_FILTERS, kernel_size=3, strides=1, padding="same",
-                     kernel_initializer=self.get_initializer(0, 1, Config.BATCH_SIZE),
-                     use_bias=Config.USE_BIAS)(inp)
-        out = BatchNormalization()(out)
-        out = Activation("relu")(out)
+        out = self.conv_layer(inp, Config.CONV_FILTERS, 3)
 
         # Residual layers, 19 in total.
         for _ in range(Config.RES_LAYERS):
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = Conv2D(2, kernel_size=1, strides=1, padding="same", use_bias=Config.USE_BIAS)(out)
-        policy = BatchNormalization()(policy)
-        policy = Activation("relu")(policy)
+        policy = self.conv_layer(out, 2, 1)
 
         outputs = self.policy_layers(game, policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
-        value = Conv2D(1, kernel_size=1, strides=1, use_bias=Config.USE_BIAS)(out)
-        value = BatchNormalization()(value)
-        value = Activation("relu")(value)
+        value = self.conv_layer(out, 1, 1)
 
         value = Flatten()(value)
-        value = Dense(Config.CONV_FILTERS, use_bias=Config.USE_BIAS)(value) # Linear layer.
-        value = Activation("relu")(value)
+        value = Dense(Config.CONV_FILTERS, use_bias=Config.USE_BIAS,
+                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(value) # Linear layer.
+        value = LeakyReLU()(value)
 
         # Final value layer. Outputs probability of win/loss/draw as value between -1 and 1.
-        value = Dense(1, kernel_initializer=self.get_initializer(-1, 1, Config.CONV_FILTERS),
+        value = Dense(1,
+                      kernel_regularizer=l2(Config.REGULARIZER_CONST),
                       use_bias=Config.USE_BIAS)(value)
-        value = Activation("tanh")(value)
+        value = Activation("tanh", name="value_head")(value)
 
         outputs.append(value)
 
         self.model = Model(inputs=inp, outputs=outputs)
         self.compile_model(self.model, game)
-        self.model._make_predict_function()
+        #self.model._make_predict_function()
+
+    def conv_layer(self, inp, filters, kernel_size):
+        out = Conv2D(filters, kernel_size=kernel_size, strides=1, padding="same",
+                     use_bias=Config.USE_BIAS,
+                     kernel_regularizer=l2(Config.REGULARIZER_CONST))(inp)
+        out = BatchNormalization()(out)
+        out = LeakyReLU()(out)
+        return out
 
     def get_initializer(self, min_val, max_val, inputs=10):
         if Config.WEIGHT_INITIALIZER == "uniform":
@@ -93,9 +104,9 @@ class NeuralNetwork:
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
         loss_funcs.append(losses.mean_squared_error)
-        model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
-                                    decay=Config.WEIGHT_DECAY,
+        model.compile(optimizer=SGD(decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
+                      loss_weights={"value_head": 0.5, "policy_head": 0.5},
                       loss=loss_funcs,
                       metrics=["accuracy"])
 
@@ -115,8 +126,7 @@ class NeuralNetwork:
         if game_type == "Latrunculi":
             # Split into...
             # ...move policies.
-            policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same", use_bias=Config.USE_BIAS)(prev)
-            policy_moves = BatchNormalization()(policy_moves)
+            policy_moves = self.conv_layer(prev, 4, 3)
 
             # ...delete captured pieces policy.
             policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same", use_bias=Config.USE_BIAS)(prev)
@@ -125,8 +135,8 @@ class NeuralNetwork:
             # Vector of probabilities for all squares.
             policy = Flatten()(prev)
             policy = Dense(game.size*game.size,
-                           kernel_initializer=self.get_initializer(0, 1, Config.CONV_FILTERS * Config.BATCH_SIZE),
-                           use_bias=Config.USE_BIAS)(policy)
+                           kernel_regularizer=l2(Config.REGULARIZER_CONST),
+                           use_bias=Config.USE_BIAS, name="policy_head")(policy)
             return [policy]
         return []
 
@@ -173,7 +183,6 @@ class NeuralNetwork:
         of inputted states, action/move probability distribution of inputted states).
         """
         result = self.model.train_on_batch(inputs, expected_out)
-        metrics = self.model.metrics_names
         return result
 
 class DummyNetwork(NeuralNetwork):

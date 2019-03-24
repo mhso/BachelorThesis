@@ -1,6 +1,6 @@
 """
 ----------------------------------------------
-training: Listen to updates from self-play actors, 
+training: Listen to updates from self-play actors,
 train network, predict from network, and plot performance.
 ----------------------------------------------
 """

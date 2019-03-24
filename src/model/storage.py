@@ -54,7 +54,9 @@ class ReplayStorage:
             for i in range(len(target_policies)):
                 expected_outputs[i].append(target_policies[i])
             expected_outputs[-1].append(target_value)
+
         expected_outputs = [np.array(arr) for arr in expected_outputs]
+        print(expected_outputs)
         return np.array(images), expected_outputs
 
     def full_buffer(self):

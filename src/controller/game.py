@@ -75,7 +75,7 @@ class Game(ABC):
         probability distribution for actions at that state.
         """
         terminal_state = self.history[-1]
-        return (self.utility(terminal_state, terminal_state.player),
+        return (self.utility(terminal_state, self.history[state_index].player),
                 self.visit_counts[state_index])
 
     def store_search_statistics(self, node):

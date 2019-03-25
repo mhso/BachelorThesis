@@ -76,7 +76,7 @@ class NeuralNetwork:
         value = Dense(1,
                       kernel_regularizer=l2(Config.REGULARIZER_CONST),
                       use_bias=Config.USE_BIAS)(value)
-        value = Activation("tanh", name="value_head")(value)
+        value = Activation("tanh")(value)
 
         outputs.append(value)
 
@@ -100,13 +100,18 @@ class NeuralNetwork:
 
     def compile_model(self, model, game):
         game_name = type(game).__name__
+        loss_weights = [0.5]
         loss_funcs = [losses.binary_crossentropy]
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
+            loss_weights[0] = 0.25
+            loss_weights.append(0.25)
+        loss_weights.append(0.5)
         loss_funcs.append(losses.mean_squared_error)
+        
         model.compile(optimizer=SGD(decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
-                      loss_weights={"value_head": 0.5, "policy_head": 0.5},
+                      loss_weights=loss_weights,
                       loss=loss_funcs,
                       metrics=["accuracy"])
 
@@ -129,14 +134,15 @@ class NeuralNetwork:
             policy_moves = self.conv_layer(prev, 4, 3)
 
             # ...delete captured pieces policy.
-            policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same", use_bias=Config.USE_BIAS)(prev)
+            policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
+                                   use_bias=Config.USE_BIAS)(prev)
             return [policy_moves, policy_delete]
         else:
             # Vector of probabilities for all squares.
             policy = Flatten()(prev)
             policy = Dense(game.size*game.size,
                            kernel_regularizer=l2(Config.REGULARIZER_CONST),
-                           use_bias=Config.USE_BIAS, name="policy_head")(policy)
+                           use_bias=Config.USE_BIAS)(policy)
             return [policy]
         return []
 

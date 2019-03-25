@@ -126,8 +126,6 @@ class MCTS(GameAI):
 
         logit_map = self.game.map_logits(actions, policy_logits)
         policy_sum = sum(logit_map.values())
-        policy_str = [str(a) + ": " + str(p) for a, p in logit_map.items()]
-        #print(f"Player: {node.state.str_player()},\nPolicy: {policy_str}\nValue: {value}\n")
 
         # Expand node.
         for a, p in logit_map.items():
@@ -191,7 +189,7 @@ class MCTS(GameAI):
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
 
-            self.back_propagate(node, node.state.player, value)
+            self.back_propagate(node, node.state.player, 1-value)
 
             node = root_node
 

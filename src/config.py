@@ -23,6 +23,9 @@ class Config():
     # |***********************************|
     # |    TRAINING/GAME LOOP OPTIONS     |
     # |***********************************|
+    # Save training progress to DB.
+    STATUS_DB = False
+
     # Max number of moves in Latrunculi before a draw
     # is assigned.
     LATRUNCULI_MAX_MOVES = 200

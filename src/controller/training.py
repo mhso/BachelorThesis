@@ -311,29 +311,36 @@ def load_loss(step, game_name):
 
 def update_training_step(step):
     FancyLogger.set_training_step(step)
-    SqlUtil.set_status(SqlUtil.connection, "step=%s", step)
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "step=%s", step)
 
 def update_loss(loss):
     FancyLogger.set_network_status("Training loss: {}".format(loss))
-    SqlUtil.set_status(SqlUtil.connection, "loss=%s", float(loss))
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "loss=%s", float(loss))
 
 def update_num_games(games=None):
-    if games:
+    if games is not None:
         FancyLogger.total_games = games
-        SqlUtil.set_status(SqlUtil.connection, "games=%s", games)
+        if Config.STATUS_DB:
+            SqlUtil.set_status(SqlUtil.connection, "games=%s", games)
     else:
         FancyLogger.increment_total_games()
-        SqlUtil.set_status(SqlUtil.connection, "games=games+1")
+        if Config.STATUS_DB:
+            SqlUtil.set_status(SqlUtil.connection, "games=games+1")
 
 def update_perf_values(values):
     FancyLogger.set_performance_values(values)
-    SqlUtil.set_status(SqlUtil.connection, "eval_rand=%s", float(values[0]))
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "eval_rand=%s", float(values[0]))
 
 def update_active(active):
-    SqlUtil.set_status(SqlUtil.connection, "active=%s", active)
-    if not active:
-        SqlUtil.connection.close()
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "active=%s", active)
+        if not active:
+            SqlUtil.connection.close()
 
 def add_training_status():
-    SqlUtil.connection = SqlUtil.connect()
-    SqlUtil.add_status(SqlUtil.connection)
+    if Config.STATUS_DB:
+        SqlUtil.connection = SqlUtil.connect()
+        SqlUtil.add_status(SqlUtil.connection)

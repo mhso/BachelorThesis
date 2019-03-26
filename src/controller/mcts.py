@@ -192,7 +192,7 @@ class MCTS(GameAI):
             log("==================================")
             log(f"ROOT PLAYER: {root_node.state.str_player()}")
             log(f"SELECT PLAYER: {node.state.str_player()}. VALUE: {value}")
-            self.back_propagate(node, value)
+            self.back_propagate(node, 1-value)
 
             node = root_node
 

@@ -108,7 +108,7 @@ class NeuralNetwork:
             loss_weights.append(0.25)
         loss_weights.append(0.5)
         loss_funcs.append(losses.mean_squared_error)
-        
+
         model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                     decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
@@ -168,16 +168,9 @@ class NeuralNetwork:
         game_type = type(self.game).__name__
 
         policy_moves = output[0][:]
-        policy_moves -= np.min(policy_moves)
-        peaks = np.ptp(policy_moves)
-        policy_moves /= peaks
 
         if game_type == "Latrunculi":
             policy_delete = output[1][:]
-            policy_delete -= np.min(policy_delete)
-            peaks = np.ptp(policy_delete)
-            if peaks:
-                policy_delete /= peaks
 
             return ((policy_moves, policy_delete), output[2][:])
         return policy_moves, output[1][:]

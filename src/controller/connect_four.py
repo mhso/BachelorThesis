@@ -37,13 +37,13 @@ class Connect_Four(Game):
         for x in range(0, self.size):
             for y in range(self.size-1, -1, -1):
                 if board[y][x] == 0:
-                    action_list.append(Action((y, x), None))
+                    action_list.append(Action(None, (y, x)))
                     break
         return action_list
 
     def result(self, state, action):
         super.__doc__
-        y, x = action.source
+        y, x = action.dest
         copy_arr = np.copy(state.board)
         copy_arr[y][x] = 1 if state.player else -1
         return State(copy_arr, not state.player)
@@ -89,7 +89,7 @@ class Connect_Four(Game):
         action_map = dict()
         policy_sum = 0
         for action in actions:
-            y, x = action.source
+            y, x = action.dest
             logit = np.exp(logits[y * self.size + x % self.size])
             action_map[action] = logit
             policy_sum += logit
@@ -100,6 +100,6 @@ class Connect_Four(Game):
     def map_actions(self, target_policies):
         policies = np.zeros((self.size * self.size))
         for a, p in target_policies.items():
-            y, x = a.source
+            y, x = a.dest
             policies[y * self.size + x % self.size] = p
         return (policies,)

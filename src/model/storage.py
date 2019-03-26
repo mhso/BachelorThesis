@@ -55,8 +55,6 @@ class ReplayStorage:
                 expected_outputs[i].append(target_policies[i])
             expected_outputs[-1].append(target_value)
 
-        
-
         expected_outputs = [np.array(arr) for arr in expected_outputs]
         return np.array(images), expected_outputs
 

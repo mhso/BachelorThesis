@@ -98,7 +98,7 @@ class Othello(Game):
             action_list.extend(action_at(board, y, x, self.size, player_num, other_num))
         if action_list == []:
             return [None]
-        return [Action((y, x), None) for (y, x) in action_list]
+        return [Action(None, (y, x)) for (y, x) in action_list]
 
     def result(self, state, action):
         super.__doc__
@@ -107,7 +107,7 @@ class Othello(Game):
         player_num = 1 if state.player else -1
         copy_arr = np.copy(state.board)
         new_state = State(copy_arr, not state.player, [p for p in state.pieces])
-        y, x = action.source
+        y, x = action.dest
         result(copy_arr, y, x, self.size, player_num)
         new_state.pieces.append((y, x))
         return new_state
@@ -150,7 +150,7 @@ class Othello(Game):
         if actions == [None]:
             return action_map
         for action in actions:
-            y, x = action.source
+            y, x = action.dest
             logit = np.exp(logits[y * self.size + x % self.size])
             action_map[action] = logit
             policy_sum += logit
@@ -163,6 +163,6 @@ class Othello(Game):
         for a, p in target_policies.items():
             if a is None:
                 continue
-            y, x = a.source
+            y, x = a.dest
             policies[y * self.size + x % self.size] = p
         return (policies,)

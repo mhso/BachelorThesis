@@ -109,7 +109,8 @@ class NeuralNetwork:
         loss_weights.append(0.5)
         loss_funcs.append(losses.mean_squared_error)
         
-        model.compile(optimizer=SGD(decay=Config.WEIGHT_DECAY,
+        model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
+                                    decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
                       loss_weights=loss_weights,
                       loss=loss_funcs,

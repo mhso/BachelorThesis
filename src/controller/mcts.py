@@ -93,19 +93,19 @@ class MCTS(GameAI):
         node_probability = 1/len(actions) # Probability of selecting node.
         node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
 
-    def back_propagate(self, node, player, value):
+    def back_propagate(self, node, value):
         """
         After a full simulation, propagate result up the tree.
         Invert value at every node, to align 'perspective' to
         the current player of that node.
         """
         node.visits += 1
-        node.value += value if node.state.player == player else -value
+        node.value += value
         node.mean_value = node.value / node.visits
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, player, value)
+        self.back_propagate(node.parent, -value)
 
     def evaluate(self, node):
         """
@@ -189,7 +189,10 @@ class MCTS(GameAI):
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
 
-            self.back_propagate(node, node.state.player, 1-value)
+            log("==================================")
+            log(f"ROOT PLAYER: {root_node.state.str_player()}")
+            log(f"SELECT PLAYER: {node.state.str_player()}. VALUE: {value}")
+            self.back_propagate(node, value)
 
             node = root_node
 

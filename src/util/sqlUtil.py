@@ -1,7 +1,10 @@
 import mysql.connector
+import datetime
 from config import Config
 
 class SqlUtil(object):
+    training_id = 0
+    connection = None
 
     @staticmethod
     def connect():
@@ -114,3 +117,24 @@ class SqlUtil(object):
         bin_data = result[5]
 
         return bin_data
+
+    @staticmethod
+    def add_status(connection):
+        mycursor = connection.cursor()
+        date = datetime.datetime.now()
+        formatted_date = date.strftime('%Y-%m-%d %H:%M:%S')
+        sql = "INSERT INTO training_status (active, step, loss, games, eval_rand, time_started) VALUES (%s, %s, %s, %s, %s, %s)"
+        row = (1, 0, 0, 0, 0, formatted_date)
+
+        mycursor.execute(sql, row)
+        SqlUtil.training_id = mycursor.lastrowid
+        connection.commit()
+
+    @staticmethod
+    def set_status(connection, var_string, data=None):
+        mycursor = connection.cursor()
+        sql = f"UPDATE training_status SET {var_string} WHERE id=%s"
+        row = (SqlUtil.training_id,) if data is None else (data, SqlUtil.training_id)
+
+        mycursor.execute(sql, row)
+        connection.commit()

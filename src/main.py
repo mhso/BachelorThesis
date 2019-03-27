@@ -61,7 +61,7 @@ def initialize(game, p1, p2, **kwargs):
 
         #if "-l" option is selected load old replays from file
         #else if "-ld" option is selected load old replays sql database
-        if "-l" in argv:
+        if "-l" in argv or "-lg" in argv:
             step = parse_load_step(argv)
             replay_storage.load_replay(step, GAME_NAME)
         elif "-dl" in argv:
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     BOARD_SIZE = Config.DEFAULT_BOARD_SIZE
     RAND_SEED = "random"
 
-    OPTION_LIST = ["-s", "-l", "-v", "-t", "-c", "-g", "-p", "-ds", "-dl"]
+    OPTION_LIST = ["-s", "-l", "-lg", "-ln", "-v", "-t", "-c", "-g", "-p", "-ds", "-dl"]
     options = []
     args = []
     # Seperate arguments from options.

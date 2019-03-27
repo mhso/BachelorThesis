@@ -182,8 +182,9 @@ class NeuralNetwork:
         @param expected_out - Numpy array of tuples with (terminal values
         of inputted states, action/move probability distribution of inputted states).
         """
-        result = self.model.train_on_batch(inputs, expected_out)
-        return result
+        result = self.model.fit(inputs, expected_out, batch_size=Config.BATCH_SIZE,
+                                epochs=Config.EPOCHS_PER_BATCH, validation_split=0.1)
+        return result.history
 
 class DummyNetwork(NeuralNetwork):
     """

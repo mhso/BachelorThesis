@@ -26,7 +26,10 @@ def train_network(network_storage, replay_storage, training_step, game_name):
 
     inputs, expected_out = replay_storage.sample_batch()
 
-    loss = network.train(inputs, expected_out)
+    loss_hist = network.train(inputs, expected_out)
+    loss = [loss_hist["loss"][-1],
+            loss_hist["dense_1_loss"][-1],
+            loss_hist["activation_1_loss"][-1]]
     if not training_step % Config.SAVE_CHECKPOINT:
         network_storage.save_network(training_step, network)
         if "-s" in argv:
@@ -125,13 +128,13 @@ def load_all_perform_data(game_name):
             show_performance_data("Versus MCTS", 2, t_step, data)
 
 def parse_load_step(args):
-    index = args.index("-l")
     step = None
-    if index < len(args)-1:
-        try:
+    try:
+        index = args.index("-l")
+        if index < len(args)-1:
             step = int(args[index+1])
-        except ValueError:
-            pass
+    except ValueError:
+        pass
     return step
 
 def initialize_network(game, network_storage):
@@ -139,13 +142,13 @@ def initialize_network(game, network_storage):
     # Construct the initial network.
     #if the -l option is selected, load a network from files
     GAME_NAME = type(game).__name__
-    if "-l" in argv:
+    if "-l" in argv or "-ln" in argv:
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
-    if "-l" in argv or "-dl" in argv:
+    if "-l" in argv or "-dl" in argv or "-ln" in argv:
         training_step = network_storage.curr_step+1
         update_training_step(training_step)
         # Load previously saved network loss + performance data.
@@ -256,7 +259,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         print("Exiting...")
         update_active(0)
         return
-    except EOFError as e:
+    except (EOFError, BrokenPipeError) as e:
         print(e)
         update_active(0)
         return

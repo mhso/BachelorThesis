@@ -154,7 +154,6 @@ class MCTS(GameAI):
     def choose_action(self, node):
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
-        print(self.cfg.NUM_SAMPLING_MOVES)
         if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
             # Perform softmax sampling of available actions,
             # based on visit counts.

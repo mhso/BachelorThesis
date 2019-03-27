@@ -122,6 +122,8 @@ def evaluate_model(game, player, config, wins_vs_rand, connection):
     """
     connection.send(("log", ["Evaluating against Random", getpid()]))
     num_games = config.EVAL_GAMES // config.EVAL_PROCESSES
+    num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
+    player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
 
     eval_random = evaluate_against_ai(game, player,
                                       get_ai_algorithm("Random", game, "."),
@@ -146,6 +148,7 @@ def evaluate_model(game, player, config, wins_vs_rand, connection):
                                         num_games, config, connection)
 
         connection.send(("perform_mcts", eval_mcts))
+    player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()

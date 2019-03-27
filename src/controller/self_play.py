@@ -186,8 +186,10 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
         # Wait for initial construction/compilation of network.
         if is_mcts(p1):
             p1.connection = connection
+            p1.set_config(cfg)
         if is_mcts(p2):
             p2.connection = connection
+            p2.set_config(cfg)
         connection.recv()
     if iteration == cfg.GAME_ITERATIONS:
         print("{} is done with training!".format(getpid()))

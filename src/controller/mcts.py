@@ -39,6 +39,7 @@ class MCTS(GameAI):
     """
     state_map = dict()
     connection = None
+    cfg = None
 
     ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
@@ -48,9 +49,13 @@ class MCTS(GameAI):
         if playouts:
             self.ITERATIONS = playouts
         else:
-            self.ITERATIONS = Config.MCTS_ITERATIONS
+            self.ITERATIONS = self.cfg.MCTS_ITERATIONS
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
+
+    def set_config(self, config):
+        self.cfg = config
+        self.ITERATIONS = config.MCTS_ITERATIONS
 
     def ucb_score(self, node, parent_visits):
         # PUCT formula.
@@ -133,7 +138,7 @@ class MCTS(GameAI):
 
         return value
 
-    def softmax_sample(self, child_nodes, visit_counts, tempature=0.7):
+    def softmax_sample(self, child_nodes, visit_counts, tempature=0.5):
         """
         Perform softmax sampling on a set of nodes
         based on a probability distribution of their
@@ -149,8 +154,8 @@ class MCTS(GameAI):
     def choose_action(self, node):
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
-
-        if len(self.game.history) < Config.NUM_SAMPLING_MOVES:
+        print(self.cfg.NUM_SAMPLING_MOVES)
+        if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
             # Perform softmax sampling of available actions,
             # based on visit counts.
             return self.softmax_sample(child_nodes, visit_counts)

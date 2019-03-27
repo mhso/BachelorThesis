@@ -231,7 +231,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                                                  training_step, game_name)
                         training_step += 1
                         new_games = 0
-                        if not finished and not training_step % Config.EVAL_CHECKPOINT:
+                        if (not finished and Config.EVAL_CHECKPOINT and
+                                training_step % Config.EVAL_CHECKPOINT == 0):
                             # Indicate that the processes should run performance evaluation games.
                             for k in alert_perform:
                                 alert_perform[k] = True

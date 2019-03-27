@@ -33,10 +33,6 @@ class Config():
     # Number of training steps for the neural network.
     TRAINING_STEPS = 100
 
-    # Number of initial random games to produce before
-    # beginning network training.
-    RANDOM_INITIAL_GAMES = 0
-
     # Number of games to play in self-play (for each thread),
     # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
     # If set to -1, self-play will run indefinitely.
@@ -72,7 +68,8 @@ class Config():
     # How often to save neural network to shared storage.
     SAVE_CHECKPOINT = 1
 
-    # How often to save neural network to the shared storage for macro Networks, where we save significant generations of the network.
+    # How often to save neural network to the shared storage for macro Networks,
+    # where we save significant generations of the network.
     SAVE_CHECKPOINT_MACRO = 100
 
     # Amount of games stored, at one time, in replay storage.

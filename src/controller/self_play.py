@@ -44,15 +44,14 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
         log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
         if connection:
             turn_took = '{0:.3f}'.format((time() - time_turn))
-            p_1, p_2 = (player_white, player_black) if state.player else (player_black, player_white)
+            p_1, p_2 = (player_black, player_white) if state.player else (player_white, player_black)
             p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
             thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
                              f"{state.str_player()}'s turn, " +
                              f"w: {align_with_spacing(pieces[0],2)}, " +
                              f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
-            if p_2_name == "MCTS":
-                q_pct = int((p_2.chosen_node.mean_value*50)+50)
-                thread_status += f" Win estimate: {q_pct}%"
+            if p_1_name == "MCTS":
+                thread_status += f" Q-value: {p_1.chosen_node.mean_value}."
             if p_1_name != "MCTS" or p_2_name != "MCTS":
                 thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
             connection.send(("log", [thread_status, getpid()]))
@@ -203,22 +202,14 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
     try:
         play_game(game, p1, p2, cfg, gui, connection)
 
-        if connection:
+        if connection and not gui:
             # Save game to be used for neural network training.
             connection.send(("game_over", game.clone()))
             game.__init__(game.size, "random")
-            if (type(p1).__name__ == "Random" and cfg.RANDOM_INITIAL_GAMES
-                    and iteration >= cfg.RANDOM_INITIAL_GAMES // cfg.GAME_THREADS):
-                # We are done with random game generation,
-                # moving on to actual self-play.
-                p1 = get_ai_algorithm("MCTS", game, ".")
-                p1.connection = connection
-                p2 = get_ai_algorithm("MCTS", game, ".")
-                p2.connection = connection
 
         game.reset() # Reset game history.
         try:
-            if is_mcts(p1) and connection:
+            if is_mcts(p1) and connection and not gui:
                 status = connection.recv()
                 if status is not None:
                     # Evaluate performance of trained model against other AIs.

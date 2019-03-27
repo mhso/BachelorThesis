@@ -54,9 +54,8 @@ def initialize(game, p1, p2, **kwargs):
                                       name=f"Actor {(i+1):02d}",
                                       args=(game, p1, p2, 0, gui, plot_data, config, child))
             else:
-                pipes = []
                 game_thread = Thread(target=self_play.play_loop,
-                                     args=(game, p1, p2, 0, gui, plot_data, config, None))
+                                     args=(game, p1, p2, 0, gui, plot_data, config, child))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file
@@ -67,31 +66,33 @@ def initialize(game, p1, p2, **kwargs):
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 
-        if pipes != []:
+        if pipes != [] and self_play.is_mcts(p1) or self_play.is_mcts(p2):
             # Start monitor thread.
             monitor = Thread(target=monitor_games, args=(pipes, game, network_storage, replay_storage))
             monitor.start()
 
-        if plot_data:
-            graph_1 = GraphHandler.new_graph("Policy Loss", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Value Loss", graph_1, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
-            graph_3 = GraphHandler.new_graph("Average Loss", graph_2, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
-            graph_4 = GraphHandler.new_graph("Training Evaluation", graph_3, "Training Iteration", "Winrate", gui is None) # Start graph window in main thread.
-            if gui is None:
-                graph_4.run()
         if gui is not None:
             gui.run() # Start GUI on main thread.
+        elif plot_data:
+            graph_1 = GraphHandler.new_graph("Policy Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_2 = GraphHandler.new_graph("Value Loss", graph_1, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_3 = GraphHandler.new_graph("Average Loss", graph_2, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_4 = GraphHandler.new_graph("Training Evaluation", graph_3, "Training Iteration", "Winrate") # Start graph window in main thread.
+            if gui is None:
+                graph_4.run()
     else:
         self_play.play_loop(game, p1, p2, 0)
 
 def invalid_args(args, options, wildcard):
+    """
     if ("MCTS" in args or len(args) - len(options) == 1
              or args[0] == wildcard or args[1] == wildcard):
         if "-g" in options:
             return "Can't use GUI during MCTS/NN training"
         if "Human" in args:
             return "Can't play as human during MCTS/NN training"
-    elif "-l" in args or "-s" in args:
+    """
+    if "-l" in args or "-s" in args:
         return "Can't save/load models or games when not training"
     return None
 
@@ -182,17 +183,16 @@ if __name__ == "__main__":
         NETWORK_STORAGE = NetworkStorage()
         REPLAY_STORAGE = ReplayStorage()
 
+        if gui:
+            # If GUI is active, only run with 1 process
+            # and no performance evaluation.
+            Config.GAME_THREADS = 1
+            Config.EVAL_CHECKPOINT = 0
         """
         if "-dl" in options:
             REPLAY_STORAGE.load_game_from_sql()
             sys.exit("test")
         """
-
-        if Config.RANDOM_INITIAL_GAMES:
-            if self_play.is_mcts(P_WHITE):
-                P_WHITE = self_play.get_ai_algorithm("Random", GAME, ".")
-            if self_play.is_mcts(P_BLACK):
-                P_BLACK = self_play.get_ai_algorithm("Random", GAME, ".")
     elif Config.GAME_THREADS > 1:
         # If we are not playing with MCTS,
         # disable multi-threading.

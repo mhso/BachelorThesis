@@ -21,9 +21,6 @@ class Graph:
         self.stop_event = Event()
         self.parent = gui_parent
         self.root = tk.Tk() if gui_parent is None else gui_parent.root
-        window = None if same_window else tk.Toplevel(self.root)
-        if window:
-            window.title("Graphs")
         w, h, x, y = self.get_window_geometry("top-r")
         inches_h = (h * 0.4) / 80
         inches_w = (w * 0.4) / 80
@@ -37,13 +34,12 @@ class Graph:
         if y_label:
             self.ax.set_ylabel(y_label)
 
-        self.canvas = FigureCanvasTkAgg(figure, master=self.root if same_window else window)
+        self.canvas = FigureCanvasTkAgg(figure, master=self.root)
 
         self.canvas.draw()
 
-        if same_window:
-            figure.set_size_inches(inches_w, inches_h, forward=True)
-            self.root.geometry("{}x{}+{}+{}".format(w, h, x, y))
+        figure.set_size_inches(inches_w, inches_h, forward=True)
+        self.root.geometry("{}x{}+{}+{}".format(w, h, x, y))
         self.root.protocol("WM_DELETE_WINDOW", lambda: self.close())
 
     def get_window_geometry(self, pos):

@@ -49,7 +49,7 @@ class MCTS(GameAI):
         if playouts:
             self.ITERATIONS = playouts
         else:
-            self.ITERATIONS = self.cfg.MCTS_ITERATIONS
+            self.ITERATIONS = Config.MCTS_ITERATIONS
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 

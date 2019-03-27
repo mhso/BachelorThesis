@@ -184,7 +184,7 @@ class NeuralNetwork:
         of inputted states, action/move probability distribution of inputted states).
         """
         result = self.model.fit(inputs, expected_out, batch_size=Config.BATCH_SIZE,
-                                epochs=Config.EPOCHS_PER_BATCH, validation_split=0.1)
+                                epochs=Config.EPOCHS_PER_BATCH, validation_split=Config.VALIDATION_SPLIT)
         return result.history
 
 class DummyNetwork(NeuralNetwork):

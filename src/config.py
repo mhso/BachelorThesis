@@ -84,6 +84,9 @@ class Config():
     # Number of times to train on one batch.
     EPOCHS_PER_BATCH = 3
 
+    # Fraction of training data to validate on.
+    VALIDATION_SPLIT = 0.2
+
     # Learning rate(s).
     LEARNING_RATE = 1e-1
 

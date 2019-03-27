@@ -60,7 +60,7 @@ class NeuralNetwork:
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = self.conv_layer(out, 2, 1)
+        policy = self.conv_layer(out, Config.CONV_FILTERS, 1)
 
         outputs = self.policy_layers(game, policy)
 
@@ -76,7 +76,7 @@ class NeuralNetwork:
         value = Dense(1,
                       kernel_regularizer=l2(Config.REGULARIZER_CONST),
                       use_bias=Config.USE_BIAS)(value)
-        value = Activation("tanh")(value)
+        value = Activation("tanh", name="value_head")(value)
 
         outputs.append(value)
 
@@ -101,7 +101,7 @@ class NeuralNetwork:
     def compile_model(self, model, game):
         game_name = type(game).__name__
         loss_weights = [0.5]
-        loss_funcs = [losses.binary_crossentropy]
+        loss_funcs = [losses.categorical_crossentropy]
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
             loss_weights[0] = 0.25
@@ -132,18 +132,19 @@ class NeuralNetwork:
         if game_type == "Latrunculi":
             # Split into...
             # ...move policies.
-            policy_moves = self.conv_layer(prev, 4, 3)
+            policy_moves = Conv2D(4, kernel_size=3, strides=1, padding="same",
+                                  use_bias=Config.USE_BIAS, name="policy_head")
 
             # ...delete captured pieces policy.
             policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
-                                   use_bias=Config.USE_BIAS)(prev)
+                                   use_bias=Config.USE_BIAS, name="policy_head2")(prev)
             return [policy_moves, policy_delete]
         else:
             # Vector of probabilities for all squares.
             policy = Flatten()(prev)
             policy = Dense(game.size*game.size,
                            kernel_regularizer=l2(Config.REGULARIZER_CONST),
-                           use_bias=Config.USE_BIAS)(policy)
+                           use_bias=Config.USE_BIAS, name="policy_head")(policy)
             return [policy]
         return []
 

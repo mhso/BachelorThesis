@@ -123,12 +123,22 @@ class SqlUtil(object):
         mycursor = connection.cursor()
         date = datetime.datetime.now()
         formatted_date = date.strftime('%Y-%m-%d %H:%M:%S')
-        sql = "INSERT INTO training_status (active, step, loss, games, eval_rand, time_started) VALUES (%s, %s, %s, %s, %s, %s)"
-        row = (1, 0, 0, 0, 0, formatted_date)
+        sql = ("INSERT INTO training_status (active, step, total_steps, loss, games, eval_rand, eval_mini, eval_mcts, time_started)"+
+               "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)")
+        row = (1, 0, 0, 0, 0, 0, 0, 0, formatted_date)
 
         mycursor.execute(sql, row)
         SqlUtil.training_id = mycursor.lastrowid
         connection.commit()
+
+    @staticmethod
+    def get_latest_status(connection):
+        mycursor = connection.cursor()
+        sql = "SELECT id FROM training_status ORDER BY id DESC LIMIT 1"
+        mycursor.execute(sql)
+
+        result = mycursor.fetchone()[0]
+        SqlUtil.training_id = result
 
     @staticmethod
     def set_status(connection, var_string, data=None):

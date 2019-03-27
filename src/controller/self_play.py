@@ -44,14 +44,17 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
         log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
         if connection:
             turn_took = '{0:.3f}'.format((time() - time_turn))
-            player = type(player_white).__name__ if state.player else type(player_black).__name__
-            other = type(player_black).__name__ if state.player else type(player_white).__name__
+            p_1, p_2 = (player_white, player_black) if state.player else (player_black, player_white)
+            p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
             thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
                              f"{state.str_player()}'s turn, " +
-                             f"pieces: w: {align_with_spacing(pieces[0],2)}, " +
-                             f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s")
-            if player != "MCTS" or other != "MCTS":
-                thread_status += " - Eval vs. {}".format(player if other == "MCTS" else other)
+                             f"w: {align_with_spacing(pieces[0],2)}, " +
+                             f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
+            if p_2_name == "MCTS":
+                q_pct = int((p_2.chosen_node.mean_value*50)+50)
+                thread_status += f" Win estimate: {q_pct}%"
+            if p_1_name != "MCTS" or p_2_name != "MCTS":
+                thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
             connection.send(("log", [thread_status, getpid()]))
         elif "-t" in argv:
             turn_took = '{0:.3f}'.format((time() - time_turn))

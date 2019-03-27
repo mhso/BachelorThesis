@@ -28,8 +28,8 @@ def train_network(network_storage, replay_storage, training_step, game_name):
 
     loss_hist = network.train(inputs, expected_out)
     loss = [loss_hist["loss"][-1],
-            loss_hist["dense_1_loss"][-1],
-            loss_hist["activation_1_loss"][-1]]
+            loss_hist["policy_head_loss"][-1],
+            loss_hist["value_head_loss"][-1]]
     if not training_step % Config.SAVE_CHECKPOINT:
         network_storage.save_network(training_step, network)
         if "-s" in argv:
@@ -40,9 +40,9 @@ def train_network(network_storage, replay_storage, training_step, game_name):
             save_loss(loss, training_step, game_name)
 
     update_loss(loss[0])
-    GraphHandler.plot_data("Training Loss Combined", "Training Loss", training_step+1, loss[0])
-    GraphHandler.plot_data("Training Loss Policy", "Training Loss", training_step+1, loss[1])
-    GraphHandler.plot_data("Training Loss Value", "Training Loss", training_step+1, loss[2])
+    GraphHandler.plot_data("Average Loss", "Training Loss", training_step+1, loss[0])
+    GraphHandler.plot_data("Policy Loss", "Training Loss", training_step+1, loss[1])
+    GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1, loss[2])
 
     if training_step == Config.TRAINING_STEPS:
         return True
@@ -161,9 +161,9 @@ def initialize_network(game, network_storage):
         update_loss(losses[0][-1])
         load_all_perform_data(GAME_NAME)
 
-        GraphHandler.plot_data("Training Loss Combined", "Training Loss", None, losses[0])
-        GraphHandler.plot_data("Training Loss Policy", "Training Loss", None, losses[1])
-        GraphHandler.plot_data("Training Loss Value", "Training Loss", None, losses[2])
+        GraphHandler.plot_data("Average Loss", "Training Loss", None, losses[0])
+        GraphHandler.plot_data("Policy Loss", "Training Loss", None, losses[1])
+        GraphHandler.plot_data("Value Loss", "Training Loss", None, losses[2])
         FancyLogger.start_timing()
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step-1, network)
@@ -183,7 +183,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         - the result of performance evaluation games.
         - logging events.
     """
-    add_training_status()
+    start_training_status()
+    set_total_steps(Config.TRAINING_STEPS)
     FancyLogger.start_timing()
     training_step = initialize_network(game, network_storage)
     update_num_games(len(replay_storage.buffer))
@@ -294,7 +295,7 @@ def load_perform_data(ai, step, game_name):
             if files == []:
                 return None
             for f in files:
-                step = f.split("_")[-1][:-4]
+                step = f.strip().split("_")[-1][:-4]
                 data.append((int(step), pickle.load(open(f, "rb"))))
             data.sort(key=lambda sd: sd[0])
         return data
@@ -335,7 +336,18 @@ def update_num_games(games=None):
 def update_perf_values(values):
     FancyLogger.set_performance_values(values)
     if Config.STATUS_DB:
-        SqlUtil.set_status(SqlUtil.connection, "eval_rand=%s", float(values[0]))
+        insert_str = None
+        val = None
+        if values[0] is not None:
+            insert_str = "eval_rand=%s"
+            val = values[0]
+        elif values[1] is not None:
+            insert_str = "eval_mini=%s"
+            val = values[1]
+        elif values[2] is not None:
+            insert_str = "eval_mcts=%s"
+            val = values[2]
+        SqlUtil.set_status(SqlUtil.connection, insert_str, float(val))
 
 def update_active(active):
     if Config.STATUS_DB:
@@ -343,7 +355,20 @@ def update_active(active):
         if not active:
             SqlUtil.connection.close()
 
-def add_training_status():
+def set_total_steps(steps):
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "total_steps=%s", steps)
+
+def start_training_status():
+    if Config.STATUS_DB:
+        if "-l" in argv:
+            load_training_status()
+        else:
+            SqlUtil.connection = SqlUtil.connect()
+            SqlUtil.add_status(SqlUtil.connection)
+
+def load_training_status():
     if Config.STATUS_DB:
         SqlUtil.connection = SqlUtil.connect()
-        SqlUtil.add_status(SqlUtil.connection)
+        SqlUtil.get_latest_status(SqlUtil.connection)
+        update_active(1)

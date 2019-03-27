@@ -73,9 +73,9 @@ def initialize(game, p1, p2, **kwargs):
             monitor.start()
 
         if plot_data:
-            graph_1 = GraphHandler.new_graph("Training Loss Policy", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Training Loss Value", graph_1, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
-            graph_3 = GraphHandler.new_graph("Training Loss Combined", graph_2, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_1 = GraphHandler.new_graph("Policy Loss", gui, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_2 = GraphHandler.new_graph("Value Loss", graph_1, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
+            graph_3 = GraphHandler.new_graph("Average Loss", graph_2, "Training Iteration", "Loss", gui is None) # Start graph window in main thread.
             graph_4 = GraphHandler.new_graph("Training Evaluation", graph_3, "Training Iteration", "Winrate", gui is None) # Start graph window in main thread.
             if gui is None:
                 graph_4.run()

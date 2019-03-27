@@ -40,6 +40,7 @@ class MCTS(GameAI):
     state_map = dict()
     connection = None
     cfg = None
+    chosen_node = None
 
     ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
@@ -177,6 +178,8 @@ class MCTS(GameAI):
         log("MCTS is calculating the best move...")
 
         root_node = Node(state, None)
+        self.chosen_node = root_node
+
         self.evaluate(root_node)
         if root_node.children == {}: # State has no actions (children).
             self.game.store_search_statistics(None)
@@ -193,9 +196,6 @@ class MCTS(GameAI):
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
 
-            log("==================================")
-            log(f"ROOT PLAYER: {root_node.state.str_player()}")
-            log(f"SELECT PLAYER: {node.state.str_player()}. VALUE: {value}")
             self.back_propagate(node, 1-value)
 
             node = root_node
@@ -204,6 +204,7 @@ class MCTS(GameAI):
             log(node.pretty_desc())
 
         best_node = self.choose_action(root_node)
+        self.chosen_node = best_node
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
         self.game.store_search_statistics(root_node)

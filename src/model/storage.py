@@ -175,11 +175,6 @@ class NetworkStorage:
             self.networks = new_dict
         self.curr_step = step
 
-    def replace_dummy_network(self):
-        old_network = self.latest_network()
-        #network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
-        self.save_network(self.curr_step, network)
-
     def save_network_to_file(self, step, network, game_type):
         """
         serializes the Neural Network, and saves it to a file,

@@ -17,6 +17,22 @@ class SqlUtil(object):
         return conn
 
     @staticmethod
+    def execute_query(query, connection, data=None, result=False):
+        try:
+            cursor = connection.cursor()
+            cursor.execute(query, data)
+            query_result = None
+            if result == "id":
+                query_result = cursor.lastrowid
+            elif result == "select":
+                query_result = cursor.fetchone()
+            connection.commit()
+            return query_result
+        except IOError:
+            print("ERROR IN MYSQL THINGS")
+            return None
+
+    @staticmethod
     def test_iteration_timing_insert_row(connection, row):
         mycursor = connection.cursor()
         sql = "INSERT INTO test_iteration_timing (time_begin, hostname, test_description, iterations, game_play_time) VALUES (%s, %s, %s, %s, %s)"
@@ -105,7 +121,6 @@ class SqlUtil(object):
     def game_data_select_filename(connection, file_name):
         mycursor = connection.cursor()
         sql = "SELECT * FROM game_data WHERE filename='{}'".format(file_name)
-        print(sql)
         mycursor.execute(sql)
         result = mycursor.fetchone()
 
@@ -120,31 +135,23 @@ class SqlUtil(object):
 
     @staticmethod
     def add_status(connection):
-        mycursor = connection.cursor()
         date = datetime.datetime.now()
         formatted_date = date.strftime('%Y-%m-%d %H:%M:%S')
         sql = ("INSERT INTO training_status (active, step, total_steps, loss, games, eval_rand, eval_mini, eval_mcts, time_started)"+
                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)")
         row = (1, 0, 0, 0, 0, 0, 0, 0, formatted_date)
 
-        mycursor.execute(sql, row)
-        SqlUtil.training_id = mycursor.lastrowid
-        connection.commit()
+        SqlUtil.training_id = SqlUtil.execute_query(sql, connection, row, "id")
 
     @staticmethod
     def get_latest_status(connection):
-        mycursor = connection.cursor()
         sql = "SELECT id FROM training_status ORDER BY id DESC LIMIT 1"
-        mycursor.execute(sql)
 
-        result = mycursor.fetchone()[0]
-        SqlUtil.training_id = result
+        SqlUtil.training_id = SqlUtil.execute_query(sql, connection, "select")[0]
 
     @staticmethod
     def set_status(connection, var_string, data=None):
-        mycursor = connection.cursor()
         sql = f"UPDATE training_status SET {var_string} WHERE id=%s"
         row = (SqlUtil.training_id,) if data is None else (data, SqlUtil.training_id)
 
-        mycursor.execute(sql, row)
-        connection.commit()
+        SqlUtil.execute_query(sql, connection, row)

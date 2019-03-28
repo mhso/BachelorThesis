@@ -127,6 +127,20 @@ def load_all_perform_data(game_name):
         for t_step, data in perf_mcts:
             show_performance_data("Versus MCTS", 2, t_step, data)
 
+def eval_checkpoint(training_step):
+    """
+    This method defines how often to evaluate
+    performance against alternate AI's.
+    """
+    checkpoints = Config.EVAL_CHECKPOINT
+    eval_games = None
+    for k in checkpoints:
+        if training_step >= k:
+            eval_games = checkpoints[k]
+        else:
+            break
+    return eval_games
+
 def parse_load_step(args):
     step = None
     try:
@@ -231,8 +245,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                                                  training_step, game_name)
                         training_step += 1
                         new_games = 0
-                        if (not finished and Config.EVAL_CHECKPOINT and
-                                training_step % Config.EVAL_CHECKPOINT == 0):
+                        if (not finished and Config.EVAL_CHECKPOINT != {} and
+                                training_step % eval_checkpoint(training_step) == 0):
                             # Indicate that the processes should run performance evaluation games.
                             for k in alert_perform:
                                 alert_perform[k] = True

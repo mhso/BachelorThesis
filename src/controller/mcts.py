@@ -195,7 +195,7 @@ class MCTS(GameAI):
             # Get network evalution, in place of rollouts.
             value = self.evaluate(node)
 
-            self.back_propagate(node, 1-value)
+            self.back_propagate(node, -value)
 
             node = root_node
 

@@ -84,17 +84,7 @@ def initialize(game, p1, p2, **kwargs):
         self_play.play_loop(game, p1, p2, 0)
 
 def invalid_args(args, options, wildcard):
-    """
-    if ("MCTS" in args or len(args) - len(options) == 1
-             or args[0] == wildcard or args[1] == wildcard):
-        if "-g" in options:
-            return "Can't use GUI during MCTS/NN training"
-        if "Human" in args:
-            return "Can't play as human during MCTS/NN training"
-    """
-    if "-l" in args or "-s" in args:
-        return "Can't save/load models or games when not training"
-    return None
+    return False
 
 if __name__ == "__main__":
     # Load Config from file if present.
@@ -187,7 +177,7 @@ if __name__ == "__main__":
             # If GUI is active, only run with 1 process
             # and no performance evaluation.
             Config.GAME_THREADS = 1
-            Config.EVAL_CHECKPOINT = 0
+            Config.EVAL_CHECKPOINT = {}
         """
         if "-dl" in options:
             REPLAY_STORAGE.load_game_from_sql()

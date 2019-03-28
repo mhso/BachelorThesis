@@ -31,7 +31,7 @@ class Config():
     LATRUNCULI_MAX_MOVES = 200
 
     # Number of training steps for the neural network.
-    TRAINING_STEPS = 100
+    TRAINING_STEPS = 500
 
     # Number of games to play in self-play (for each thread),
     # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
@@ -49,7 +49,7 @@ class Config():
 
     # How often to evaluate model against base AI's
     # during training, default is every 5th training iteration.
-    EVAL_CHECKPOINT = 15
+    EVAL_CHECKPOINT = {0: 10, 50: 15, 100: 25}
 
     # How many games to play against each base AI
     # while evaluating model performance.

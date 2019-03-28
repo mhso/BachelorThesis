@@ -222,7 +222,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
 
-                    should_train = game_over(conn, new_games, alert_perform, wins_vs_rand)
+                    should_train = game_over(conn, new_games, alert_perform, wins_vs_rand >= 24)
                     finished = False
                     if should_train:
                         # Tell network to train on a batch of data.
@@ -247,7 +247,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     # Get performance data from games against alternate AIs.
                     if status == "perform_rand":
                         games_played = (Config.EVAL_GAMES // Config.EVAL_PROCESSES)
-                        wins_vs_rand = wins_vs_rand + games_played if val == 1 else 0
+                        if wins_vs_rand < 24:
+                            wins_vs_rand = wins_vs_rand + games_played if val == 1 else 0
                         perform_data[0].append(val)
                     elif status == "perform_mini":
                         perform_data[1].append(val)

@@ -25,7 +25,6 @@ def set_nn_config():
 
     # Config options, to stop TF from eating all GPU memory.
     nn_config = ConfigProto()
-    #Config.gpu_options.visible_device_list = "0"
     nn_config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
     nn_config.gpu_options.allow_growth = True
     set_session(Session(config=nn_config))

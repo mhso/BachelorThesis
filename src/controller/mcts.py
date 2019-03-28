@@ -90,14 +90,6 @@ class MCTS(GameAI):
 
         return self.select(best_node)
 
-    def expand(self, node, actions):
-        """
-        Expand the tree with new nodes, corresponding to
-        taking any possible actions from the current node.
-        """
-        node_probability = 1/len(actions) # Probability of selecting node.
-        node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
-
     def back_propagate(self, node, value):
         """
         After a full simulation, propagate result up the tree.
@@ -116,7 +108,7 @@ class MCTS(GameAI):
         """
         Use the neural network to obtain a prediction of the
         outcome of the game, as well as probability distribution
-        of available actions, from the current state.
+        of available actions from the current state.
         """
         state = node.state
         actions = self.game.actions(state)
@@ -152,6 +144,14 @@ class MCTS(GameAI):
                                 p=exps/sum(exps))
 
     def choose_action(self, node):
+        """
+        When MCTS is finished with it's iterations,
+        a final action to take is chosen. If the current
+        length of the give is less than a certain threshold,
+        softmax sampling is used to select an action, based on
+        a probabiliy of visits to that node during MCTS simulation.
+        Otherwise, the node with most visits is chosen.
+        """
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
         if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
@@ -163,8 +163,8 @@ class MCTS(GameAI):
 
     def add_exploration_noise(self, node):
         """
-        Add noise to prior value of node, to encourage
-        exploration of new nodes.
+        Add Dirichlet noise to prior value of node,
+        to encourage exploration of new nodes.
         """
         actions = node.children.keys()
         noise = np.random.gamma(Config.NOISE_BASE, 1, len(actions))
@@ -186,13 +186,13 @@ class MCTS(GameAI):
 
         self.add_exploration_noise(root_node)
 
-        # Perform iterations of selection, simulation, expansion, and back propogation.
+        # Perform iterations of selection, evaluation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
-        # number of mean value (value/visits) are chosen as the best action.
+        # number of visits are chosen as the best action.
         for _ in range(self.ITERATIONS):
             node = self.select(root_node)
 
-            # Perform rollout, simulate till end of game and return outcome.
+            # Get network evalution, in place of rollouts.
             value = self.evaluate(node)
 
             self.back_propagate(node, 1-value)
@@ -208,9 +208,3 @@ class MCTS(GameAI):
         log("MCTS action: {}, q-value: {}".format(best_node.action, best_node.q_value))
         self.game.store_search_statistics(root_node)
         return best_node.state
-
-    def __str__(self):
-        states_explored = ""
-        for v in self.state_map:
-            states_explored += str(self.state_map[v]) + ",\n"
-        return "[MCTS:\n{}]".format(states_explored)

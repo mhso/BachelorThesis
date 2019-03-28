@@ -51,7 +51,7 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
                              f"w: {align_with_spacing(pieces[0],2)}, " +
                              f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
             if p_1_name == "MCTS":
-                thread_status += f" Q-value: {p_1.chosen_node.mean_value}."
+                thread_status += f" Q-value: {p_1.chosen_node.q_value}."
             if p_1_name != "MCTS" or p_2_name != "MCTS":
                 thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
             connection.send(("log", [thread_status, getpid()]))

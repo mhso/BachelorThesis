@@ -55,36 +55,43 @@ class NeuralNetwork:
         # First convolutional layer.
         out = self.conv_layer(inp, Config.CONV_FILTERS, 3)
 
-        # Residual layers, 19 in total.
+        # Residual layers.
         for _ in range(Config.RES_LAYERS):
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
         policy = self.conv_layer(out, Config.CONV_FILTERS, 1)
 
+        # Game specific policy outputs.
         outputs = self.policy_layers(game, policy)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
         value = self.conv_layer(out, 1, 1)
 
+        # Flatten into linear layer.
         value = Flatten()(value)
         value = Dense(Config.CONV_FILTERS, use_bias=Config.USE_BIAS,
-                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(value) # Linear layer.
+                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(value)
         value = LeakyReLU()(value)
 
-        # Final value layer. Outputs probability of win/loss/draw as value between -1 and 1.
+        # Final value layer. Linar layer with one output neuron.
         value = Dense(1,
                       kernel_regularizer=l2(Config.REGULARIZER_CONST),
                       use_bias=Config.USE_BIAS)(value)
+        # Tanh activation, outputs probability of win/loss/draw as scalar value between -1 and 1.
         value = Activation("tanh", name="value_head")(value)
 
         outputs.append(value)
 
         self.model = Model(inputs=inp, outputs=outputs)
         self.compile_model(self.model, game)
-        #self.model._make_predict_function()
+        self.model._make_predict_function()
 
     def conv_layer(self, inp, filters, kernel_size):
+        """
+        Construct a 2D convolutional, rectified, batchnormalized
+        layer with the given input, filters and kernel size.
+        """
         out = Conv2D(filters, kernel_size=kernel_size, strides=1, padding="same",
                      use_bias=Config.USE_BIAS,
                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(inp)
@@ -99,24 +106,30 @@ class NeuralNetwork:
             return random_normal(min_val, 1/np.sqrt(inputs)) # Stddev = 1/sqrt(inputs)
 
     def compile_model(self, model, game):
+        """
+        Create relevant loss functions, weights and
+        optimizer, and compile the neural network model.
+        """
         game_name = type(game).__name__
+        # Policy head weights & loss function.
         loss_weights = [0.5]
-        loss_funcs = [losses.categorical_crossentropy]
+        loss_funcs = [losses.binary_crossentropy]
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
             loss_weights[0] = 0.25
             loss_weights.append(0.25)
+        # Value head weights & loss function.
         loss_weights.append(0.5)
         loss_funcs.append(losses.mean_squared_error)
 
+        # Stochastic Gradient Descent optimizer with momentum.
         model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                     decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
                       loss_weights=loss_weights,
                       loss=loss_funcs,
-                      metrics=["accuracy"])
+                      metrics=["binary_crossentropy", "accuracy"])
 
-    #softmax_cross_entropy_with_logits_v2
     def input_layer(self, game):
         game_type = type(game).__name__
         input_depth = 1

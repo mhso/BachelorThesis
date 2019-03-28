@@ -17,11 +17,11 @@ class Node():
         self.children = {}
         self.visits = 0
         self.value = 0
-        self.mean_value = 0
+        self.q_value = 0
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
-            self.action, self.visits, self.value, "%.3f" % self.mean_value, "%.3f" % self.prior_prob)
+            self.action, self.visits, self.value, "%.3f" % self.q_value, "%.3f" % self.prior_prob)
 
     def __str__(self):
         return self.pretty_desc()
@@ -42,9 +42,6 @@ class MCTS(GameAI):
     cfg = None
     chosen_node = None
 
-    ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
-    MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
-
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if playouts:
@@ -52,19 +49,29 @@ class MCTS(GameAI):
         else:
             self.ITERATIONS = Config.MCTS_ITERATIONS
 
-        log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
+        log("MCTS is using {} playouts.".format(self.ITERATIONS))
 
     def set_config(self, config):
         self.cfg = config
         self.ITERATIONS = config.MCTS_ITERATIONS
 
     def ucb_score(self, node, parent_visits):
-        # PUCT formula.
-        #e_base = Config.EXPLORE_BASE
-        #e_init = Config.EXPLORE_INIT
+        """
+        PUCT (Polynomial Upper Confident for Trees) formula.
+        Q(s, a) + C(s) * P(s, a) * sqrt(N(s)) / (1 + N(s, a)),
+        where
+            - Q(s, a) = q-value of node. Visits/value.
+            - N(s) = parent visit count of current node.
+            - C(s) = exploration rate. Scales according to simulations in AZ.
+                     We keep it as a constant for simplicity.
+            - P(s, a) = prior probability of selecting action in node.
+            - N(s, a) = visits of current node.
+        """
+        #e_base = self.cfg.EXPLORE_BASE
+        #e_init = self.cfg.EXPLORE_INIT
         #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
         explore_val = 1.27 # TODO: Maybe change later.
-        val = node.mean_value + (
+        val = node.q_value + (
             explore_val * node.prior_prob
             * parent_visits / (1+node.visits)
         )
@@ -73,16 +80,8 @@ class MCTS(GameAI):
     def select(self, node):
         """
         Select a node to run simulations from.
-        Nodes are chosen according to how they maximize
-        the PUCT formula = Q(i) + c * P(i) * sqrt (N(i)) / (1 + n(i)
-        Where
-            - Q(i) = mean value of node (node value / node visits).
-            - c = exploration rate.
-            - P(i) = prior probability of selecting action in node (i).
-            - N(i) = visits of parent node.
-            - n(i) = times current node was visited.
-        This assures a balance between exploring new nodes,
-        and exploiting nodes that are known to result in good outcomes.
+        Nodes are recursively chosen according to how they maximize
+        the PUCT formula, until a leaf is reached.
         """
         if node.children == {}: # Node is a leaf.
             return node
@@ -107,7 +106,7 @@ class MCTS(GameAI):
         """
         node.visits += 1
         node.value += value
-        node.mean_value = node.value / node.visits
+        node.q_value = node.value / node.visits
 
         if node.parent is None:
             return
@@ -206,7 +205,7 @@ class MCTS(GameAI):
         best_node = self.choose_action(root_node)
         self.chosen_node = best_node
 
-        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
+        log("MCTS action: {}, q-value: {}".format(best_node.action, best_node.q_value))
         self.game.store_search_statistics(root_node)
         return best_node.state
 

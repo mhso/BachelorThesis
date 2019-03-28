@@ -91,7 +91,7 @@ class FancyLogger:
             print("Against Random: {}".format(FancyLogger.performance_values[0]))
             print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
             print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
-            print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT}th training step.")
+            print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT} training step.")
             print("")
             print("-=-=- Self play status -=-=-")
             print("Playing {} on a {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))

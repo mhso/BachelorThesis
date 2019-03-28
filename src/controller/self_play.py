@@ -117,22 +117,24 @@ def minimax_for_game(game):
         return "Minimax_Othello"
     return "unknown"
 
-def evaluate_model(game, player, config, wins_vs_rand, connection):
+def evaluate_model(game, player, config, eval_others, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
     """
-    connection.send(("log", ["Evaluating against Random", getpid()]))
     num_games = config.EVAL_GAMES // config.EVAL_PROCESSES
     num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
 
-    eval_random = evaluate_against_ai(game, player,
-                                      get_ai_algorithm("Random", game, "."),
-                                      num_games, config, connection)
+    if not eval_others:
+        connection.send(("log", ["Evaluating against Random", getpid()]))
 
-    connection.send(("perform_rand", eval_random))
-    if wins_vs_rand >= 24:
+        eval_random = evaluate_against_ai(game, player,
+                                          get_ai_algorithm("Random", game, "."),
+                                          num_games, config, connection)
+
+        connection.send(("perform_rand", eval_random))
+    else:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
         connection.send(("log", ["Evaluating against Minimax", getpid()]))

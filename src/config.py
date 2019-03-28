@@ -23,16 +23,15 @@ class Config():
     # |***********************************|
     # |    TRAINING/GAME LOOP OPTIONS     |
     # |***********************************|
+    # Save training progress to DB.
+    STATUS_DB = False
+
     # Max number of moves in Latrunculi before a draw
     # is assigned.
     LATRUNCULI_MAX_MOVES = 200
 
     # Number of training steps for the neural network.
     TRAINING_STEPS = 100
-
-    # Number of initial random games to produce before
-    # beginning network training.
-    RANDOM_INITIAL_GAMES = 0
 
     # Number of games to play in self-play (for each thread),
     # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
@@ -69,7 +68,8 @@ class Config():
     # How often to save neural network to shared storage.
     SAVE_CHECKPOINT = 1
 
-    # How often to save neural network to the shared storage for macro Networks, where we save significant generations of the network.
+    # How often to save neural network to the shared storage for macro Networks,
+    # where we save significant generations of the network.
     SAVE_CHECKPOINT_MACRO = 100
 
     # Amount of games stored, at one time, in replay storage.
@@ -81,8 +81,14 @@ class Config():
     # Batch size for neural network input.
     BATCH_SIZE = 256
 
+    # Number of times to train on one batch.
+    EPOCHS_PER_BATCH = 3
+
+    # Fraction of training data to validate on.
+    VALIDATION_SPLIT = 0.2
+
     # Learning rate(s).
-    LEARNING_RATE = 2e-1
+    LEARNING_RATE = 1e-1
 
     # Momentum for SGD optimization.
     MOMENTUM = 0.9
@@ -102,6 +108,8 @@ class Config():
     # Kernel initializer.
     # Options:0 'uniform', 'normal'.
     WEIGHT_INITIALIZER = "uniform"
+
+    REGULARIZER_CONST = 0.0001
 
     # |***********************************|
     # |           MCTS OPTIONS            |

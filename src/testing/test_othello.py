@@ -76,4 +76,3 @@ def run_tests():
     assertion.assert_equal([None], actions_b, "Actions - no moves black")
     assertion.assert_equal([None], game.actions(result), "Actions - no moves white")
     assertion.assert_true(result.player, "Actions - pass switches turn")
-    assertion.assert_true(game_over, "Terminal test3 - white wins")

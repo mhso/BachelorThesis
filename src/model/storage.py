@@ -6,7 +6,7 @@ import numpy as np
 from config import Config
 import pickle
 import os
-from model.neural import NeuralNetwork, DummyNetwork
+from model.neural import NeuralNetwork, DummyNetwork, set_nn_config
 from glob import glob
 from keras.models import save_model, load_model, Model
 from util.sqlUtil import SqlUtil
@@ -54,6 +54,7 @@ class ReplayStorage:
             for i in range(len(target_policies)):
                 expected_outputs[i].append(target_policies[i])
             expected_outputs[-1].append(target_value)
+
         expected_outputs = [np.array(arr) for arr in expected_outputs]
         return np.array(images), expected_outputs
 
@@ -174,11 +175,6 @@ class NetworkStorage:
             self.networks = new_dict
         self.curr_step = step
 
-    def replace_dummy_network(self):
-        old_network = self.latest_network()
-        #network = NeuralNetwork(old_network.board_size, old_network.action_space, False)
-        self.save_network(self.curr_step, network)
-
     def save_network_to_file(self, step, network, game_type):
         """
         serializes the Neural Network, and saves it to a file,
@@ -229,6 +225,7 @@ class NetworkStorage:
         file_name = "network"
 
         try:
+            set_nn_config()
             if step is None:
                 #gets the most recently created network's path, and finds its step count, based on file name, and sets current_step to this int. 
                 list_of_files = glob(folder_name + game_type + data_type + "*")
@@ -251,7 +248,6 @@ class NetworkStorage:
                 print("network file was not found: " + folder_name + game_type + data_type + file_name + str(version_nn))
             else:
                 print("file was found, but something else went wrong")
-
 
     def load_macro_network_from_file(self, step, game_type):
         """

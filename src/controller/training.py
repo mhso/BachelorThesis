@@ -1,6 +1,6 @@
 """
 ----------------------------------------------
-training: Listen to updates from self-play actors, 
+training: Listen to updates from self-play actors,
 train network, predict from network, and plot performance.
 ----------------------------------------------
 """
@@ -14,6 +14,7 @@ from model.neural import NeuralNetwork
 from view.log import FancyLogger
 from view.graph import GraphHandler
 from config import Config
+from util.sqlUtil import SqlUtil
 
 def train_network(network_storage, replay_storage, training_step, game_name):
     """
@@ -23,10 +24,12 @@ def train_network(network_storage, replay_storage, training_step, game_name):
     network = network_storage.latest_network()
     FancyLogger.set_network_status("Training...")
 
-    FancyLogger.set_training_step((training_step+1))
     inputs, expected_out = replay_storage.sample_batch()
 
-    loss = network.train(inputs, expected_out)
+    loss_hist = network.train(inputs, expected_out)
+    loss = [loss_hist["loss"][-1],
+            loss_hist["policy_head_loss"][-1],
+            loss_hist["value_head_loss"][-1]]
     if not training_step % Config.SAVE_CHECKPOINT:
         network_storage.save_network(training_step, network)
         if "-s" in argv:
@@ -36,10 +39,10 @@ def train_network(network_storage, replay_storage, training_step, game_name):
         if "-s" in argv or "-ds" in argv:
             save_loss(loss, training_step, game_name)
 
-    FancyLogger.set_network_status("Training loss: {}".format(loss[0]))
-    GraphHandler.plot_data("Training Loss Combined", "Training Loss", training_step+1, loss[0])
-    GraphHandler.plot_data("Training Loss Policy", "Training Loss", training_step+1, loss[1])
-    GraphHandler.plot_data("Training Loss Value", "Training Loss", training_step+1, loss[2])
+    update_loss(loss[0])
+    GraphHandler.plot_data("Average Loss", "Training Loss", training_step+1, loss[0])
+    GraphHandler.plot_data("Policy Loss", "Training Loss", training_step+1, loss[1])
+    GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1, loss[2])
 
     if training_step == Config.TRAINING_STEPS:
         return True
@@ -49,7 +52,8 @@ def show_performance_data(ai, index, step, data):
     avg_data = sum(data) / len(data)
     values = [None, None, None]
     values[index] = avg_data
-    FancyLogger.set_performance_values(values)
+    update_perf_values(values)
+
     GraphHandler.plot_data("Training Evaluation", ai, step, avg_data)
 
 def handle_performance_data(step, perform_data, perform_size, game_name):
@@ -124,13 +128,13 @@ def load_all_perform_data(game_name):
             show_performance_data("Versus MCTS", 2, t_step, data)
 
 def parse_load_step(args):
-    index = args.index("-l")
     step = None
-    if index < len(args)-1:
-        try:
+    try:
+        index = args.index("-l")
+        if index < len(args)-1:
             step = int(args[index+1])
-        except ValueError:
-            pass
+    except ValueError:
+        pass
     return step
 
 def initialize_network(game, network_storage):
@@ -138,15 +142,15 @@ def initialize_network(game, network_storage):
     # Construct the initial network.
     #if the -l option is selected, load a network from files
     GAME_NAME = type(game).__name__
-    if "-l" in argv:
+    if "-l" in argv or "-ln" in argv:
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
-    if "-l" in argv or "-dl" in argv:
+    if "-l" in argv or "-dl" in argv or "-ln" in argv:
         training_step = network_storage.curr_step+1
-        FancyLogger.set_training_step(training_step)
+        update_training_step(training_step)
         # Load previously saved network loss + performance data.
         losses = [[], [], []]
         for i in range(training_step):
@@ -154,11 +158,12 @@ def initialize_network(game, network_storage):
             losses[0].append(loss_both)
             losses[1].append(loss_pol)
             losses[2].append(loss_val)
+        update_loss(losses[0][-1])
         load_all_perform_data(GAME_NAME)
 
-        GraphHandler.plot_data("Training Loss Combined", "Training Loss", None, losses[0])
-        GraphHandler.plot_data("Training Loss Policy", "Training Loss", None, losses[1])
-        GraphHandler.plot_data("Training Loss Value", "Training Loss", None, losses[2])
+        GraphHandler.plot_data("Average Loss", "Training Loss", None, losses[0])
+        GraphHandler.plot_data("Policy Loss", "Training Loss", None, losses[1])
+        GraphHandler.plot_data("Value Loss", "Training Loss", None, losses[2])
         FancyLogger.start_timing()
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step-1, network)
@@ -178,9 +183,11 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         - the result of performance evaluation games.
         - logging events.
     """
+    start_training_status()
+    set_total_steps(Config.TRAINING_STEPS)
     FancyLogger.start_timing()
     training_step = initialize_network(game, network_storage)
-    FancyLogger.total_games = len(replay_storage.buffer)
+    update_num_games(len(replay_storage.buffer))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
 
     # Notify processes that network is ready.
@@ -196,8 +203,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     new_games = 0
     game_name = type(game).__name__
 
-    while True:
-        try:
+    try:
+        while True:
             for conn in wait(game_conns):
                 status, val = conn.recv()
                 if status == "evaluate":
@@ -207,23 +214,25 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         evaluate_games(game, eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":
-                    FancyLogger.increment_total_games()
+                    update_num_games()
                     replay_storage.save_game(val)
                     if "-s" in argv:
                         replay_storage.save_replay(val, training_step, game_name)
                     if "-ds" in argv:
                         replay_storage.save_game_to_sql(val)
                     new_games += 1
-                    
+
                     should_train = game_over(conn, new_games, alert_perform, wins_vs_rand)
                     finished = False
                     if should_train:
                         # Tell network to train on a batch of data.
+                        update_training_step(training_step+1)
                         finished = train_network(network_storage, replay_storage,
                                                  training_step, game_name)
                         training_step += 1
                         new_games = 0
-                        if not finished and not training_step % Config.EVAL_CHECKPOINT:
+                        if (not finished and Config.EVAL_CHECKPOINT and
+                                training_step % Config.EVAL_CHECKPOINT == 0):
                             # Indicate that the processes should run performance evaluation games.
                             for k in alert_perform:
                                 alert_perform[k] = True
@@ -246,14 +255,16 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         perform_data[2].append(val)
 
                     handle_performance_data(training_step, perform_data, perform_size, game_name)
-        except KeyboardInterrupt:
-            for conn in game_conns:
-                conn.close()
-            print("Exiting...")
-            return
-        except EOFError as e:
-            print(e)
-            return
+    except KeyboardInterrupt:
+        for conn in game_conns:
+            conn.close()
+        print("Exiting...")
+        update_active(0)
+        return
+    except (EOFError, BrokenPipeError) as e:
+        print(e)
+        update_active(0)
+        return
 
 def save_perform_data(data, ai, step, game_name):
     location = "../resources/" + game_name + "/misc/"
@@ -285,7 +296,7 @@ def load_perform_data(ai, step, game_name):
             if files == []:
                 return None
             for f in files:
-                step = f.split("_")[-1][:-4]
+                step = f.strip().split("_")[-1][:-4]
                 data.append((int(step), pickle.load(open(f, "rb"))))
             data.sort(key=lambda sd: sd[0])
         return data
@@ -302,3 +313,63 @@ def load_loss(step, game_name):
         return loss[0], loss[1], loss[2]
     except IOError:
         return 1, 1, 1
+
+def update_training_step(step):
+    FancyLogger.set_training_step(step)
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "step=%s", step)
+
+def update_loss(loss):
+    FancyLogger.set_network_status("Training loss: {}".format(loss))
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "loss=%s", float(loss))
+
+def update_num_games(games=None):
+    if games is not None:
+        FancyLogger.total_games = games
+        if Config.STATUS_DB:
+            SqlUtil.set_status(SqlUtil.connection, "games=%s", games)
+    else:
+        FancyLogger.increment_total_games()
+        if Config.STATUS_DB:
+            SqlUtil.set_status(SqlUtil.connection, "games=games+1")
+
+def update_perf_values(values):
+    FancyLogger.set_performance_values(values)
+    if Config.STATUS_DB:
+        insert_str = None
+        val = None
+        if values[0] is not None:
+            insert_str = "eval_rand=%s"
+            val = values[0]
+        elif values[1] is not None:
+            insert_str = "eval_mini=%s"
+            val = values[1]
+        elif values[2] is not None:
+            insert_str = "eval_mcts=%s"
+            val = values[2]
+        SqlUtil.set_status(SqlUtil.connection, insert_str, float(val))
+
+def update_active(active):
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "active=%s", active)
+        if not active:
+            SqlUtil.connection.close()
+
+def set_total_steps(steps):
+    if Config.STATUS_DB:
+        SqlUtil.set_status(SqlUtil.connection, "total_steps=%s", steps)
+
+def start_training_status():
+    if Config.STATUS_DB:
+        if "-l" in argv:
+            load_training_status()
+        else:
+            SqlUtil.connection = SqlUtil.connect()
+            SqlUtil.add_status(SqlUtil.connection)
+
+def load_training_status():
+    if Config.STATUS_DB:
+        SqlUtil.connection = SqlUtil.connect()
+        SqlUtil.get_latest_status(SqlUtil.connection)
+        update_active(1)

@@ -9,18 +9,15 @@ from controller.game_ai import GameAI
 from view.log import log
 
 class Node():
-    action = None
-    state = None
-    visits = 0
-    value = 0
-    mean_value = 0
-    
     def __init__(self, state, action, prior_prob=0, parent=None):
         self.state = state
         self.action = action
         self.parent = parent
         self.prior_prob = prior_prob
         self.children = {}
+        self.visits = 0
+        self.value = 0
+        self.mean_value = 0
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
@@ -42,6 +39,8 @@ class MCTS(GameAI):
     """
     state_map = dict()
     connection = None
+    cfg = None
+    chosen_node = None
 
     ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
     MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
@@ -54,6 +53,10 @@ class MCTS(GameAI):
             self.ITERATIONS = Config.MCTS_ITERATIONS
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
+
+    def set_config(self, config):
+        self.cfg = config
+        self.ITERATIONS = config.MCTS_ITERATIONS
 
     def ucb_score(self, node, parent_visits):
         # PUCT formula.
@@ -136,7 +139,7 @@ class MCTS(GameAI):
 
         return value
 
-    def softmax_sample(self, child_nodes, visit_counts, tempature=0.7):
+    def softmax_sample(self, child_nodes, visit_counts, tempature=0.5):
         """
         Perform softmax sampling on a set of nodes
         based on a probability distribution of their
@@ -152,8 +155,7 @@ class MCTS(GameAI):
     def choose_action(self, node):
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
-
-        if len(self.game.history) < Config.NUM_SAMPLING_MOVES:
+        if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
             # Perform softmax sampling of available actions,
             # based on visit counts.
             return self.softmax_sample(child_nodes, visit_counts)
@@ -176,6 +178,8 @@ class MCTS(GameAI):
         log("MCTS is calculating the best move...")
 
         root_node = Node(state, None)
+        self.chosen_node = root_node
+
         self.evaluate(root_node)
         if root_node.children == {}: # State has no actions (children).
             self.game.store_search_statistics(None)
@@ -192,7 +196,7 @@ class MCTS(GameAI):
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
 
-            self.back_propagate(node, -value)
+            self.back_propagate(node, 1-value)
 
             node = root_node
 
@@ -200,6 +204,7 @@ class MCTS(GameAI):
             log(node.pretty_desc())
 
         best_node = self.choose_action(root_node)
+        self.chosen_node = best_node
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
         self.game.store_search_statistics(root_node)

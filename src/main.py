@@ -45,11 +45,12 @@ def initialize(game, p1, p2, **kwargs):
                 game = self_play.get_game(type(game).__name__, game.size, "random", ".")
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = self_play.get_ai_algorithm(type(p2).__name__, game, ".")
-            parent, child = Pipe()
-            pipes.append(parent)
+            child = None
+            if self_play.is_mcts(p1) or self_play.is_mcts(p2):
+                parent, child = Pipe()
+                pipes.append(parent)
 
             if gui is None:
-                #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
                 game_thread = Process(target=self_play.play_loop,
                                       name=f"Actor {(i+1):02d}",
                                       args=(game, p1, p2, 0, gui, plot_data, config, child))
@@ -66,7 +67,7 @@ def initialize(game, p1, p2, **kwargs):
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 
-        if pipes != [] and self_play.is_mcts(p1) or self_play.is_mcts(p2):
+        if pipes != []:
             # Start monitor thread.
             monitor = Thread(target=monitor_games, args=(pipes, game, network_storage, replay_storage))
             monitor.start()

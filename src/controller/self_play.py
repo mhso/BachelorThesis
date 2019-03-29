@@ -47,11 +47,11 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
             p_1, p_2 = (player_black, player_white) if state.player else (player_white, player_black)
             p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
             thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
-                             f"{state.str_player()}'s turn, " +
+                             f"{p_2_name} ({state.str_player()})'s turn, " +
                              f"w: {align_with_spacing(pieces[0],2)}, " +
                              f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
             if p_1_name == "MCTS":
-                thread_status += f" Q-value: {p_1.chosen_node.q_value:.5f}."
+                thread_status += f" Q: {p_1.chosen_node.q_value:.5f}."
             if p_1_name != "MCTS" or p_2_name != "MCTS":
                 thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
             connection.send(("log", [thread_status, getpid()]))
@@ -92,7 +92,7 @@ def align_with_spacing(number, total_lenght):
         val += " "
     return "{}{}".format(val, str(number))
 
-def evaluate_against_ai(game, player, other, num_games, config, connection=None):
+def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection=None):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -102,8 +102,8 @@ def evaluate_against_ai(game, player, other, num_games, config, connection=None)
     """
     wins = 0
     for _ in range(num_games):
-        result = play_game(game, player, other, config, connection=connection)
-        wins += game.utility(result, True)
+        result = play_game(game, player1, player2, config, connection=connection)
+        wins += game.utility(result, mcts_player)
         game.reset()
     return wins/num_games # Return ratio of games won.
 
@@ -117,7 +117,7 @@ def minimax_for_game(game):
         return "Minimax_Othello"
     return "unknown"
 
-def evaluate_model(game, player, config, eval_others, connection):
+def evaluate_model(game, player, config, status, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
@@ -125,12 +125,16 @@ def evaluate_model(game, player, config, eval_others, connection):
     num_games = config.EVAL_GAMES // config.EVAL_PROCESSES
     num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
+    play_as_white = status[1] == 1
 
-    if not eval_others:
+    if not status[0]:
         connection.send(("log", ["Evaluating against Random", getpid()]))
+        p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
+        if not play_as_white:
+            # MCTS should play as player 2.
+            p_1, p_2 = p_2, p_1
 
-        eval_random = evaluate_against_ai(game, player,
-                                          get_ai_algorithm("Random", game, "."),
+        eval_random = evaluate_against_ai(game, p_1, p_2, play_as_white,
                                           num_games, config, connection)
 
         connection.send(("perform_rand", eval_random))
@@ -138,17 +142,23 @@ def evaluate_model(game, player, config, eval_others, connection):
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
         connection.send(("log", ["Evaluating against Minimax", getpid()]))
+        p_1, p_2 = player, get_ai_algorithm("Minimax", game, ".")
+        if not play_as_white:
+            # MCTS should play as player 2.
+            p_1, p_2 = p_2, p_1
 
-        eval_minimax = evaluate_against_ai(game, player,
-                                           get_ai_algorithm("Minimax", game, "."),
+        eval_minimax = evaluate_against_ai(game, p_1, p_2, play_as_white,
                                            num_games, config, connection)
 
         connection.send(("perform_mini", eval_minimax))
 
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
+        p_1, p_2 = player, get_ai_algorithm("MCTS_Basic", game, ".")
+        if not play_as_white:
+            # MCTS should play as player 2.
+            p_1, p_2 = p_2, p_1
 
-        eval_mcts = evaluate_against_ai(game, player,
-                                        get_ai_algorithm("MCTS_Basic", game, "."),
+        eval_mcts = evaluate_against_ai(game, p_1, p_2, play_as_white,
                                         num_games, config, connection)
 
         connection.send(("perform_mcts", eval_mcts))
@@ -226,3 +236,5 @@ def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, c
         if plot_data:
             GraphHandler.close_graphs()
         exit(0)
+
+

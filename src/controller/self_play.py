@@ -47,7 +47,7 @@ def play_game(game, player_white, player_black, config, gui=None, connection=Non
             p_1, p_2 = (player_black, player_white) if state.player else (player_white, player_black)
             p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
             thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
-                             f"{p_2_name} ({state.str_player()})'s turn, " +
+                             f" {p_2_name} ({state.str_player()})'s turn, " +
                              f"w: {align_with_spacing(pieces[0],2)}, " +
                              f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
             if p_1_name == "MCTS":
@@ -137,7 +137,7 @@ def evaluate_model(game, player, config, status, connection):
         eval_random = evaluate_against_ai(game, p_1, p_2, play_as_white,
                                           num_games, config, connection)
 
-        connection.send(("perform_rand", eval_random))
+        connection.send((f"perform_rand_{status[1]}", eval_random))
     else:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
@@ -150,7 +150,7 @@ def evaluate_model(game, player, config, status, connection):
         eval_minimax = evaluate_against_ai(game, p_1, p_2, play_as_white,
                                            num_games, config, connection)
 
-        connection.send(("perform_mini", eval_minimax))
+        connection.send((f"perform_mini_{status[1]}", eval_minimax))
 
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
         p_1, p_2 = player, get_ai_algorithm("MCTS_Basic", game, ".")
@@ -161,7 +161,7 @@ def evaluate_model(game, player, config, status, connection):
         eval_mcts = evaluate_against_ai(game, p_1, p_2, play_as_white,
                                         num_games, config, connection)
 
-        connection.send(("perform_mcts", eval_mcts))
+        connection.send((f"perform_mcts_{status[1]}", eval_mcts))
     player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
 
 def get_game(game_name, size, rand_seed, wildcard="."):

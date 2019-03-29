@@ -49,12 +49,14 @@ def train_network(network_storage, replay_storage, training_step, game_name):
     return False
 
 def show_performance_data(ai, index, step, data):
-    avg_data = sum(data) / len(data)
+    avg_total = sum(data[0]) / len(data[0])
+    avg_white = sum(data[1]) / len(data[1])
+    avg_black = sum(data[2]) / len(data[2])
     values = [None, None, None]
-    values[index] = avg_data
+    values[index] = [avg_total, avg_white, avg_black]
     update_perf_values(values)
 
-    GraphHandler.plot_data("Training Evaluation", ai, step, avg_data)
+    GraphHandler.plot_data("Training Evaluation", ai, step, avg_total)
 
 def handle_performance_data(step, perform_data, perform_size, game_name):
     """
@@ -64,21 +66,21 @@ def handle_performance_data(step, perform_data, perform_size, game_name):
     p1 = perform_data[0]
     p2 = perform_data[1]
     p3 = perform_data[2]
-    if len(p1) >= perform_size:
+    if len(p1[0]) >= perform_size:
         show_performance_data("Versus Random", 0, step, p1)
         if "-s" in argv:
-            save_perform_data(perform_data[0], "random", step, game_name) # Save to file.
-        perform_data[0] = []
-    elif len(p2) >= perform_size:
+            save_perform_data(p1, "random", step, game_name) # Save to file.
+        perform_data[0] = [[], [], []]
+    elif len(p2[0]) >= perform_size:
         show_performance_data("Versus Minimax", 1, step, p2)
         if "-s" in argv:
-            save_perform_data(perform_data[1], "minimax", step, game_name) # Save to file.
-        perform_data[1] = []
-    elif len(p3) >= perform_size:
+            save_perform_data(p2, "minimax", step, game_name) # Save to file.
+        perform_data[1] = [[], [], []]
+    elif len(p3[0]) >= perform_size:
         show_performance_data("Versus MCTS", 2, step, p3)
         if "-s" in argv:
-            save_perform_data(perform_data[2], "mcts", step, game_name) # Save to file.
-        perform_data[2] = []
+            save_perform_data(p3, "mcts", step, game_name) # Save to file.
+        perform_data[2] = [[], [], []]
 
 def game_over(conn, new_games, alert_perform, perform_status):
     """
@@ -213,7 +215,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
 
     eval_queue = []
     queue_size = Config.GAME_THREADS
-    perform_data = [[], [], []]
+    perform_data = [[[], [], []], [[], [], []], [[], [], []]]
     perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
     alert_perform = {conn: 0 for conn in game_conns[-perform_size:]}
     wins_vs_rand = 0
@@ -263,15 +265,24 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     FancyLogger.set_thread_status(val[1], val[0])
                 elif status[:7] == "perform":
                     # Get performance data from games against alternate AIs.
-                    if status == "perform_rand":
+                    perform_list = None
+                    if status[:-2] == "perform_rand":
                         games_played = (Config.EVAL_GAMES // Config.EVAL_PROCESSES)
                         if wins_vs_rand < 24:
                             wins_vs_rand = wins_vs_rand + games_played if val == 1 else 0
-                        perform_data[0].append(val)
-                    elif status == "perform_mini":
-                        perform_data[1].append(val)
-                    elif status == "perform_mcts":
-                        perform_data[2].append(val)
+                        perform_list = perform_data[0]
+                    elif status[:-2] == "perform_mini":
+                        perform_list = perform_data[1]
+                    elif status[:-2] == "perform_mcts":
+                        perform_list = perform_data[2]
+
+                    perform_list[0].append(val) # Score total.
+                    if status[-1:] == "1":
+                        # Score as white.
+                        perform_list[1].append(val)
+                    else:
+                        # Score as black.
+                        perform_list[2].append(val)
 
                     handle_performance_data(training_step, perform_data, perform_size, game_name)
     except KeyboardInterrupt:
@@ -360,13 +371,13 @@ def update_perf_values(values):
         val = None
         if values[0] is not None:
             insert_str = "eval_rand=%s"
-            val = values[0]
+            val = values[0][0]
         elif values[1] is not None:
             insert_str = "eval_mini=%s"
-            val = values[1]
+            val = values[1][0]
         elif values[2] is not None:
             insert_str = "eval_mcts=%s"
-            val = values[2]
+            val = values[2][0]
         SqlUtil.set_status(SqlUtil.connection, insert_str, float(val))
 
 def update_active(active):

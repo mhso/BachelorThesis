@@ -4,7 +4,7 @@ neural: Neural Network wrapper.
 -------------------------------
 """
 import numpy as np
-from tensorflow import Session, ConfigProto, reset_default_graph
+import tensorflow as tf
 from keras import losses
 from keras.backend.tensorflow_backend import set_session, clear_session
 from keras.layers import Dense, Conv2D, BatchNormalization, Input, Flatten
@@ -13,21 +13,33 @@ from keras.optimizers import SGD
 from keras.models import Model
 from keras.initializers import random_uniform, random_normal
 from keras.regularizers import l2
+from keras.utils import get_custom_objects
 from keras.utils.vis_utils import plot_model
 from keras.layers import LeakyReLU
 from model.residual import Residual
 from config import Config
 
+def softmax_cross_entropy_with_logits(y_bool, y_pred):
+    zeros = tf.zeros(shape=(tf.shape(y_bool)), dtype=tf.float32)
+    where_true = tf.equal(y_bool, zeros)
+
+    where_false = tf.fill(tf.shape(y_bool), -100.0)
+    pred = tf.where(where_true, where_false, y_pred)
+    
+    return tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_bool, logits=pred)
+
 def set_nn_config():
-     # Clean up from previous TF graphs.
-    reset_default_graph()
+    # Clean up from previous TF graphs.    
+    tf.reset_default_graph()
     clear_session()
 
+    get_custom_objects().update({"softmax_cross_entropy_with_logits": softmax_cross_entropy_with_logits})
+
     # Config options, to stop TF from eating all GPU memory.
-    nn_config = ConfigProto()
+    nn_config = tf.ConfigProto()
     nn_config.gpu_options.per_process_gpu_memory_fraction = Config.MAX_GPU_FRACTION
     nn_config.gpu_options.allow_growth = True
-    set_session(Session(config=nn_config))
+    set_session(tf.Session(config=nn_config))
 
 class NeuralNetwork:
     """

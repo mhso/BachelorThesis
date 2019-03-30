@@ -30,6 +30,7 @@ class FancyLogger:
     performance_values = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     total_games = 0
     time_started = 0
+    eval_checkpoint = 0
 
     @staticmethod
     def start_timing():
@@ -94,7 +95,7 @@ class FancyLogger:
             print("Against Minimax: {}. As White: {}. As Black: {}.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
             perf_mcts = FancyLogger.performance_values[2]
             print("Against base MCTS: {}. As White: {}. As Black: {}.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
-            print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT} training step.")
+            print(f"Evaluating {Config.EVAL_GAMES} times every {FancyLogger.eval_checkpoint} training step.")
             print("")
             print("-=-=- Self play status -=-=-")
             print("Playing {} on a {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))

@@ -346,6 +346,7 @@ def load_loss(step, game_name):
 
 def update_training_step(step):
     FancyLogger.set_training_step(step)
+    FancyLogger.eval_checkpoint = eval_checkpoint(training_step)
     if Config.STATUS_DB:
         SqlUtil.set_status(SqlUtil.connection, "step=%s", step)
 

@@ -50,8 +50,8 @@ def train_network(network_storage, replay_storage, training_step, game_name):
 
 def show_performance_data(ai, index, step, data):
     avg_total = sum(data[0]) / len(data[0])
-    avg_white = sum(data[1]) / len(data[1])
-    avg_black = sum(data[2]) / len(data[2])
+    avg_white = sum(data[1]) / len(data[1]) if len(data[1]) else 0.0
+    avg_black = sum(data[2]) / len(data[2]) if len(data[2]) else 0.0
     values = [None, None, None]
     values[index] = [avg_total, avg_white, avg_black]
     update_perf_values(values)
@@ -95,7 +95,7 @@ def game_over(conn, new_games, alert_perform, perform_status):
     if alert_status:
         # Tell the process to start running perform eval games.
         conn.send((perform_status, alert_status))
-        alert_perform[conn] = False
+        alert_perform[conn] = 0
     else:
         # Nothing of note happens, indicate that process should carry on as usual.
         conn.send(None)
@@ -255,7 +255,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                             # Indicate that the processes should run performance evaluation games.
                             for i, k in enumerate(alert_perform):
                                 # Half should play against AI as player 1, half as player 2.
-                                alert_perform[k] = 1 if i < len(alert_perform)/2 else 2
+                                alert_perform[k] = 1 if i < perform_size/2 else 2
                     if finished:
                         FancyLogger.set_network_status("Training finished!")
                         for c in game_conns:
@@ -277,7 +277,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         perform_list = perform_data[2]
 
                     perform_list[0].append(val) # Score total.
-                    if status[-1:] == "1":
+                    if status[-1] == "1":
                         # Score as white.
                         perform_list[1].append(val)
                     else:

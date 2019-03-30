@@ -24,12 +24,14 @@ def train_network(network_storage, replay_storage, training_step, game_name):
     network = network_storage.latest_network()
     FancyLogger.set_network_status("Training...")
 
-    inputs, expected_out = replay_storage.sample_batch()
+    loss = 0
+    for _ in range(10):
+        inputs, expected_out = replay_storage.sample_batch()
 
-    loss_hist = network.train(inputs, expected_out)
-    loss = [loss_hist["loss"][-1],
-            loss_hist["policy_head_loss"][-1],
-            loss_hist["value_head_loss"][-1]]
+        loss_hist = network.train(inputs, expected_out)
+        loss = [loss_hist["loss"][-1],
+                loss_hist["policy_head_loss"][-1],
+                loss_hist["value_head_loss"][-1]]
     if not training_step % Config.SAVE_CHECKPOINT:
         network_storage.save_network(training_step, network)
         if "-s" in argv:

@@ -40,7 +40,7 @@ def initialize(game, p1, p2, **kwargs):
             # Don't use plot/GUI if several games are played.
             gui = None
         pipes = []
-        for i in range(Config.GAME_THREADS):
+        for i in range(3):
             if i > 0: # Make copies of game and players.
                 game = self_play.get_game(type(game).__name__, game.size, "random", ".")
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
@@ -49,13 +49,17 @@ def initialize(game, p1, p2, **kwargs):
             pipes.append(parent)
 
             if gui is None:
+<<<<<<< Updated upstream
                 #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
                 game_thread = Process(target=self_play.play_loop,
+=======
+                game_thread = Process(target=self_play.init_self_play,
+>>>>>>> Stashed changes
                                       name=f"Actor {(i+1):02d}",
-                                      args=(game, p1, p2, 0, gui, plot_data, config, child))
+                                      args=(game, p1, p2, child, gui, config))
             else:
                 game_thread = Thread(target=self_play.play_loop,
-                                     args=(game, p1, p2, 0, gui, plot_data, config, child))
+                                     args=(game, p1, p2, 0, gui, config, child))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file

@@ -20,67 +20,78 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
-def play_game(game, player_white, player_black, config, gui=None, connection=None):
+def play_game(games, player_white, player_black, config, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
     """
-    state = game.start_state()
-    counter = 0
+    active_games = [[games[i], games[i].start_state(), player_white[i], player_black[i]] for i in range(len(games))]
+    counters = [0 for _ in range(len(games))]
+    results = []
     time_game = time()
-    if gui is not None:
-        sleep(1)
-        gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
-    while not game.terminal_test(state) and counter < config.LATRUNCULI_MAX_MOVES:
-        time_turn = time()
 
-        if game.player(state):
-            state = player_white.execute_action(state)
-        else:
-            state = player_black.execute_action(state)
+    while active_games:
+        for i, data in enumerate(active_games):
+            game = data[0]
+            state = data[1]
+            player_1 = data[2]
+            player_2 = data[3]
+            time_turn = time()
 
-        game.history.append(state)
+            if gui is not None:
+                sleep(1)
+                gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
-        pieces = state.count_pieces()
-        log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
-        if connection:
-            turn_took = '{0:.3f}'.format((time() - time_turn))
-            p_1, p_2 = (player_black, player_white) if state.player else (player_white, player_black)
-            p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
-            thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
-                             f"{state.str_player()}'s turn, " +
-                             f"w: {align_with_spacing(pieces[0],2)}, " +
-                             f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
-            if p_1_name == "MCTS":
-                thread_status += f" Q-value: {p_1.chosen_node.mean_value}."
-            if p_1_name != "MCTS" or p_2_name != "MCTS":
-                thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
-            connection.send(("log", [thread_status, getpid()]))
-        elif "-t" in argv:
-            turn_took = '{0:.3f}'.format((time() - time_turn))
-            print(f"Turn took {turn_took} s")
+            if game.player(state):
+                state = player_1.execute_action(state)
+            else:
+                state = player_2.execute_action(state)
 
-        if force_quit(gui):
-            print("{}: Forcing exit...".format(getpid()))
-            exit(0)
+            game.history.append(state)
+            active_games[i][1] = state
 
-        if gui is not None:
-            if type(player_white).__name__ != "Human" and not state.player:
-                sleep(config.GUI_AI_SLEEP)
-            elif type(player_black).__name__ != "Human" and state.player:
-                sleep(config.GUI_AI_SLEEP)
-            gui.update(state)
-        counter += 1
+            pieces = state.count_pieces()
+            log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
+            if connection:
+                turn_took = '{0:.3f}'.format((time() - time_turn))
+                p_1, p_2 = (player_2, player_1) if state.player else (player_1, player_2)
+                p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
+                thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
+                                f" {p_2_name} ({state.str_player()})'s turn, " +
+                                f"w: {align_with_spacing(pieces[0],2)}, " +
+                                f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
+                if p_1_name == "MCTS":
+                    thread_status += f" Q: {p_1.chosen_node.q_value:.5f}."
+                if p_1_name != "MCTS" or p_2_name != "MCTS":
+                    thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
+                connection.send(("log", [thread_status, getpid()]))
+            elif "-t" in argv:
+                turn_took = '{0:.3f}'.format((time() - time_turn))
+                print(f"Turn took {turn_took} s")
 
-    util = game.utility(state, True)
-    winner = "White" if util == 1 else "Black" if util else "Draw"
-    log("Game over! Winner: {}".format(winner))
-    if "-t" in argv:
-        print("Game took: {0:.3f} s".format(time() - time_game))
-    if connection:
-        connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
+            if force_quit(gui):
+                print("{}: Forcing exit...".format(getpid()))
+                exit(0)
 
-    # Return resulting state of game.
-    return state
+            if gui is not None:
+                if type(player_white).__name__ != "Human" and not state.player:
+                    sleep(config.GUI_AI_SLEEP)
+                elif type(player_black).__name__ != "Human" and state.player:
+                    sleep(config.GUI_AI_SLEEP)
+                gui.update(state)
+
+            counters[i] = counters[i] + 1
+            if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
+                active_games.pop(i)
+
+                util = game.utility(state, True)
+                winner = "White" if util == 1 else "Black" if util else "Draw"
+                log("Game over! Winner: {}".format(winner))
+                if "-t" in argv:
+                    print("Game took: {0:.3f} s".format(time() - time_game))
+                if connection:
+                    connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
+                results.append(state)
+    return results
 
 def align_with_spacing(number, total_lenght):
     """
@@ -182,47 +193,67 @@ def get_ai_algorithm(algorithm, game, wildcard="."):
         print("Unknown AI algorithm, name must equal name of AI class.")
         return None, "unknown"
 
-def play_loop(game, p1, p2, iteration, gui=None, plot_data=False, config=None, connection=None):
+def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None):
     """
     Run a given number of game iterations with a given AI.
     """
-    cfg = config
-    if not cfg:
-        cfg = Config()
-    if iteration == 0 and connection:
-        # Wait for initial construction/compilation of network.
-        if is_mcts(p1):
-            p1.connection = connection
-            p1.set_config(cfg)
-        if is_mcts(p2):
-            p2.connection = connection
-            p2.set_config(cfg)
-        connection.recv()
-    if iteration == cfg.GAME_ITERATIONS:
+    if iteration == config.GAME_ITERATIONS:
         print("{} is done with training!".format(getpid()))
         return
     try:
-        play_game(game, p1, p2, cfg, gui, connection)
+        play_game(games, p1s, p2s, config, gui, connection)
 
-        if connection and not gui:
-            # Save game to be used for neural network training.
-            connection.send(("game_over", game.clone()))
-            game.__init__(game.size, "random")
+        for i in range(len(games)):
+            game = games[i]
+            p1 = p1s[i]
+            p2 = p2s[i]
+            if connection and not gui:
+                # Save game to be used for neural network training.
+                connection.send(("game_over", game.clone()))
+                game.__init__(game.size, "random")
 
-        game.reset() # Reset game history.
-        try:
-            if is_mcts(p1) and connection and not gui:
-                status = connection.recv()
-                if status is not None:
-                    # Evaluate performance of trained model against other AIs.
-                    evaluate_model(game, p1, cfg, status, connection)
-            play_loop(game, p1, p2, iteration+1, gui, plot_data, cfg, connection)
-        except EOFError:
-            print("f{getpid()}: Monitor process has exited... This is probably fine.")
-            exit(0)
+            game.reset() # Reset game history.
+            try:
+                if is_mcts(p1) and connection and not gui:
+                    status = connection.recv()
+                    if status is not None:
+                        # Evaluate performance of trained model against other AIs.
+                        evaluate_model(game, p1, config, status, connection)
+            except EOFError:
+                print("f{getpid()}: Monitor process has exited... This is probably fine.")
+                exit(0)
+        play_loop(games, p1s, p2s, iteration+1, gui, config, connection)
     except KeyboardInterrupt:
         if gui is not None:
             gui.close()
-        if plot_data:
-            GraphHandler.close_graphs()
         exit(0)
+
+def init_self_play(game, p1, p2, connection, gui=None, config=None):
+    cfg = config
+    if not cfg:
+        cfg = Config()
+
+    if is_mcts(p1):
+        p1.connection = connection
+        p1.set_config(cfg)
+    if is_mcts(p2):
+        p2.connection = connection
+        p2.set_config(cfg)
+    # Wait for initial construction/compilation of network.
+    connection.recv()
+
+    games = []
+    player_1_agents = []
+    player_2_agents = []
+    for _ in range(Config.GAME_THREADS // 3):
+        games.append(get_game(type(game).__name__, game.size, "random", "."))
+        player_1 = get_ai_algorithm(type(p1).__name__, game, ".")
+        player_1.connection = connection
+        player_1.set_config(cfg)
+        player_2 = get_ai_algorithm(type(p2).__name__, game, ".")
+        player_2.connection = connection
+        player_2.set_config(cfg)
+        player_1_agents.append(player_1)
+        player_2_agents.append(player_2)
+
+    play_loop(games, player_1_agents, player_2_agents, 0, gui, cfg, connection)

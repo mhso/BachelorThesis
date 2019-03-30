@@ -210,7 +210,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                 if status == "evaluate":
                     # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
-                    if len(eval_queue) == queue_size:
+                    if len(eval_queue) == 3:
                         evaluate_games(game, eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":

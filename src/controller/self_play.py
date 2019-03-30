@@ -20,6 +20,30 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
+def prepare(games):
+    for i, data in enumerate(games):
+        game = data[0]
+        state = data[1]
+        player_1 = data[2]
+        player_2 = data[3]
+
+        player = player_1 if game.player(state) else player_2
+        player.prepare_action(state)
+
+def select_states(games):
+    states = []
+    for i, data in enumerate(games):
+        game = data[0]
+        state = data[1]
+        player_1 = data[2]
+        player_2 = data[3]
+
+        player = player_1 if game.player(state) else player_2
+        player.prepare_action(state)
+
+        states.append(player.select(state))
+    return states
+
 def play_game(games, player_white, player_black, config, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
@@ -30,6 +54,13 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
     time_game = time()
 
     while active_games:
+        prepare(active_games)
+
+        selected_states = select_states(active_games)
+
+        for i, s in enumerate(select_states):
+            active_games[i][]
+
         for i, data in enumerate(active_games):
             game = data[0]
             state = data[1]

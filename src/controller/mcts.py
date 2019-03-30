@@ -91,13 +91,13 @@ class MCTS(GameAI):
 
         return self.select(best_node)
 
-    def expand(self, node, actions):
+    def expand(self, node, state, logit_map, policy_sum):
         """
         Expand the tree with new nodes, corresponding to
         taking any possible actions from the current node.
         """
-        node_probability = 1/len(actions) # Probability of selecting node.
-        node.children = {action: Node(self.game.result(node.state, action), action, node_probability, node) for action in actions}
+        for a, p in logit_map.items():
+            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
 
     def back_propagate(self, node, value):
         """
@@ -134,8 +134,7 @@ class MCTS(GameAI):
         policy_sum = sum(logit_map.values())
 
         # Expand node.
-        for a, p in logit_map.items():
-            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
+        self.expand(node, state, logit_map, policy_sum)
 
         return value
 
@@ -172,6 +171,17 @@ class MCTS(GameAI):
         frac = Config.NOISE_FRACTION
         for a, n in zip(actions, noise):
             node.children[a].prior_prob *= (1 - frac) + n * frac
+
+    def prepare_action(self, state):
+        root_node = Node(state, None)
+        self.chosen_node = root_node
+
+        self.evaluate(root_node)
+        if root_node.children == {}: # State has no actions (children).
+            self.game.store_search_statistics(None)
+            return self.game.result(state, None) # Simulate pass.
+
+        self.add_exploration_noise(root_node)
 
     def execute_action(self, state):
         super.__doc__

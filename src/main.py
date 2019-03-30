@@ -49,12 +49,7 @@ def initialize(game, p1, p2, **kwargs):
             pipes.append(parent)
 
             if gui is None:
-<<<<<<< Updated upstream
-                #self_play.spawn_process(game, p1, p2, gui, plot_data, child)
-                game_thread = Process(target=self_play.play_loop,
-=======
                 game_thread = Process(target=self_play.init_self_play,
->>>>>>> Stashed changes
                                       name=f"Actor {(i+1):02d}",
                                       args=(game, p1, p2, child, gui, config))
             else:

@@ -25,28 +25,28 @@ def train_network(network_storage, replay_storage, training_step, game_name):
     FancyLogger.set_network_status("Training...")
 
     loss = 0
-    for _ in range(Config.ITERATIONS_PER_TRAINING):
+    for i in range(Config.ITERATIONS_PER_TRAINING):
         inputs, expected_out = replay_storage.sample_batch()
 
         loss_hist = network.train(inputs, expected_out)
         loss = [loss_hist["loss"][-1],
                 loss_hist["policy_head_loss"][-1],
                 loss_hist["value_head_loss"][-1]]
+        if "-s" in argv or "-ds" in argv:
+            save_loss(loss, training_step+i, game_name)
+        update_loss(loss[0])
+        GraphHandler.plot_data("Average Loss", "Training Loss", training_step+1+i, loss[0])
+        GraphHandler.plot_data("Policy Loss", "Training Loss", training_step+1+i, loss[1])
+        GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1+i, loss[2])
+
     if not training_step % Config.SAVE_CHECKPOINT:
         network_storage.save_network(training_step, network)
         if "-s" in argv:
             network_storage.save_network_to_file(training_step, network, game_name)
         if "-ds" in argv:
             network_storage.save_network_to_sql(network)
-        if "-s" in argv or "-ds" in argv:
-            save_loss(loss, training_step, game_name)
 
-    update_loss(loss[0])
-    GraphHandler.plot_data("Average Loss", "Training Loss", training_step+1, loss[0])
-    GraphHandler.plot_data("Policy Loss", "Training Loss", training_step+1, loss[1])
-    GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1, loss[2])
-
-    if training_step == Config.TRAINING_STEPS:
+    if training_step >= Config.TRAINING_STEPS:
         return True
     return False
 

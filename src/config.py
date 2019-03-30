@@ -49,7 +49,7 @@ class Config():
 
     # How often to evaluate model against base AI's
     # during training, default is every 5th training iteration.
-    EVAL_CHECKPOINT = {0: 10, 50: 15, 150: 25}
+    EVAL_CHECKPOINT = {0: 50, 50: 75, 150: 125}
 
     # How many games to play against each base AI
     # while evaluating model performance.
@@ -82,7 +82,7 @@ class Config():
     BATCH_SIZE = 256
 
     # Number of times to train per training step.
-    ITERATIONS_PER_TRAINING = 10
+    ITERATIONS_PER_TRAINING = 5
 
     # Number of times to train on one batch.
     EPOCHS_PER_BATCH = 3

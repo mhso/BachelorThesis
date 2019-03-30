@@ -25,7 +25,7 @@ def train_network(network_storage, replay_storage, training_step, game_name):
     FancyLogger.set_network_status("Training...")
 
     loss = 0
-    for _ in range(10):
+    for _ in range(Config.ITERATIONS_PER_TRAINING):
         inputs, expected_out = replay_storage.sample_batch()
 
         loss_hist = network.train(inputs, expected_out)
@@ -247,10 +247,11 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     finished = False
                     if should_train:
                         # Tell network to train on a batch of data.
-                        update_training_step(training_step+1)
+                        new_step = training_step + Config.ITERATIONS_PER_TRAINING
+                        update_training_step(new_step)
                         finished = train_network(network_storage, replay_storage,
                                                  training_step, game_name)
-                        training_step += 1
+                        training_step = new_step
                         new_games = 0
                         if (not finished and Config.EVAL_CHECKPOINT and
                                 training_step % eval_checkpoint(training_step) == 0):
@@ -348,7 +349,7 @@ def load_loss(step, game_name):
 
 def update_training_step(step):
     FancyLogger.set_training_step(step)
-    FancyLogger.eval_checkpoint = eval_checkpoint(training_step)
+    FancyLogger.eval_checkpoint = eval_checkpoint(step)
     if Config.STATUS_DB:
         SqlUtil.set_status(SqlUtil.connection, "step=%s", step)
 

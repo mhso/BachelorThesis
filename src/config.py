@@ -81,6 +81,9 @@ class Config():
     # Batch size for neural network input.
     BATCH_SIZE = 256
 
+    # Number of times to train per training step.
+    ITERATIONS_PER_TRAINING = 10
+
     # Number of times to train on one batch.
     EPOCHS_PER_BATCH = 3
 

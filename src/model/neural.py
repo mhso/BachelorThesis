@@ -124,7 +124,7 @@ class NeuralNetwork:
         game_name = type(game).__name__
         # Policy head weights & loss function.
         loss_weights = [0.5]
-        loss_funcs = [losses.binary_crossentropy]
+        loss_funcs = [softmax_cross_entropy_with_logits]
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
             loss_weights[0] = 0.25
@@ -139,7 +139,7 @@ class NeuralNetwork:
                                     momentum=Config.MOMENTUM),
                       loss_weights=loss_weights,
                       loss=loss_funcs,
-                      metrics=["binary_crossentropy", "accuracy"])
+                      metrics=["accuracy"])
 
     def input_layer(self, game):
         game_type = type(game).__name__

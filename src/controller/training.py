@@ -171,7 +171,6 @@ def initialize_network(game, network_storage):
 
     if "-l" in argv or "-dl" in argv or "-ln" in argv:
         training_step = network_storage.curr_step+1
-        update_training_step(training_step)
         # Load previously saved network loss + performance data.
         losses = [[], [], []]
         for i in range(training_step):
@@ -208,6 +207,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     set_total_steps(Config.TRAINING_STEPS)
     FancyLogger.start_timing()
     training_step = initialize_network(game, network_storage)
+    update_training_step(training_step)
     update_num_games(len(replay_storage.buffer))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
 

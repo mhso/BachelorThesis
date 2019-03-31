@@ -62,7 +62,7 @@ class FancyLogger:
     def set_performance_values(values):
         for i, val in enumerate(values):
             if val is not None:
-                FancyLogger.performance_values[i] = int(val*100)
+                FancyLogger.performance_values[i] = [int(v * 100) for v in val]
         FancyLogger.pp()
 
     @staticmethod
@@ -90,11 +90,11 @@ class FancyLogger:
 
             print("-=-=- Latest evaluation statuses -=-=-")
             perf_rand = FancyLogger.performance_values[0]
-            print("Against Random: {}. As White: {}. As Black: {}.".format(perf_rand[0], perf_rand[1], perf_rand[2]))
+            print("Against Random: {}%. As White: {}%. As Black: {}%.".format(perf_rand[0], perf_rand[1], perf_rand[2]))
             perf_mini = FancyLogger.performance_values[1]
-            print("Against Minimax: {}. As White: {}. As Black: {}.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
+            print("Against Minimax: {}%. As White: {}%. As Black: {}%.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
             perf_mcts = FancyLogger.performance_values[2]
-            print("Against base MCTS: {}. As White: {}. As Black: {}.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
+            print("Against base MCTS: {}%. As White: {}%. As Black: {}%.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
             print(f"Evaluating {Config.EVAL_GAMES} times every {FancyLogger.eval_checkpoint} training step.")
             print("")
             print("-=-=- Self play status -=-=-")

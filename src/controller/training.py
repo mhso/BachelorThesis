@@ -170,10 +170,10 @@ def initialize_network(game, network_storage):
         model = network_storage.load_newest_network_from_sql()
 
     if "-l" in argv or "-dl" in argv or "-ln" in argv:
-        training_step = network_storage.curr_step
+        training_step = network_storage.curr_step + Config.ITERATIONS_PER_TRAINING
         # Load previously saved network loss + performance data.
         losses = [[], [], []]
-        for i in range(training_step+1):
+        for i in range(network_storage.curr_step+1):
             loss_both, loss_pol, loss_val = load_loss(i, GAME_NAME)
             losses[0].append(loss_both)
             losses[1].append(loss_pol)

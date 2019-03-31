@@ -62,7 +62,7 @@ class FancyLogger:
     def set_performance_values(values):
         for i, val in enumerate(values):
             if val is not None:
-                FancyLogger.performance_values[i] = val
+                FancyLogger.performance_values[i] = int(val*100)
         FancyLogger.pp()
 
     @staticmethod

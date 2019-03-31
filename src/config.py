@@ -49,7 +49,7 @@ class Config():
 
     # How often to evaluate model against base AI's
     # during training, default is every 5th training iteration.
-    EVAL_CHECKPOINT = {0: 50, 50: 75, 150: 125}
+    EVAL_CHECKPOINT = {0: 30, 50: 50, 150: 70}
 
     # How many games to play against each base AI
     # while evaluating model performance.

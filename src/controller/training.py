@@ -216,12 +216,12 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         conn.send("go")
 
     eval_queue = []
-    queue_size = Config.GAME_THREADS
     perform_data = [[[], [], []], [[], [], []], [[], [], []]]
     perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
     alert_perform = {conn: 0 for conn in game_conns[-perform_size:]}
     wins_vs_rand = 0
     new_games = 0
+    new_training_steps = 0
     game_name = type(game).__name__
 
     try:
@@ -231,7 +231,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                 if status == "evaluate":
                     # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
-                    if len(eval_queue) == queue_size:
+                    if len(eval_queue) == Config.GAME_THREADS:
                         evaluate_games(game, eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":
@@ -247,6 +247,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     finished = False
                     if should_train:
                         # Tell network to train on a batch of data.
+                        new_training_steps += Config.ITERATIONS_PER_TRAINING
                         new_step = training_step + Config.ITERATIONS_PER_TRAINING
                         update_training_step(new_step)
                         finished = train_network(network_storage, replay_storage,
@@ -254,11 +255,12 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         training_step = new_step
                         new_games = 0
                         if (not finished and Config.EVAL_CHECKPOINT and
-                                training_step % eval_checkpoint(training_step) == 0):
+                                new_training_steps >= eval_checkpoint(training_step)):
                             # Indicate that the processes should run performance evaluation games.
                             for i, k in enumerate(alert_perform):
                                 # Half should play against AI as player 1, half as player 2.
                                 alert_perform[k] = 1 if i < perform_size/2 else 2
+                            new_training_steps = 0
                     if finished:
                         FancyLogger.set_network_status("Training finished!")
                         for c in game_conns:

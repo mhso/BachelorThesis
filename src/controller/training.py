@@ -221,7 +221,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     alert_perform = {conn: 0 for conn in game_conns[-perform_size:]}
     wins_vs_rand = 0
     new_games = 0
-    new_training_steps = 0
+    new_training_steps = training_step % eval_checkpoint(training_step)
     game_name = type(game).__name__
 
     try:

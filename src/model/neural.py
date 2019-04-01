@@ -71,7 +71,7 @@ class NeuralNetwork:
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = self.conv_layer(out, Config.CONV_FILTERS, 1)
+        policy = self.conv_layer(out, 4, 1)
 
         # Game specific policy outputs.
         outputs = self.policy_layers(game, policy)

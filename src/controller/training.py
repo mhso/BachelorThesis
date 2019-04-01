@@ -104,14 +104,16 @@ def evaluate_games(game, eval_queue, network_storage):
     """
     Evaluate a queue of games using the latest neural network.
     """
-    arr = array([v for _, v in eval_queue])
     # Evaluate everything in the queue.
-    policies, values = network_storage.latest_network().evaluate(arr)
     for i, c in enumerate(eval_queue):
+        conn = c[0]
+        eval_data = c[1]
+        arr = array(eval_data)
+        policies, values = network_storage.latest_network().evaluate(arr)
         # Send result to all processes in the queue.
         g_name = type(game).__name__
-        logits = policies[i] if g_name != "Latrunculi" else (policies[0][i], policies[1][i])
-        c[0].send((logits, values[i][0]))
+        logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
+        conn.send((logits, values[:, 0]))
 
 def load_all_perform_data(game_name):
     perf_rand = load_perform_data("random", None, game_name)

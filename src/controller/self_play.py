@@ -20,7 +20,8 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
-def prepare(games):
+def root_nodes(games):
+    root_nodes = []
     for i, data in enumerate(games):
         game = data[0]
         state = data[1]
@@ -28,61 +29,98 @@ def prepare(games):
         player_2 = data[3]
 
         player = player_1 if game.player(state) else player_2
-        player.prepare_action(state)
+        root_nodes.append(player.create_root_node(state))
+    return root_nodes
 
-def select_states(games):
-    states = []
+def select_nodes(games, roots):
+    nodes = []
     for i, data in enumerate(games):
         game = data[0]
         state = data[1]
         player_1 = data[2]
         player_2 = data[3]
+        root = roots[i]
 
         player = player_1 if game.player(state) else player_2
-        player.prepare_action(state)
 
-        states.append(player.select(state))
-    return states
+        nodes.append(player.select(root))
+    return nodes
+
+def expand_roots(games, nodes, policies):
+    for i, data in enumerate(games):
+        game = data[0]
+        state = data[1]
+        player_1 = data[2]
+        player_2 = data[3]
+        root = nodes[i]
+        policy = policies[i]
+
+        player = player_1 if game.player(state) else player_2
+
+        player.expand(root, game.actions(state), policy)
+        player.prepare_action(root)
+
+def backprop(games, nodes, values):
+    for i, data in enumerate(games):
+        game = data[0]
+        state = data[1]
+        player_1 = data[2]
+        player_2 = data[3]
+        node = nodes[i]
+        value = values[i]
+
+        player = player_1 if game.player(state) else player_2
+
+        player.back_propagate(node, -value)
+
+def choose_actions(games, nodes):
+    for i, data in enumerate(games):
+        game = data[0]
+        state = data[1]
+        player_1 = data[2]
+        player_2 = data[3]
+        node = nodes[i]
+
+        player = player_1 if game.player(state) else player_2
+
+        games[i][1] = player.finalize_action(node)
 
 def play_game(games, player_white, player_black, config, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
     """
     active_games = [[games[i], games[i].start_state(), player_white[i], player_black[i]] for i in range(len(games))]
-    counters = [0 for _ in range(len(games))]
+    counters = {g: 0 for g in games}
     results = []
     time_game = time()
 
     while active_games:
-        prepare(active_games)
+        time_turn = time()
+        roots = root_nodes(active_games)
+        connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
+        policies, _ = connection.recv()
+        expand_roots(active_games, roots, policies)
 
-        selected_states = select_states(active_games)
+        for _ in range(Config.MCTS_ITERATIONS):
+            selected_nodes = select_nodes(active_games, roots)
 
-        for i, s in enumerate(select_states):
-            active_games[i][]
+            connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)]))
+            policies, values = connection.recv()
+            expand_roots(active_games, selected_nodes, policies)
+            backprop(active_games, selected_nodes, values)
 
-        for i, data in enumerate(active_games):
-            game = data[0]
-            state = data[1]
-            player_1 = data[2]
-            player_2 = data[3]
-            time_turn = time()
+        choose_actions(active_games, roots)
 
+        for game, state, player_1, player_2 in active_games:
             if gui is not None:
                 sleep(1)
                 gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
 
-            if game.player(state):
-                state = player_1.execute_action(state)
-            else:
-                state = player_2.execute_action(state)
-
             game.history.append(state)
-            active_games[i][1] = state
 
             pieces = state.count_pieces()
             log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
-            if connection:
+            if connection and False:
                 turn_took = '{0:.3f}'.format((time() - time_turn))
                 p_1, p_2 = (player_2, player_1) if state.player else (player_1, player_2)
                 p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
@@ -110,9 +148,11 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
                     sleep(config.GUI_AI_SLEEP)
                 gui.update(state)
 
-            counters[i] = counters[i] + 1
-            if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
-                active_games.pop(i)
+            counters[game] = counters[game] + 1
+            if game.terminal_test(state) or counters[game] > config.LATRUNCULI_MAX_MOVES:
+                for i, g in enumerate(active_games):
+                    if g[0] == game:
+                        active_games.pop(i)
 
                 util = game.utility(state, True)
                 winner = "White" if util == 1 else "Black" if util else "Draw"
@@ -122,15 +162,18 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
                 if connection:
                     connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
                 results.append(state)
+
+        turn_took = "{0:.3f}".format((time() - time_turn))
+        connection.send(("log", [f"Moves: {len(games[0].history)}. Active games: {len(active_games)}/{config.GAME_THREADS//3}. Turn took {turn_took} s", getpid()]))
     return results
 
-def align_with_spacing(number, total_lenght):
+def align_with_spacing(number, total_length):
     """
     Used for adding spaces before the 'number',
-    so that the total lenght of the return string matches 'total_length'.
+    so that the total length of the return string matches 'total_length'.
     """
     val = ""
-    for _ in range(len(str(number)), total_lenght):
+    for _ in range(len(str(number)), total_length):
         val += " "
     return "{}{}".format(val, str(number))
 
@@ -276,7 +319,7 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
     games = []
     player_1_agents = []
     player_2_agents = []
-    for _ in range(Config.GAME_THREADS // 3):
+    for _ in range(cfg.GAME_THREADS // 3):
         games.append(get_game(type(game).__name__, game.size, "random", "."))
         player_1 = get_ai_algorithm(type(p1).__name__, game, ".")
         player_1.connection = connection

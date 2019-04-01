@@ -17,11 +17,11 @@ class Node():
         self.children = {}
         self.visits = 0
         self.value = 0
-        self.mean_value = 0
+        self.q_value = 0
 
     def pretty_desc(self):
         return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
-            self.action, self.visits, self.value, "%.3f" % self.mean_value, "%.3f" % self.prior_prob)
+            self.action, self.visits, self.value, "%.3f" % self.q_value, "%.3f" % self.prior_prob)
 
     def __str__(self):
         return self.pretty_desc()
@@ -64,7 +64,7 @@ class MCTS(GameAI):
         #e_init = Config.EXPLORE_INIT
         #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
         explore_val = 1.27 # TODO: Maybe change later.
-        val = node.mean_value + (
+        val = node.q_value + (
             explore_val * node.prior_prob
             * parent_visits / (1+node.visits)
         )
@@ -91,13 +91,15 @@ class MCTS(GameAI):
 
         return self.select(best_node)
 
-    def expand(self, node, state, logit_map, policy_sum):
+    def expand(self, node, actions, policies):
         """
         Expand the tree with new nodes, corresponding to
         taking any possible actions from the current node.
         """
+        logit_map = self.game.map_logits(actions, policies)
+        policy_sum = sum(logit_map.values())
         for a, p in logit_map.items():
-            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
+            node.children[a] = Node(self.game.result(node.state, a), a, p / policy_sum if policy_sum else 0, node)
 
     def back_propagate(self, node, value):
         """
@@ -107,7 +109,7 @@ class MCTS(GameAI):
         """
         node.visits += 1
         node.value += value
-        node.mean_value = node.value / node.visits
+        node.q_value = node.value / node.visits
 
         if node.parent is None:
             return
@@ -130,11 +132,8 @@ class MCTS(GameAI):
         if actions == [None]: # Only action is a 'pass'.
             return value
 
-        logit_map = self.game.map_logits(actions, policy_logits)
-        policy_sum = sum(logit_map.values())
-
         # Expand node.
-        self.expand(node, state, logit_map, policy_sum)
+        self.expand(node, actions, policy_logits)
 
         return value
 
@@ -172,16 +171,25 @@ class MCTS(GameAI):
         for a, n in zip(actions, noise):
             node.children[a].prior_prob *= (1 - frac) + n * frac
 
-    def prepare_action(self, state):
+    def create_root_node(self, state):
         root_node = Node(state, None)
         self.chosen_node = root_node
+        return root_node
 
-        self.evaluate(root_node)
+    def prepare_action(self, root_node):
         if root_node.children == {}: # State has no actions (children).
             self.game.store_search_statistics(None)
-            return self.game.result(state, None) # Simulate pass.
+            return self.game.result(root_node.state, None) # Simulate pass.
 
         self.add_exploration_noise(root_node)
+
+    def finalize_action(self, node):
+        best_node = self.choose_action(node)
+        self.chosen_node = best_node
+
+        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.q_value*50)+50)))
+        self.game.store_search_statistics(node)
+        return best_node.state
 
     def execute_action(self, state):
         super.__doc__
@@ -216,7 +224,7 @@ class MCTS(GameAI):
         best_node = self.choose_action(root_node)
         self.chosen_node = best_node
 
-        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
+        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.q_value*50)+50)))
         self.game.store_search_statistics(root_node)
         return best_node.state
 

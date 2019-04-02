@@ -40,7 +40,7 @@ def initialize(game, p1, p2, **kwargs):
             # Don't use plot/GUI if several games are played.
             gui = None
         pipes = []
-        for i in range(3):
+        for i in range(Config.GAME_THREADS):
             if i > 0: # Make copies of game and players.
                 game = self_play.get_game(type(game).__name__, game.size, "random", ".")
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
@@ -55,8 +55,8 @@ def initialize(game, p1, p2, **kwargs):
                                       name=f"Process {(i+1):02d}",
                                       args=(game, p1, p2, child, gui, config))
             else:
-                game_thread = Thread(target=self_play.init_self_play,
-                                     args=(game, p1, p2, child, gui, config))
+                game_thread = Thread(target=self_play.play_loop,
+                                     args=([game], [p1], [p2], 0, gui, config, child))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file
@@ -89,7 +89,7 @@ def invalid_args(args, options, wildcard):
 
 if __name__ == "__main__":
     # Load Config from file if present.
-    cfg = None
+    cfg = Config
     if "-c" in argv:
         cfg = Config.from_file("../resources/Config.txt")
 

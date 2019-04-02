@@ -27,9 +27,15 @@ class FancyLogger:
     thread_statuses = dict()
     train_step = 0
     train_ratio = 0
-    performance_values = [0, 0, 0]
+    evaluating = False
     total_games = 0
     time_started = 0
+    performance_values = [0, 0, 0]
+
+    @staticmethod
+    def is_evaluating(evaluating):
+        FancyLogger.evaluating = evaluating
+        FancyLogger.pp()
 
     @staticmethod
     def start_timing():
@@ -91,7 +97,10 @@ class FancyLogger:
             print("Against Random: {}".format(FancyLogger.performance_values[0]))
             print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
             print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
-            print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT}th training step.")
+            if FancyLogger.evaluating:
+                print("Currently evaluating against alternate AIs...")
+            else:
+                print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT}th training step.")
             print("")
             print("-=-=- Self play status -=-=-")
             print("Playing {} on a {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))

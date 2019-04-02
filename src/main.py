@@ -53,8 +53,8 @@ def initialize(game, p1, p2, **kwargs):
                                       name=f"Process {(i+1):02d}",
                                       args=(game, p1, p2, child, gui, config))
             else:
-                game_thread = Thread(target=self_play.play_loop,
-                                     args=(game, p1, p2, 0, gui, config, child))
+                game_thread = Thread(target=self_play.init_self_play,
+                                     args=(game, p1, p2, child, gui, config))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file

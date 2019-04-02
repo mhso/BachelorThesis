@@ -104,7 +104,6 @@ def evaluate_games(game, eval_queue, network_storage):
     """
     Evaluate a queue of games using the latest neural network.
     """
-    # Evaluate everything in the queue.
     for i, c in enumerate(eval_queue):
         conn = c[0]
         eval_data = c[1]
@@ -197,7 +196,6 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         conn.send("go")
 
     eval_queue = []
-    queue_size = Config.GAME_THREADS
     perform_data = [[], [], []]
     perform_size = Config.EVAL_PROCESSES if Config.GAME_THREADS > 1 else 1
     alert_perform = {conn: False for conn in game_conns[-perform_size:]}
@@ -210,11 +208,10 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
             for conn in wait(game_conns):
                 status, val = conn.recv()
                 if status == "evaluate":
-                    # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
                     if len(eval_queue) == 3:
                         evaluate_games(game, eval_queue, network_storage)
-                        eval_queue = []
+                    eval_queue = []
                 elif status == "game_over":
                     update_num_games()
                     replay_storage.save_game(val)
@@ -235,6 +232,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         new_games = 0
                         if (not finished and Config.EVAL_CHECKPOINT and
                                 training_step % Config.EVAL_CHECKPOINT == 0):
+                            FancyLogger.is_evaluating(True)
                             # Indicate that the processes should run performance evaluation games.
                             for k in alert_perform:
                                 alert_perform[k] = True

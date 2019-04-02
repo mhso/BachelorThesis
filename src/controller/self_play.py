@@ -85,7 +85,54 @@ def choose_actions(games, nodes):
 
         games[i][1] = player.finalize_action(node)
 
-def play_game(games, player_white, player_black, config, gui=None, connection=None):
+def play_game(game, player_white, player_black, config, gui=None):
+    """
+    Play a game to the end, and return the resulting state.
+    """
+    state = game.start_state()
+    counter = 0
+    time_game = time()
+    if gui is not None:
+        sleep(1)
+        gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
+    while not game.terminal_test(state) and counter < config.LATRUNCULI_MAX_MOVES:
+        time_turn = time()
+
+        if game.player(state):
+            state = player_white.execute_action(state)
+        else:
+            state = player_black.execute_action(state)
+
+        game.history.append(state)
+
+        pieces = state.count_pieces()
+        log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
+        if "-t" in argv:
+            turn_took = '{0:.3f}'.format((time() - time_turn))
+            print(f"Turn took {turn_took} s")
+
+        if force_quit(gui):
+            print("{}: Forcing exit...".format(getpid()))
+            exit(0)
+
+        if gui is not None:
+            if type(player_white).__name__ != "Human" and not state.player:
+                sleep(config.GUI_AI_SLEEP)
+            elif type(player_black).__name__ != "Human" and state.player:
+                sleep(config.GUI_AI_SLEEP)
+            gui.update(state)
+        counter += 1
+
+    util = game.utility(state, True)
+    winner = "White" if util == 1 else "Black" if util else "Draw"
+    log("Game over! Winner: {}".format(winner))
+    if "-t" in argv:
+        print("Game took: {0:.3f} s".format(time() - time_game))
+
+    # Return resulting state of game.
+    return state
+
+def play_batch(games, player_white, player_black, config, connection=None):
     """
     Play a game to the end, and return the resulting state.
     """
@@ -111,45 +158,11 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
 
         finished_games_indexes = []
         for (i, (game, state, player_1, player_2)) in enumerate(active_games):
-            if gui is not None:
-                sleep(1)
-                gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
-
             player = player_1 if game.player(state) else player_2
             state = player.finalize_action(roots[i])
             active_games[i][1] = state
 
             game.history.append(state)
-
-            pieces = state.count_pieces()
-            log("Num of pieces, White: {} Black: {}".format(pieces[0], pieces[1]))
-            if connection and False:
-                turn_took = '{0:.3f}'.format((time() - time_turn))
-                p_1, p_2 = (player_2, player_1) if state.player else (player_1, player_2)
-                p_1_name, p_2_name = type(p_1).__name__, type(p_2).__name__
-                thread_status = (f"Moves: {align_with_spacing(len(game.history), 3)}." +
-                                f" {p_2_name} ({state.str_player()})'s turn, " +
-                                f"w: {align_with_spacing(pieces[0],2)}, " +
-                                f"b: {align_with_spacing(pieces[1],2)}. Turn took {turn_took} s.")
-                if p_1_name == "MCTS":
-                    thread_status += f" Q: {p_1.chosen_node.q_value:.5f}."
-                if p_1_name != "MCTS" or p_2_name != "MCTS":
-                    thread_status += " - Eval vs. {}".format(p_1_name if p_2_name == "MCTS" else p_2_name)
-                connection.send(("log", [thread_status, getpid()]))
-            elif "-t" in argv:
-                turn_took = '{0:.3f}'.format((time() - time_turn))
-                print(f"Turn took {turn_took} s")
-
-            if force_quit(gui):
-                print("{}: Forcing exit...".format(getpid()))
-                exit(0)
-
-            if gui is not None:
-                if type(player_white).__name__ != "Human" and not state.player:
-                    sleep(config.GUI_AI_SLEEP)
-                elif type(player_black).__name__ != "Human" and state.player:
-                    sleep(config.GUI_AI_SLEEP)
-                gui.update(state)
 
             counters[i] = counters[i] + 1
             if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
@@ -163,7 +176,7 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
                 if connection:
                     connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
                 """
-                results.append(state)
+                connection.send(("game_over", game.clone()))
 
         turn_took = "{0:.3f}".format((time() - time_turn))
         num_active = len(active_games)
@@ -189,7 +202,7 @@ def align_with_spacing(number, total_length):
         val += " "
     return "{}{}".format(val, str(number))
 
-def evaluate_against_ai(game, player, other, num_games, config, connection=None):
+def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -199,8 +212,8 @@ def evaluate_against_ai(game, player, other, num_games, config, connection=None)
     """
     wins = 0
     for _ in range(num_games):
-        result = play_game(game, player, other, config, connection=connection)
-        wins += game.utility(result, True)
+        result = play_game(game, player1, player2, config)
+        wins += game.utility(result, mcts_player)
         game.reset()
     return wins/num_games # Return ratio of games won.
 
@@ -214,7 +227,7 @@ def minimax_for_game(game):
         return "Minimax_Othello"
     return "unknown"
 
-def evaluate_model(game, player, config, eval_others, connection):
+def evaluate_model(game, player, config, status, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
@@ -222,33 +235,43 @@ def evaluate_model(game, player, config, eval_others, connection):
     num_games = config.EVAL_GAMES // config.EVAL_PROCESSES
     num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
+    play_as_white = status[1] == 1
 
-    if not eval_others:
+    if not status[0]:
         connection.send(("log", ["Evaluating against Random", getpid()]))
+        p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
+        if not play_as_white:
+            # MCTS should play as player 2.
+            p_1, p_2 = p_2, p_1
 
-        eval_random = evaluate_against_ai(game, player,
-                                          get_ai_algorithm("Random", game, "."),
-                                          num_games, config, connection)
+        eval_random = evaluate_against_ai(game, p_1, p_2, play_as_white,
+                                          num_games, config)
 
-        connection.send(("perform_rand", eval_random))
+        connection.send((f"perform_rand_{status[1]}", eval_random))
     else:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
         connection.send(("log", ["Evaluating against Minimax", getpid()]))
+        p_1, p_2 = player, get_ai_algorithm("Minimax", game, ".")
+        if not play_as_white:
+            # MCTS should play as player 2.
+            p_1, p_2 = p_2, p_1
 
-        eval_minimax = evaluate_against_ai(game, player,
-                                           get_ai_algorithm("Minimax", game, "."),
-                                           num_games, config, connection)
+        eval_minimax = evaluate_against_ai(game, p_1, p_2, play_as_white,
+                                           num_games, config)
 
-        connection.send(("perform_mini", eval_minimax))
+        connection.send((f"perform_mini_{status[1]}", eval_minimax))
 
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
+        p_1, p_2 = player, get_ai_algorithm("MCTS_Basic", game, ".")
+        if not play_as_white:
+            # MCTS should play as player 2.
+            p_1, p_2 = p_2, p_1
 
-        eval_mcts = evaluate_against_ai(game, player,
-                                        get_ai_algorithm("MCTS_Basic", game, "."),
-                                        num_games, config, connection)
+        eval_mcts = evaluate_against_ai(game, p_1, p_2, play_as_white,
+                                        num_games, config)
 
-        connection.send(("perform_mcts", eval_mcts))
+        connection.send((f"perform_mcts_{status[1]}", eval_mcts))
     player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
 
 def get_game(game_name, size, rand_seed, wildcard="."):
@@ -287,7 +310,10 @@ def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None
         print("{} is done with training!".format(getpid()))
         return
     try:
-        play_game(games, p1s, p2s, config, gui, connection)
+        if len(games) > 1:
+            play_batch(games, p1s, p2s, config, connection)
+        else:
+            play_game(games[0], p1s[0], p2s[0], config, gui)
 
         for i in range(len(games)):
             game = games[i]

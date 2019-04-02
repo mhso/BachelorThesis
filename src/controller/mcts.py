@@ -196,15 +196,13 @@ class MCTS(GameAI):
         super.__doc__
         log("MCTS is calculating the best move...")
 
-        root_node = Node(state, None)
-        self.chosen_node = root_node
+        root_node = self.create_root_node(state)
 
         self.evaluate(root_node)
-        if root_node.children == {}: # State has no actions (children).
-            self.game.store_search_statistics(None)
-            return self.game.result(state, None) # Simulate pass.
-
-        self.add_exploration_noise(root_node)
+        
+        pass_action = self.prepare_action(root_node)
+        if pass_action:
+            return pass_action
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
@@ -215,19 +213,14 @@ class MCTS(GameAI):
             # Perform rollout, simulate till end of game and return outcome.
             value = self.evaluate(node)
 
-            self.back_propagate(node, 1-value)
+            self.back_propagate(node, -value)
 
             node = root_node
 
         for node in root_node.children.values():
             log(node.pretty_desc())
 
-        best_node = self.choose_action(root_node)
-        self.chosen_node = best_node
-
-        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.q_value*50)+50)))
-        self.game.store_search_statistics(root_node)
-        return best_node.state
+        return self.finalize_action(root_node)
 
     def __str__(self):
         states_explored = ""

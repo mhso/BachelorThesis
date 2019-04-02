@@ -90,6 +90,16 @@ class MCTS(GameAI):
 
         return self.select(best_node)
 
+    def expand(self, node, actions, policies):
+        """
+        Expand the tree with new nodes, corresponding to
+        taking any possible actions from the current node.
+        """
+        logit_map = self.game.map_logits(actions, policies)
+        policy_sum = sum(logit_map.values())
+        for a, p in logit_map.items():
+            node.children[a] = Node(self.game.result(node.state, a), a, p / policy_sum if policy_sum else 0, node)
+
     def back_propagate(self, node, value):
         """
         After a full simulation, propagate result up the tree.
@@ -121,12 +131,8 @@ class MCTS(GameAI):
         if actions == [None]: # Only action is a 'pass'.
             return value
 
-        logit_map = self.game.map_logits(actions, policy_logits)
-        policy_sum = sum(logit_map.values())
-
         # Expand node.
-        for a, p in logit_map.items():
-            node.children[a] = Node(self.game.result(state, a), a, p / policy_sum if policy_sum else 0, node)
+        self.expand(node, actions, policy_logits)
 
         return value
 
@@ -172,19 +178,38 @@ class MCTS(GameAI):
         for a, n in zip(actions, noise):
             node.children[a].prior_prob *= (1 - frac) + n * frac
 
+    def create_root_node(self, state):
+        root_node = Node(state, None)
+        self.chosen_node = root_node
+        return root_node
+
+    def prepare_action(self, root_node):
+        if root_node.children == {}: # State has no actions (children).
+            self.game.store_search_statistics(None)
+            return self.game.result(root_node.state, None) # Simulate pass.
+
+        self.add_exploration_noise(root_node)
+        return None
+
+    def finalize_action(self, node):
+        best_node = self.choose_action(node)
+        self.chosen_node = best_node
+
+        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.q_value*50)+50)))
+        self.game.store_search_statistics(node)
+        return best_node.state
+
     def execute_action(self, state):
         super.__doc__
         log("MCTS is calculating the best move...")
 
-        root_node = Node(state, None)
-        self.chosen_node = root_node
+        root_node = self.create_root_node(state)
 
         self.evaluate(root_node)
-        if root_node.children == {}: # State has no actions (children).
-            self.game.store_search_statistics(None)
-            return self.game.result(state, None) # Simulate pass.
-
-        self.add_exploration_noise(root_node)
+        
+        pass_action = self.prepare_action(root_node)
+        if pass_action:
+            return pass_action
 
         # Perform iterations of selection, evaluation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
@@ -202,9 +227,10 @@ class MCTS(GameAI):
         for node in root_node.children.values():
             log(node.pretty_desc())
 
-        best_node = self.choose_action(root_node)
-        self.chosen_node = best_node
+        return self.finalize_action(root_node)
 
-        log("MCTS action: {}, q-value: {}".format(best_node.action, best_node.q_value))
-        self.game.store_search_statistics(root_node)
-        return best_node.state
+    def __str__(self):
+        states_explored = ""
+        for v in self.state_map:
+            states_explored += str(self.state_map[v]) + ",\n"
+        return "[MCTS:\n{}]".format(states_explored)

@@ -109,14 +109,15 @@ def evaluate_games(game, eval_queue, network_storage):
     """
     Evaluate a queue of games using the latest neural network.
     """
-    arr = array([v for _, v in eval_queue])
-    # Evaluate everything in the queue.
-    policies, values = network_storage.latest_network().evaluate(arr)
     for i, c in enumerate(eval_queue):
+        conn = c[0]
+        eval_data = c[1]
+        arr = array(eval_data)
+        policies, values = network_storage.latest_network().evaluate(arr)
         # Send result to all processes in the queue.
         g_name = type(game).__name__
-        logits = policies[i] if g_name != "Latrunculi" else (policies[0][i], policies[1][i])
-        c[0].send((logits, values[i][0]))
+        logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
+        conn.send((logits, values[:, 0]))
 
 def load_all_perform_data(game_name):
     perf_rand = load_perform_data("random", None, game_name)
@@ -229,11 +230,10 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
             for conn in wait(game_conns):
                 status, val = conn.recv()
                 if status == "evaluate":
-                    # Process has data that needs to be evaluated. Add it to the queue.
                     eval_queue.append((conn, val))
-                    if len(eval_queue) == Config.GAME_THREADS:
+                    if len(eval_queue) == 3:
                         evaluate_games(game, eval_queue, network_storage)
-                        eval_queue = []
+                    eval_queue = []
                 elif status == "game_over":
                     update_num_games()
                     replay_storage.save_game(val)
@@ -256,6 +256,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         new_games = 0
                         if (not finished and Config.EVAL_CHECKPOINT and
                                 new_training_steps >= eval_checkpoint(training_step)):
+                            FancyLogger.is_evaluating(True)
                             # Indicate that the processes should run performance evaluation games.
                             for i, k in enumerate(alert_perform):
                                 # Half should play against AI as player 1, half as player 2.

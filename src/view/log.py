@@ -31,6 +31,12 @@ class FancyLogger:
     total_games = 0
     time_started = 0
     eval_checkpoint = 0
+    evaluating = False
+
+    @staticmethod
+    def is_evaluating(evaluating):
+        FancyLogger.evaluating = evaluating
+        FancyLogger.pp()
 
     @staticmethod
     def start_timing():
@@ -95,7 +101,14 @@ class FancyLogger:
             print("Against Minimax: {}%. As White: {}%. As Black: {}%.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
             perf_mcts = FancyLogger.performance_values[2]
             print("Against base MCTS: {}%. As White: {}%. As Black: {}%.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
-            print(f"Evaluating {Config.EVAL_GAMES} times every {FancyLogger.eval_checkpoint} training step.")
+            print("Against Random: {}".format(FancyLogger.performance_values[0]))
+            print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
+            print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
+            if FancyLogger.evaluating:
+                print("Currently evaluating against alternate AIs...")
+            else:
+                print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT}th training step.")
+
             print("")
             print("-=-=- Self play status -=-=-")
             print("Playing {} on a {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))
@@ -105,7 +118,7 @@ class FancyLogger:
                 print("{}: {}".format(thread, status))
 
             print("----------")
-            print("Number of processes: {}".format(Config.GAME_THREADS))
+            print("Number of actors: {}.".format(Config.GAME_THREADS))
             print("Total games generated: {}".format(FancyLogger.total_games))
             time_spent = time() - FancyLogger.time_started
             print("Time spent: {0:.3f} s [{1}]".format(time_spent, datetime.timedelta(seconds=math.ceil(time_spent))))

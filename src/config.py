@@ -31,7 +31,7 @@ class Config():
     LATRUNCULI_MAX_MOVES = 200
 
     # Number of training steps for the neural network.
-    TRAINING_STEPS = 100
+    TRAINING_STEPS = 500
 
     # Number of games to play in self-play (for each thread),
     # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
@@ -49,7 +49,7 @@ class Config():
 
     # How often to evaluate model against base AI's
     # during training, default is every 5th training iteration.
-    EVAL_CHECKPOINT = 15
+    EVAL_CHECKPOINT = {0: 30, 50: 50, 150: 70}
 
     # How many games to play against each base AI
     # while evaluating model performance.
@@ -80,6 +80,9 @@ class Config():
 
     # Batch size for neural network input.
     BATCH_SIZE = 256
+
+    # Number of times to train per training step.
+    ITERATIONS_PER_TRAINING = 5
 
     # Number of times to train on one batch.
     EPOCHS_PER_BATCH = 3
@@ -115,7 +118,7 @@ class Config():
     # |           MCTS OPTIONS            |
     # |***********************************|
     # Number of iterations per action taken.
-    MCTS_ITERATIONS = 300
+    MCTS_ITERATIONS = 800
 
     # Base exploration constant. This basically defines how much the visit
     # count for a node in MCTS should count towards it's UCB score. Lowering

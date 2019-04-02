@@ -45,8 +45,10 @@ def initialize(game, p1, p2, **kwargs):
                 game = self_play.get_game(type(game).__name__, game.size, "random", ".")
                 p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
                 p2 = self_play.get_ai_algorithm(type(p2).__name__, game, ".")
-            parent, child = Pipe()
-            pipes.append(parent)
+            child = None
+            if self_play.is_mcts(p1) or self_play.is_mcts(p2):
+                parent, child = Pipe()
+                pipes.append(parent)
 
             if gui is None:
                 game_thread = Process(target=self_play.init_self_play,
@@ -65,7 +67,7 @@ def initialize(game, p1, p2, **kwargs):
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
 
-        if pipes != [] and self_play.is_mcts(p1) or self_play.is_mcts(p2):
+        if pipes != []:
             # Start monitor thread.
             monitor = Thread(target=monitor_games, args=(pipes, game, network_storage, replay_storage))
             monitor.start()
@@ -83,17 +85,7 @@ def initialize(game, p1, p2, **kwargs):
         self_play.play_loop(game, p1, p2, 0)
 
 def invalid_args(args, options, wildcard):
-    """
-    if ("MCTS" in args or len(args) - len(options) == 1
-             or args[0] == wildcard or args[1] == wildcard):
-        if "-g" in options:
-            return "Can't use GUI during MCTS/NN training"
-        if "Human" in args:
-            return "Can't play as human during MCTS/NN training"
-    """
-    if "-l" in args or "-s" in args:
-        return "Can't save/load models or games when not training"
-    return None
+    return False
 
 if __name__ == "__main__":
     # Load Config from file if present.
@@ -186,7 +178,7 @@ if __name__ == "__main__":
             # If GUI is active, only run with 1 process
             # and no performance evaluation.
             Config.GAME_THREADS = 1
-            Config.EVAL_CHECKPOINT = 0
+            Config.EVAL_CHECKPOINT = {}
         """
         if "-dl" in options:
             REPLAY_STORAGE.load_game_from_sql()

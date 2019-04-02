@@ -27,10 +27,11 @@ class FancyLogger:
     thread_statuses = dict()
     train_step = 0
     train_ratio = 0
-    evaluating = False
+    performance_values = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     total_games = 0
     time_started = 0
-    performance_values = [0, 0, 0]
+    eval_checkpoint = 0
+    evaluating = False
 
     @staticmethod
     def is_evaluating(evaluating):
@@ -67,7 +68,7 @@ class FancyLogger:
     def set_performance_values(values):
         for i, val in enumerate(values):
             if val is not None:
-                FancyLogger.performance_values[i] = val
+                FancyLogger.performance_values[i] = [int(v * 100) for v in val]
         FancyLogger.pp()
 
     @staticmethod
@@ -94,6 +95,12 @@ class FancyLogger:
             print("")
 
             print("-=-=- Latest evaluation statuses -=-=-")
+            perf_rand = FancyLogger.performance_values[0]
+            print("Against Random: {}%. As White: {}%. As Black: {}%.".format(perf_rand[0], perf_rand[1], perf_rand[2]))
+            perf_mini = FancyLogger.performance_values[1]
+            print("Against Minimax: {}%. As White: {}%. As Black: {}%.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
+            perf_mcts = FancyLogger.performance_values[2]
+            print("Against base MCTS: {}%. As White: {}%. As Black: {}%.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
             print("Against Random: {}".format(FancyLogger.performance_values[0]))
             print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
             print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
@@ -101,6 +108,7 @@ class FancyLogger:
                 print("Currently evaluating against alternate AIs...")
             else:
                 print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT}th training step.")
+
             print("")
             print("-=-=- Self play status -=-=-")
             print("Playing {} on a {}x{} board.".format(FancyLogger.game_name, FancyLogger.board_size, FancyLogger.board_size))

@@ -42,9 +42,6 @@ class MCTS(GameAI):
     cfg = None
     chosen_node = None
 
-    ITERATIONS = 800 # Number of times to run MCTS, per action taken in game.
-    MAX_MOVES = 5000 # Max moves before a simulation is deemed a draw.
-
     def __init__(self, game, playouts=None):
         super().__init__(game)
         if playouts:
@@ -52,16 +49,26 @@ class MCTS(GameAI):
         else:
             self.ITERATIONS = Config.MCTS_ITERATIONS
 
-        log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
+        log("MCTS is using {} playouts.".format(self.ITERATIONS))
 
     def set_config(self, config):
         self.cfg = config
         self.ITERATIONS = config.MCTS_ITERATIONS
 
     def ucb_score(self, node, parent_visits):
-        # PUCT formula.
-        #e_base = Config.EXPLORE_BASE
-        #e_init = Config.EXPLORE_INIT
+        """
+        PUCT (Polynomial Upper Confident for Trees) formula.
+        Q(s, a) + C(s) * P(s, a) * sqrt(N(s)) / (1 + N(s, a)),
+        where
+            - Q(s, a) = q-value of node. Visits/value.
+            - N(s) = parent visit count of current node.
+            - C(s) = exploration rate. Scales according to simulations in AZ.
+                     We keep it as a constant for simplicity.
+            - P(s, a) = prior probability of selecting action in node.
+            - N(s, a) = visits of current node.
+        """
+        #e_base = self.cfg.EXPLORE_BASE
+        #e_init = self.cfg.EXPLORE_INIT
         #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
         explore_val = 1.27 # TODO: Maybe change later.
         val = node.q_value + (
@@ -73,16 +80,8 @@ class MCTS(GameAI):
     def select(self, node):
         """
         Select a node to run simulations from.
-        Nodes are chosen according to how they maximize
-        the PUCT formula = Q(i) + c * P(i) * sqrt (N(i)) / (1 + n(i)
-        Where
-            - Q(i) = mean value of node (node value / node visits).
-            - c = exploration rate.
-            - P(i) = prior probability of selecting action in node (i).
-            - N(i) = visits of parent node.
-            - n(i) = times current node was visited.
-        This assures a balance between exploring new nodes,
-        and exploiting nodes that are known to result in good outcomes.
+        Nodes are recursively chosen according to how they maximize
+        the PUCT formula, until a leaf is reached.
         """
         if node.children == {}: # Node is a leaf.
             return node
@@ -119,7 +118,7 @@ class MCTS(GameAI):
         """
         Use the neural network to obtain a prediction of the
         outcome of the game, as well as probability distribution
-        of available actions, from the current state.
+        of available actions from the current state.
         """
         state = node.state
         actions = self.game.actions(state)
@@ -151,6 +150,14 @@ class MCTS(GameAI):
                                 p=exps/sum(exps))
 
     def choose_action(self, node):
+        """
+        When MCTS is finished with it's iterations,
+        a final action to take is chosen. If the current
+        length of the give is less than a certain threshold,
+        softmax sampling is used to select an action, based on
+        a probabiliy of visits to that node during MCTS simulation.
+        Otherwise, the node with most visits is chosen.
+        """
         child_nodes = [n for n in node.children.values()]
         visit_counts = [n.visits for n in child_nodes]
         if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
@@ -162,8 +169,8 @@ class MCTS(GameAI):
 
     def add_exploration_noise(self, node):
         """
-        Add noise to prior value of node, to encourage
-        exploration of new nodes.
+        Add Dirichlet noise to prior value of node,
+        to encourage exploration of new nodes.
         """
         actions = node.children.keys()
         noise = np.random.gamma(Config.NOISE_BASE, 1, len(actions))
@@ -204,13 +211,13 @@ class MCTS(GameAI):
         if pass_action:
             return pass_action
 
-        # Perform iterations of selection, simulation, expansion, and back propogation.
+        # Perform iterations of selection, evaluation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest
-        # number of mean value (value/visits) are chosen as the best action.
+        # number of visits are chosen as the best action.
         for _ in range(self.ITERATIONS):
             node = self.select(root_node)
 
-            # Perform rollout, simulate till end of game and return outcome.
+            # Get network evalution, in place of rollouts.
             value = self.evaluate(node)
 
             self.back_propagate(node, -value)

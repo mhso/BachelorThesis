@@ -102,15 +102,17 @@ class ReplayStorage:
         file_extension = ".bin"
 
         try:
+            folders = glob(folder_name + game_type + data_type + folder_nn_no_version + "*")
+            folders.sort(key=lambda s: int(s.split("NNv")[-1]))
             if step is None:
-                current_step = len(glob(folder_name + game_type + data_type + folder_nn_no_version + "*"))-1
+                current_step = len(folders)-1
             else:
                 current_step = step
 
             step_counter = current_step
             file_counter = 0
             while step_counter >= 0 and file_counter < Config.MAX_GAME_STORAGE:
-                file_list = glob(folder_name + game_type + data_type + folder_nn_no_version + str(step_counter) + "/" + "*" + file_extension)
+                file_list = glob(folders[step_counter] + "/" + "*" + file_extension)
 
                 for f in file_list:
                     if file_counter < Config.MAX_GAME_STORAGE:

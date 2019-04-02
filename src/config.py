@@ -57,7 +57,7 @@ class Config():
     EVAL_GAMES = 16
 
     # How many processes that should run evaluation games.
-    EVAL_PROCESSES = 4
+    EVAL_PROCESSES = 1
 
     # |***********************************|
     # |      NEURAL NETWORK OPTIONS       |

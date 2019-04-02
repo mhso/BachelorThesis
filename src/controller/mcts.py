@@ -38,7 +38,6 @@ class MCTS(GameAI):
     Simulation and Backpropagation.
     """
     state_map = dict()
-    connection = None
     cfg = None
     chosen_node = None
 
@@ -114,7 +113,7 @@ class MCTS(GameAI):
             return
         self.back_propagate(node.parent, -value)
 
-    def evaluate(self, node):
+    def set_evaluation_data(self, node, policy_logits, value):
         """
         Use the neural network to obtain a prediction of the
         outcome of the game, as well as probability distribution
@@ -122,9 +121,6 @@ class MCTS(GameAI):
         """
         state = node.state
         actions = self.game.actions(state)
-        # Get network evaluation from main process.
-        self.connection.send(("evaluate", self.game.structure_data(state)))
-        policy_logits, value = self.connection.recv()
         if self.game.terminal_test(state):
             value = self.game.utility(state, state.player)
 
@@ -173,8 +169,8 @@ class MCTS(GameAI):
         to encourage exploration of new nodes.
         """
         actions = node.children.keys()
-        noise = np.random.gamma(Config.NOISE_BASE, 1, len(actions))
-        frac = Config.NOISE_FRACTION
+        noise = np.random.gamma(self.cfg.NOISE_BASE, 1, len(actions))
+        frac = self.cfg.NOISE_FRACTION
         for a, n in zip(actions, noise):
             node.children[a].prior_prob *= (1 - frac) + n * frac
 
@@ -191,43 +187,13 @@ class MCTS(GameAI):
         self.add_exploration_noise(root_node)
         return None
 
-    def finalize_action(self, node):
+    def execute_action(self, node):
         best_node = self.choose_action(node)
         self.chosen_node = best_node
 
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.q_value*50)+50)))
         self.game.store_search_statistics(node)
         return best_node.state
-
-    def execute_action(self, state):
-        super.__doc__
-        log("MCTS is calculating the best move...")
-
-        root_node = self.create_root_node(state)
-
-        self.evaluate(root_node)
-        
-        pass_action = self.prepare_action(root_node)
-        if pass_action:
-            return pass_action
-
-        # Perform iterations of selection, evaluation, expansion, and back propogation.
-        # After the iterations are done, the child of the original node with the highest
-        # number of visits are chosen as the best action.
-        for _ in range(self.ITERATIONS):
-            node = self.select(root_node)
-
-            # Get network evalution, in place of rollouts.
-            value = self.evaluate(node)
-
-            self.back_propagate(node, -value)
-
-            node = root_node
-
-        for node in root_node.children.values():
-            log(node.pretty_desc())
-
-        return self.finalize_action(root_node)
 
     def __str__(self):
         states_explored = ""

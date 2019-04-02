@@ -31,12 +31,6 @@ class FancyLogger:
     total_games = 0
     time_started = 0
     eval_checkpoint = 0
-    evaluating = False
-
-    @staticmethod
-    def is_evaluating(evaluating):
-        FancyLogger.evaluating = evaluating
-        FancyLogger.pp()
 
     @staticmethod
     def start_timing():
@@ -80,7 +74,7 @@ class FancyLogger:
     def pp():
         global debug
         if not debug:
-            clear_console()
+            #clear_console()
             print("-=-=- Network status -=-=-")
             network_string = f"Network is using {Config.CONV_FILTERS} conv filters, "
             network_string += f"{Config.RES_LAYERS} residual layers "
@@ -101,13 +95,7 @@ class FancyLogger:
             print("Against Minimax: {}%. As White: {}%. As Black: {}%.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
             perf_mcts = FancyLogger.performance_values[2]
             print("Against base MCTS: {}%. As White: {}%. As Black: {}%.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
-            print("Against Random: {}".format(FancyLogger.performance_values[0]))
-            print("Against Minimax: {}".format(FancyLogger.performance_values[1]))
-            print("Against base MCTS: {}".format(FancyLogger.performance_values[2]))
-            if FancyLogger.evaluating:
-                print("Currently evaluating against alternate AIs...")
-            else:
-                print(f"Evaluating {Config.EVAL_GAMES} times every {Config.EVAL_CHECKPOINT}th training step.")
+            print(f"Evaluating {Config.EVAL_GAMES} times every {FancyLogger.eval_checkpoint}th training step.")
 
             print("")
             print("-=-=- Self play status -=-=-")

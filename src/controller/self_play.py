@@ -90,7 +90,7 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
     Play a game to the end, and return the resulting state.
     """
     active_games = [[games[i], games[i].start_state(), player_white[i], player_black[i]] for i in range(len(games))]
-    counters = {g: 0 for g in games}
+    counters = [0 for _ in games]
     results = []
     time_game = time()
 
@@ -109,12 +109,15 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
             expand_roots(active_games, selected_nodes, policies)
             backprop(active_games, selected_nodes, values)
 
-        choose_actions(active_games, roots)
-
-        for game, state, player_1, player_2 in active_games:
+        finished_games_indexes = []
+        for (i, (game, state, player_1, player_2)) in enumerate(active_games):
             if gui is not None:
                 sleep(1)
                 gui.update(state) # Update GUI, to clear board, if several games are played sequentially.
+
+            player = player_1 if game.player(state) else player_2
+            state = player.finalize_action(roots[i])
+            active_games[i][1] = state
 
             game.history.append(state)
 
@@ -148,12 +151,10 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
                     sleep(config.GUI_AI_SLEEP)
                 gui.update(state)
 
-            counters[game] = counters[game] + 1
-            if game.terminal_test(state) or counters[game] > config.LATRUNCULI_MAX_MOVES:
-                for i, g in enumerate(active_games):
-                    if g[0] == game:
-                        active_games.pop(i)
-
+            counters[i] = counters[i] + 1
+            if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
+                finished_games_indexes.append(i)
+                """
                 util = game.utility(state, True)
                 winner = "White" if util == 1 else "Black" if util else "Draw"
                 log("Game over! Winner: {}".format(winner))
@@ -161,10 +162,21 @@ def play_game(games, player_white, player_black, config, gui=None, connection=No
                     print("Game took: {0:.3f} s".format(time() - time_game))
                 if connection:
                     connection.send(("log", ["Game over! Winner: {}, util: {}".format(winner, util), getpid()]))
+                """
                 results.append(state)
 
         turn_took = "{0:.3f}".format((time() - time_turn))
-        connection.send(("log", [f"Moves: {len(games[0].history)}. Active games: {len(active_games)}/{config.GAME_THREADS//3}. Turn took {turn_took} s", getpid()]))
+        num_active = len(active_games)
+        num_moves = len(active_games[0][0].history)
+        elems_removed = 0
+        for i in finished_games_indexes:
+            active_games.pop(i-elems_removed)
+            elems_removed += 1
+
+        num_active -= elems_removed
+        connection.send(("log", [(f"Moves: {num_moves}. Active games: "+
+                                  f"{num_active}/{config.GAME_THREADS//3}. Turn took {turn_took} s"),
+                                 getpid()]))
     return results
 
 def align_with_spacing(number, total_length):
@@ -320,7 +332,7 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
     player_1_agents = []
     player_2_agents = []
     for _ in range(cfg.GAME_THREADS // 3):
-        games.append(get_game(type(game).__name__, game.size, "random", "."))
+        games.append(game)
         player_1 = get_ai_algorithm(type(p1).__name__, game, ".")
         player_1.connection = connection
         player_1.set_config(cfg)
@@ -329,5 +341,6 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
         player_2.set_config(cfg)
         player_1_agents.append(player_1)
         player_2_agents.append(player_2)
+        game = get_game(type(game).__name__, game.size, "random", ".")
 
     play_loop(games, player_1_agents, player_2_agents, 0, gui, cfg, connection)

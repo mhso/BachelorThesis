@@ -182,6 +182,7 @@ class MCTS(GameAI):
             return self.game.result(root_node.state, None) # Simulate pass.
 
         self.add_exploration_noise(root_node)
+        return None
 
     def finalize_action(self, node):
         best_node = self.choose_action(node)

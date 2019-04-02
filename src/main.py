@@ -50,7 +50,7 @@ def initialize(game, p1, p2, **kwargs):
 
             if gui is None:
                 game_thread = Process(target=self_play.init_self_play,
-                                      name=f"Actor {(i+1):02d}",
+                                      name=f"Process {(i+1):02d}",
                                       args=(game, p1, p2, child, gui, config))
             else:
                 game_thread = Thread(target=self_play.play_loop,

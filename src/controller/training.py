@@ -228,7 +228,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                 status, val = conn.recv()
                 if status == "evaluate":
                     eval_queue.append((conn, val))
-                    if len(eval_queue) == 3:
+                    if len(eval_queue) == Config.GAME_THREADS:
                         evaluate_games(game, eval_queue, network_storage)
                         eval_queue = []
                 elif status == "game_over":

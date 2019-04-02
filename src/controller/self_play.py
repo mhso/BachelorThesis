@@ -104,7 +104,7 @@ def play_as_mcts(active_games, config, connection):
         backprop(active_games, selected_nodes, values)
     return roots
 
-def play_games(games, player_white, player_black, config, connection=None):
+def play_games(games, player_white, player_black, config, gui=None, connection=None):
     """
     Play a game to the end, and return the resulting state.
     """
@@ -112,6 +112,10 @@ def play_games(games, player_white, player_black, config, connection=None):
     total_games = len(games)
     counters = [0 for _ in games]
     results = []
+
+    if gui is not None:
+        sleep(1)
+        gui.update(active_games[0][1]) # Update GUI, to clear board, if several games are played sequentially.
 
     while active_games:
         player = active_games[0][2] if active_games[0][0].player(active_games[0][1]) else active_games[0][3]
@@ -127,6 +131,13 @@ def play_games(games, player_white, player_black, config, connection=None):
             active_games[i][1] = state
 
             game.history.append(state)
+
+            if gui is not None:
+                if type(player_white).__name__ != "Human" and not state.player:
+                    sleep(config.GUI_AI_SLEEP)
+                elif type(player_black).__name__ != "Human" and state.player:
+                    sleep(config.GUI_AI_SLEEP)
+                gui.update(state)
 
             counters[i] = counters[i] + 1
             if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
@@ -174,7 +185,7 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
     for i in range(len(games)):
         player = p1s[i] if mcts_player else p2s[i]
         player.set_config(config)
-    results = play_games(games, p1s, p2s, config, connection)
+    results = play_games(games, p1s, p2s, config, connection=connection)
     for result in results:
         wins += game.utility(result, mcts_player)
         game.reset()
@@ -266,7 +277,7 @@ def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None
         print("{} is done with training!".format(getpid()))
         return
     try:
-        play_games(games, p1s, p2s, config, connection)
+        play_games(games, p1s, p2s, config, gui, connection)
         clones = []
 
         for i in range(len(games)):
@@ -321,7 +332,7 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
     # Wait for initial construction/compilation of network.
     connection.recv()
 
-    games, player_1_agents, player_2_agents = copy_games_and_players(game, p1, p2, cfg.GAME_THREADS // 3)
+    games, player_1_agents, player_2_agents = copy_games_and_players(game, p1, p2, cfg.ACTORS // 3)
     for i in range(len(games)):
         player_1_agents[i].set_config(cfg)
         player_2_agents[i].set_config(cfg)

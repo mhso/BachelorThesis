@@ -40,7 +40,10 @@ class Config():
 
     # Amount of games to run in parallel during training.
     # 1 = no parallel games.
-    GAME_THREADS = 8
+    GAME_THREADS = 3
+
+    # Total number of actors split evenly between each thread/process.
+    ACTORS = 30
 
     # How many games to generate per training run.
     # Default is to run training every time all processes

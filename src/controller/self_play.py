@@ -20,9 +20,12 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
-def root_nodes(games):
+def create_roots(games):
+    """
+    Create root nodes for use in MCTS simulation.
+    """
     root_nodes = []
-    for i, data in enumerate(games):
+    for data in games:
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -33,6 +36,9 @@ def root_nodes(games):
     return root_nodes
 
 def select_nodes(games, roots):
+    """
+    Run 'select' in MCTS on a batch of root nodes.
+    """
     nodes = []
     for i, data in enumerate(games):
         game = data[0]
@@ -47,6 +53,10 @@ def select_nodes(games, roots):
     return nodes
 
 def prepare_actions(games, nodes):
+    """
+    Add exploration noise and check for 'pass' action
+    on a batch of nodes.
+    """
     for i, data in enumerate(games):
         game = data[0]
         state = data[1]
@@ -59,6 +69,10 @@ def prepare_actions(games, nodes):
         player.prepare_action(root)
 
 def expand_nodes(games, nodes, policies, values):
+    """
+    Expand a batch of node based on policy logits 
+    acquired from the neural network.
+    """
     return_values = []
     for i, data in enumerate(games):
         game = data[0]
@@ -71,10 +85,13 @@ def expand_nodes(games, nodes, policies, values):
         player = player_1 if game.player(state) else player_2
 
         return_values.append(player.set_evaluation_data(node, policy, values[i]))
-        player.expand(node, game.actions(state), policy)
     return return_values
 
 def backprop(games, nodes, values):
+    """
+    Backpropagate values from the neural network
+    to update of a batch of nodes.
+    """
     for i, data in enumerate(games):
         game = data[0]
         state = data[1]
@@ -88,7 +105,10 @@ def backprop(games, nodes, values):
         player.back_propagate(node, -value)
 
 def play_as_mcts(active_games, config, connection):
-    roots = root_nodes(active_games)
+    """
+    Play a batch of games as MCTS vs. MCTS.
+    """
+    roots = create_roots(active_games)
     # Get network evaluation from main process.
     connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
     policies, values = connection.recv()

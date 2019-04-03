@@ -106,7 +106,7 @@ class FancyLogger:
                 print("{}: {}".format(thread, status))
 
             print("----------")
-            print("Number of actors: {}.".format(Config.GAME_THREADS))
+            print("Number of actors: {}.".format(Config.ACTORS))
             print("Total games generated: {}".format(FancyLogger.total_games))
             time_spent = time() - FancyLogger.time_started
             print("Time spent: {0:.3f} s [{1}]".format(time_spent, datetime.timedelta(seconds=math.ceil(time_spent))))

@@ -275,7 +275,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     FancyLogger.set_thread_status(val[1], val[0])
                 elif status[:7] == "perform":
                     # Get performance data from games against alternate AIs.
-                    total = val[0] + val[1]
+                    total = (val[0] + val[1])/2
                     as_white = val[0]
                     as_black = val[1]
                     index = None

@@ -230,16 +230,16 @@ def evaluate_model(game, player, status, config, connection):
     num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
 
-    if not status:
-        connection.send(("log", ["Evaluating against Random", getpid()]))
-        p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
+    connection.send(("log", ["Evaluating against Random", getpid()]))
+    p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
 
-        eval_rand_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
-        p_2, p_1 = p_1, p_2
-        eval_rand_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
+    eval_rand_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
+    p_2, p_1 = p_1, p_2
+    eval_rand_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
-        connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
-    else:
+    connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
+    
+    if status:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
         connection.send(("log", ["Evaluating against Minimax", getpid()]))
@@ -259,7 +259,7 @@ def evaluate_model(game, player, status, config, connection):
         eval_mcts_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
-    player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
+        player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()

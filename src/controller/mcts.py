@@ -80,7 +80,7 @@ class MCTS(GameAI):
         """
         Select a node to run simulations from.
         Nodes are recursively chosen according to how they maximize
-        the PUCT formula, until a leaf is reached.
+        the PUCT formula, until a leaf is reached, that leaf is then returned.
         """
         if node.children == {}: # Node is a leaf.
             return node
@@ -175,11 +175,17 @@ class MCTS(GameAI):
             node.children[a].prior_prob *= (1 - frac) + n * frac
 
     def create_root_node(self, state):
+        """
+        Creates a root node...
+        """
         root_node = Node(state, None)
         self.chosen_node = root_node
         return root_node
 
     def prepare_action(self, root_node):
+        """
+        Adds Exploration noise. If root_node has no actions/children, simulate a pass
+        """
         if root_node.children == {}: # State has no actions (children).
             self.game.store_search_statistics(None)
             return self.game.result(root_node.state, None) # Simulate pass.
@@ -188,6 +194,10 @@ class MCTS(GameAI):
         return None
 
     def execute_action(self, node):
+        """
+        Uses choose_action() to choose a child node based on either softmax sampling or nr. of vists,
+        depending on how early the game is. It then stores search statistics. Then it returns the state of the chosen node.
+        """
         best_node = self.choose_action(node)
         self.chosen_node = best_node
 

@@ -72,6 +72,7 @@ class Connect_Four(Game):
         clone = Connect_Four(self.size)
         clone.history = self.history
         clone.visit_counts = self.visit_counts
+        clone.q_value_history = self.q_value_history
         return clone
 
     def structure_data(self, state):

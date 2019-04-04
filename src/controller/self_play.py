@@ -20,12 +20,13 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
-def create_roots(games):
+def create_roots(gamesData):
     """
-    Create root nodes for use in MCTS simulation.
+    Create root nodes for use in MCTS simulation. Takes as a parameter a list of tuples,
+    containing data for each game. This data consist of: gametype, state, type of player 1 and type of player 2
     """
     root_nodes = []
-    for data in games:
+    for data in gamesData:
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -35,12 +36,12 @@ def create_roots(games):
         root_nodes.append(player.create_root_node(state))
     return root_nodes
 
-def select_nodes(games, roots):
+def select_nodes(gamesData, roots):
     """
     Run 'select' in MCTS on a batch of root nodes.
     """
     nodes = []
-    for i, data in enumerate(games):
+    for i, data in enumerate(gamesData):
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -52,12 +53,12 @@ def select_nodes(games, roots):
         nodes.append(player.select(root))
     return nodes
 
-def prepare_actions(games, nodes):
+def prepare_actions(gamesData, nodes):
     """
     Add exploration noise and check for 'pass' action
     on a batch of nodes.
     """
-    for i, data in enumerate(games):
+    for i, data in enumerate(gamesData):
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -68,13 +69,13 @@ def prepare_actions(games, nodes):
 
         player.prepare_action(root)
 
-def expand_nodes(games, nodes, policies, values):
+def expand_nodes(gamesData, nodes, policies, values):
     """
-    Expand a batch of node based on policy logits 
+    Expand a batch of nodes based on policy logits 
     acquired from the neural network.
     """
     return_values = []
-    for i, data in enumerate(games):
+    for i, data in enumerate(gamesData):
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -87,12 +88,12 @@ def expand_nodes(games, nodes, policies, values):
         return_values.append(player.set_evaluation_data(node, policy, values[i]))
     return return_values
 
-def backprop(games, nodes, values):
+def backprop_nodes(gamesData, nodes, values):
     """
     Backpropagate values from the neural network
-    to update of a batch of nodes.
+    to update a batch of nodes.
     """
-    for i, data in enumerate(games):
+    for i, data in enumerate(gamesData):
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -121,12 +122,12 @@ def play_as_mcts(active_games, config, connection):
         connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)]))
         policies, values = connection.recv()
         values = expand_nodes(active_games, selected_nodes, policies, values)
-        backprop(active_games, selected_nodes, values)
+        backprop_nodes(active_games, selected_nodes, values)
     return roots
 
 def play_games(games, player_white, player_black, config, gui=None, connection=None):
     """
-    Play a game to the end, and return the resulting state.
+    Play a number of games to the end, and return the resulting states.
     """
     active_games = [[games[i], games[i].start_state(), player_white[i], player_black[i]] for i in range(len(games))]
     total_games = len(games)
@@ -147,10 +148,15 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
         finished_games_indexes = []
         for (i, (game, state, player_1, player_2)) in enumerate(active_games):
             player = player_1 if game.player(state) else player_2
-            state = player.execute_action(roots[i] if is_mcts(player) else state)
+            state = player.execute_action(roots[i] if is_mcts(player) else state) #gives a root node to the method if MCTS, else it gives a state
             active_games[i][1] = state
 
             game.history.append(state)
+            #this part adds the q_value to q_value_history
+            #TODO: it is a bit hacky, might want to improve
+            if is_mcts(player): #TODO: check if works
+                node = player.choose_action(roots[i])
+                game.q_value_history.append(node.q_value)
 
             if gui is not None:
                 if type(player_white).__name__ != "Human" and not state.player:

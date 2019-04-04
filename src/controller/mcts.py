@@ -149,7 +149,7 @@ class MCTS(GameAI):
         """
         When MCTS is finished with it's iterations,
         a final action to take is chosen. If the current
-        length of the give is less than a certain threshold,
+        length of the game is less than a certain threshold,
         softmax sampling is used to select an action, based on
         a probabiliy of visits to that node during MCTS simulation.
         Otherwise, the node with most visits is chosen.

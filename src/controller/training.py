@@ -34,7 +34,7 @@ def train_network(network_storage, replay_storage, training_step, game_name):
                 loss_hist["value_head_loss"][-1]]
         if "-s" in argv or "-ds" in argv:
             save_loss(loss, training_step+i, game_name)
-        update_loss(loss[0])
+        update_loss(loss)
         GraphHandler.plot_data("Average Loss", "Training Loss", training_step+1+i, loss[0])
         GraphHandler.plot_data("Policy Loss", "Training Loss", training_step+1+i, loss[1])
         GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1+i, loss[2])
@@ -177,7 +177,7 @@ def initialize_network(game, network_storage):
             losses[0].append(loss_both)
             losses[1].append(loss_pol)
             losses[2].append(loss_val)
-        update_loss(losses[0][-1])
+        update_loss([losses[0][-1], losses[1][-1], losses[2][-1]])
         load_all_perform_data(GAME_NAME)
 
         GraphHandler.plot_data("Average Loss", "Training Loss", None, losses[0])
@@ -186,7 +186,6 @@ def initialize_network(game, network_storage):
         FancyLogger.start_timing()
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step, network)
-        FancyLogger.set_network_status("Training loss: {}".format(losses[0][-1]))
     else:
         network = NeuralNetwork(game)
         network_storage.save_network(0, network)
@@ -356,9 +355,9 @@ def update_training_step(step):
         SqlUtil.set_status(SqlUtil.connection, "step=%s", step)
 
 def update_loss(loss):
-    FancyLogger.set_network_status("Training loss: {}".format(loss))
+    FancyLogger.set_network_status(f"Training loss: Total: {loss[0]:.5f}. Policy: {loss[1]:.5f}. Value: {loss[2]:.5f}")
     if Config.STATUS_DB:
-        SqlUtil.set_status(SqlUtil.connection, "loss=%s", float(loss))
+        SqlUtil.set_status(SqlUtil.connection, "loss=%s", float(loss[0]))
 
 def update_num_games(games=None):
     if games is not None:

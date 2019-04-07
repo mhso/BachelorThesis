@@ -155,6 +155,8 @@ class Minimax(GameAI):
         super.__doc__
         self.player = state.player
         actions = self.game.actions(state)
+        if actions == [None]:
+            return self.game.result(state, None)
         best_action = None
         highest_value = -10000
 

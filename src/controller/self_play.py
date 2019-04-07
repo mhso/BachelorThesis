@@ -40,7 +40,8 @@ def select_nodes(games, roots):
     Run 'select' in MCTS on a batch of root nodes.
     """
     nodes = []
-    for i, data in enumerate(games):
+    for i, root in enumerate(roots):
+        data = games[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -78,12 +79,12 @@ def expand_nodes(games, nodes, policies, values):
     acquired from the neural network.
     """
     return_values = []
-    for i, data in enumerate(games):
+    for i, node in enumerate(nodes):
+        data = games[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
         player_2 = data[3]
-        node = nodes[i]
         policy = policies[i]
 
         player = player_1 if game.player(state) else player_2
@@ -96,12 +97,12 @@ def backprop(games, nodes, values):
     Backpropagate values from the neural network
     to update of a batch of nodes.
     """
-    for i, data in enumerate(games):
+    for i, node in enumerate(nodes):
+        data = games[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
         player_2 = data[3]
-        node = nodes[i]
         value = values[i]
 
         player = player_1 if game.player(state) else player_2

@@ -118,10 +118,16 @@ def evaluate_games(game, eval_queue, network_storage):
         conn.send((logits[amount[i]:amount[i+1]], values[amount[i]:amount[i+1], 0]))
 
 def load_all_perform_data(game_name):
+    rand_streak = 0
     perf_rand = load_perform_data("random", None, game_name)
     if perf_rand:
+        streak = 0
         for t_step, data in perf_rand:
             show_performance_data("Versus Random", 0, t_step, data)
+            if data[0] == 1.0:
+                streak += 1
+        if streak >= 2:
+            rand_streak = 24
     perf_mini = load_perform_data("minimax", None, game_name)
     if perf_mini:
         for t_step, data in perf_mini:
@@ -130,13 +136,8 @@ def load_all_perform_data(game_name):
     if perf_mcts:
         for t_step, data in perf_mcts:
             show_performance_data("Versus MCTS", 2, t_step, data)
-    streak = 0
-    for _, data in perf_rand[-2:]:
-        if data[0] == 1.0:
-            streak += 1
-    if streak >= 2:
-        return 24
-    return 0
+
+    return rand_streak
 
 def eval_checkpoint(training_step):
     """

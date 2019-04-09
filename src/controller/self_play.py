@@ -88,7 +88,6 @@ def expand_nodes(games, nodes, policies, values):
         policy = policies[i]
 
         player = player_1 if game.player(state) else player_2
-
         return_values.append(player.set_evaluation_data(node, policy, values[i]))
     return return_values
 
@@ -243,7 +242,7 @@ def evaluate_model(game, player, status, config, connection):
     eval_rand_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
     connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
-    
+
     if status:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.

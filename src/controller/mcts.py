@@ -176,6 +176,7 @@ class MCTS(GameAI):
             node.children[a].prior_prob *= (1 - frac) + n * frac
 
     def create_root_node(self, state):
+        state_id = state.stringify()
         root_node = Node(state, None)
         self.chosen_node = root_node
         return root_node

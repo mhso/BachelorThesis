@@ -20,13 +20,13 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
-def create_roots(gamesData):
+def create_roots(games):
     """
     Create root nodes for use in MCTS simulation. Takes as a parameter a list of tuples,
     containing data for each game. This data consist of: gametype, state, type of player 1 and type of player 2
     """
     root_nodes = []
-    for data in gamesData:
+    for data in games:
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -36,7 +36,7 @@ def create_roots(gamesData):
         root_nodes.append(player.create_root_node(state))
     return root_nodes
 
-def select_nodes(gamesData, roots):
+def select_nodes(games, roots):
     """
     Run 'select' in MCTS on a batch of root nodes.
     """
@@ -54,7 +54,7 @@ def select_nodes(gamesData, roots):
         nodes.append(player.select(root))
     return nodes
 
-def prepare_actions(gamesData, nodes):
+def prepare_actions(games, nodes):
     """
     Add exploration noise and check for 'pass' action
     on a batch of nodes.
@@ -74,7 +74,7 @@ def prepare_actions(gamesData, nodes):
             valid_nodes.append(root)
     return valid_nodes
 
-def expand_nodes(gamesData, nodes, policies, values):
+def expand_nodes(games, nodes, policies, values):
     """
     Expand a batch of node based on policy logits
     acquired from the neural network.
@@ -93,7 +93,7 @@ def expand_nodes(gamesData, nodes, policies, values):
         return_values.append(player.set_evaluation_data(node, policy, values[i]))
     return return_values
 
-def backprop_nodes(gamesData, nodes, values):
+def backprop_nodes(games, nodes, values):
     """
     Backpropagate values from the neural network
     to update a batch of nodes.

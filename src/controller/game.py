@@ -75,8 +75,14 @@ class Game(ABC):
         Return terminal value of given state at index, as well as
         probability distribution for actions at that state.
         """
+
+        #uses the average of z-value and q-value, instead of just z-value
+        #terminal_state = self.history[-1]
+        #return (((self.utility(terminal_state, self.history[state_index].player) + self.q_value_history[state_index]) / 2),
+        #        self.visit_counts[state_index])
+
         terminal_state = self.history[-1]
-        return (((self.utility(terminal_state, self.history[state_index].player) + self.q_value_history[state_index]) / 2),
+        return (self.utility(terminal_state, self.history[state_index].player),
                 self.visit_counts[state_index])
 
     def store_search_statistics(self, node):

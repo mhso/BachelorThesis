@@ -81,14 +81,20 @@ class Graph:
         if changed_labels == []:
             return
 
+        handles, labels = self.ax.get_legend_handles_labels()
+
         for label in changed_labels:
             p_x, p_y = self.data[label]
-
-            self.ax.plot(p_x, p_y, self.colors[label])
-            self.ax.legend([l for l in self.data])
+            
+            if label in labels:
+                self.ax.plot(p_x, p_y, self.colors[label])
+            else:
+                self.ax.plot(p_x, p_y, self.colors[label], label=label)
+            self.ax.legend()
 
             self.canvas.draw()
             self.changed_plots[label] = False
+
         if self.save_to_file:
             title = self.ax.get_title().lower().replace(" ", "_")
             self.ax.get_figure().savefig(f"../resources/graph_{title}.png")

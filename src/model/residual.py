@@ -1,6 +1,4 @@
 from keras.layers import BatchNormalization, Conv2D, add
-from keras.initializers import random_uniform
-from keras.layers.core import Activation
 from keras.layers import LeakyReLU
 from keras.regularizers import l2
 from config import Config
@@ -8,11 +6,11 @@ from config import Config
 def conv_block(feat_maps_out, prev):
     prev = Conv2D(feat_maps_out, kernel_size=3, strides=1, padding="same",
                   use_bias=Config.USE_BIAS, kernel_regularizer=l2(Config.REGULARIZER_CONST))(prev)
-    prev = BatchNormalization()(prev) # Specifying the axis and mode allows for later merging
+    prev = BatchNormalization()(prev)
     prev = LeakyReLU()(prev)
     prev = Conv2D(feat_maps_out, kernel_size=3, strides=1, padding="same",
                   use_bias=Config.USE_BIAS, kernel_regularizer=l2(Config.REGULARIZER_CONST))(prev)
-    prev = BatchNormalization()(prev) # Specifying the axis and mode allows for later merging
+    prev = BatchNormalization()(prev)
     return prev
 
 def skip_block(feat_maps_in, feat_maps_out, prev):
@@ -33,6 +31,6 @@ def Residual(feat_maps_in, feat_maps_out, prev_layer):
     skip = skip_block(feat_maps_in, feat_maps_out, prev_layer)
     conv = conv_block(feat_maps_out, prev_layer)
 
-    merged = add([skip, conv])
+    merged = add([skip, conv]) # the residual connection
 
-    return LeakyReLU()(merged) # the residual connection
+    return LeakyReLU()(merged)

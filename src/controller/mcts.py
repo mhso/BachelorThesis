@@ -188,16 +188,14 @@ class MCTS(GameAI):
         """
         if root_node.children == {}: # State has no actions (children).
             self.game.store_search_statistics(None)
-            return self.game.result(root_node.state, None) # Simulate pass.
+            return False # Simulate pass.
 
         self.add_exploration_noise(root_node)
-        return None
+        return True
 
     def execute_action(self, node):
-        """
-        Uses choose_action() to choose a child node based on either softmax sampling or nr. of vists,
-        depending on how early the game is. It then stores search statistics. Then it returns the state of the chosen node.
-        """
+        if node.children == {}: # Node is a 'pass' action.
+            return self.game.result(node.state, None)
         best_node = self.choose_action(node)
         self.chosen_node = best_node
 

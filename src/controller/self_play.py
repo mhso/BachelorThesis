@@ -41,7 +41,8 @@ def select_nodes(gamesData, roots):
     Run 'select' in MCTS on a batch of root nodes.
     """
     nodes = []
-    for i, data in enumerate(gamesData):
+    for i, root in enumerate(roots):
+        data = games[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -58,7 +59,8 @@ def prepare_actions(gamesData, nodes):
     Add exploration noise and check for 'pass' action
     on a batch of nodes.
     """
-    for i, data in enumerate(gamesData):
+    valid_nodes = [] # States that have possible actions.
+    for i, data in enumerate(games):
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -67,20 +69,23 @@ def prepare_actions(gamesData, nodes):
 
         player = player_1 if game.player(state) else player_2
 
-        player.prepare_action(root)
+        valid_node = player.prepare_action(root)
+        if valid_node:
+            valid_nodes.append(root)
+    return valid_nodes
 
 def expand_nodes(gamesData, nodes, policies, values):
     """
-    Expand a batch of nodes based on policy logits 
+    Expand a batch of node based on policy logits
     acquired from the neural network.
     """
     return_values = []
-    for i, data in enumerate(gamesData):
+    for i, node in enumerate(nodes):
+        data = games[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
         player_2 = data[3]
-        node = nodes[i]
         policy = policies[i]
 
         player = player_1 if game.player(state) else player_2
@@ -93,12 +98,12 @@ def backprop_nodes(gamesData, nodes, values):
     Backpropagate values from the neural network
     to update a batch of nodes.
     """
-    for i, data in enumerate(gamesData):
+    for i, node in enumerate(nodes):
+        data = games[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
         player_2 = data[3]
-        node = nodes[i]
         value = values[i]
 
         player = player_1 if game.player(state) else player_2
@@ -114,10 +119,10 @@ def play_as_mcts(active_games, config, connection):
     connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
     policies, values = connection.recv()
     expand_nodes(active_games, roots, policies, values)
-    prepare_actions(active_games, roots)
+    valid_roots = prepare_actions(active_games, roots)
 
     for _ in range(config.MCTS_ITERATIONS):
-        selected_nodes = select_nodes(active_games, roots)
+        selected_nodes = select_nodes(active_games, valid_roots)
 
         connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)]))
         policies, values = connection.recv()
@@ -236,16 +241,16 @@ def evaluate_model(game, player, status, config, connection):
     num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
 
-    if not status:
-        connection.send(("log", ["Evaluating against Random", getpid()]))
-        p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
+    connection.send(("log", ["Evaluating against Random", getpid()]))
+    p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
 
-        eval_rand_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
-        p_2, p_1 = p_1, p_2
-        eval_rand_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
+    eval_rand_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
+    p_2, p_1 = p_1, p_2
+    eval_rand_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
-        connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
-    else:
+    connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
+    
+    if status:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
         connection.send(("log", ["Evaluating against Minimax", getpid()]))
@@ -265,7 +270,7 @@ def evaluate_model(game, player, status, config, connection):
         eval_mcts_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
-    player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
+        player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()

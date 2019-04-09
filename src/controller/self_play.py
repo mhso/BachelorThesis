@@ -247,6 +247,7 @@ def evaluate_model(game, player, status, config, connection):
     if status:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
+        """
         connection.send(("log", ["Evaluating against Minimax", getpid()]))
         p_1, p_2 = player, get_ai_algorithm("Minimax", game, ".")
 
@@ -255,7 +256,7 @@ def evaluate_model(game, player, status, config, connection):
         eval_mini_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mini", (eval_mini_w, eval_mini_b)))
-
+        """
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
         p_1, p_2 = player, get_ai_algorithm("MCTS_Basic", game, ".")
 

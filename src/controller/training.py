@@ -134,8 +134,8 @@ def load_all_perform_data(game_name):
     for _, data in perf_rand[-2:]:
         if data[0] == 1.0:
             streak += 1
-        if streak == 2:
-            return 24
+    if streak >= 2:
+        return 24
     return 0
 
 def eval_checkpoint(training_step):

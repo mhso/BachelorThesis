@@ -121,16 +121,17 @@ class MCTS(GameAI):
         """
         state = node.state
         actions = self.game.actions(state)
+        new_value = value
         if self.game.terminal_test(state):
-            value = self.game.utility(state, state.player)
+            new_value = self.game.utility(state, state.player)
 
         if actions == [None]: # Only action is a 'pass'.
-            return value
+            return new_value
 
         # Expand node.
         self.expand(node, actions, policy_logits)
 
-        return value
+        return new_value
 
     def softmax_sample(self, child_nodes, visit_counts, tempature=0.5):
         """

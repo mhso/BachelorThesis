@@ -35,7 +35,7 @@ class State:
 
     def __str__(self):
         white_pieces, black_pieces = self.count_pieces()
-        return "[State: \nPlayer turn = {}\nWhite pieces = {}\nBlack pieces = {}\nBoard =\n{}\n]".format(
+        return "<State: \nPlayer turn = {}\nWhite pieces = {}\nBlack pieces = {}\nBoard =\n{}\n>".format(
             self.str_player(), white_pieces, black_pieces, self.board)
 
     def stringify(self):
@@ -67,4 +67,4 @@ class Action:
         return int(str(x1)+str(y1)+str(x2)+str(y2))
 
     def __str__(self):
-        return "[Action: source({}), dest({})]".format(self.source, self.dest)
+        return "<Action: source({}), dest({})>".format(self.source, self.dest)

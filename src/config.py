@@ -206,7 +206,7 @@ def set_game_specific_values(cfg, game):
         # Avg actions: 4, 6, 9, 11, and 14.
         noise_options = [2.5, 1.66, 1.11, 0.9, 0.7]
         # Avg game length: 10, 20, 30, 45, and 60.
-        sampling_options = [2, 3, 4, 5, 7]
+        sampling_options = [2, 3, 5, 5, 7]
         noise = noise_options[8-game.size]
         sample_moves = sampling_options[8-game.size]
     elif game_name == "Connect_Four":

@@ -20,7 +20,7 @@ class Node():
         self.q_value = 0
 
     def pretty_desc(self):
-        return "Node: a: {}, n: {}, v: {}, m: {}, p: {}".format(
+        return "<Node: a: {}, n: {}, v: {}, m: {}, p: {}>".format(
             self.action, self.visits, self.value, "%.3f" % self.q_value, "%.3f" % self.prior_prob)
 
     def __str__(self):
@@ -201,12 +201,10 @@ class MCTS(GameAI):
         best_node = self.choose_action(node)
         self.chosen_node = best_node
 
-        log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.q_value*50)+50)))
+        log(f"Root: {node}")
+        for n in node.children.values():
+            log(n.pretty_desc())
+
+        log("MCTS action: {}, q value: {}.".format(best_node.action, best_node.q_value))
         self.game.store_search_statistics(node)
         return best_node.state
-
-    def __str__(self):
-        states_explored = ""
-        for v in self.state_map:
-            states_explored += str(self.state_map[v]) + ",\n"
-        return "[MCTS:\n{}]".format(states_explored)

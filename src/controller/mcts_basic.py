@@ -151,8 +151,9 @@ class MCTS_Basic(GameAI):
         log("MCTS is calculating the best move...")
 
         # Get state ID and look the corresponding node up in the state map.
+        original_node = Node(state, None)
+        """
         state_id = state.stringify()
-        original_node = None
         try:
             # Node exists, we have run MCTS on this state before.
             original_node = self.state_map[state_id]
@@ -164,6 +165,7 @@ class MCTS_Basic(GameAI):
             original_node = Node(state, None, [])
             self.expand(original_node, actions)
             self.state_map[state_id] = original_node
+        """
 
         # Perform iterations of selection, simulation, expansion, and back propogation.
         # After the iterations are done, the child of the original node with the highest

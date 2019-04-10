@@ -178,8 +178,11 @@ if __name__ == "__main__":
             # If GUI is active, only run with 1 process
             # and no performance evaluation.
             Config.GAME_THREADS = 1
+            cfg.GAME_THREADS = 1
             Config.ACTORS = 1
+            cfg.ACTORS = 1
             Config.EVAL_CHECKPOINT = {}
+            cfg.EVAL_CHECKPOINT = {}
         """
         if "-dl" in options:
             REPLAY_STORAGE.load_game_from_sql()
@@ -189,7 +192,9 @@ if __name__ == "__main__":
         # If we are not playing with MCTS,
         # disable multi-threading.
         Config.ACTORS = 1
+        cfg.ACTORS = 1
         Config.GAME_THREADS = 1
+        cfg.GAME_THREADS = 1
 
     initialize(GAME, P_WHITE, P_BLACK,
                gui=gui,

@@ -173,6 +173,9 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
             if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
                 finished_games_indexes.append(i)
                 results.append(state)
+                util = game.utility(state, True)
+                winner = "White" if util == 1 else "Black" if util == -1 else "Draw"
+                log(f"Game over! Winner: {winner}")
 
         turn_took = "{0:.3f}".format((time() - time_turn))
         num_active = len(active_games)
@@ -365,7 +368,6 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
 
     # Wait for initial construction/compilation of network.
     connection.recv()
-
     games, player_1_agents, player_2_agents = copy_games_and_players(game, p1, p2, cfg.ACTORS // 3)
     for i in range(1, len(games)):
         player_1_agents[i].set_config(cfg)

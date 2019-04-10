@@ -238,7 +238,9 @@ def evaluate_model(game, player, status, config, connection):
     """
     num_games = config.EVAL_GAMES
     num_sample_moves = player.cfg.NUM_SAMPLING_MOVES
+    noise_base = player.cfg.NOISE_BASE
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
+    player.cfg.NOISE_BASE = 0 # Disable noise during evaluation.
 
     connection.send(("log", ["Evaluating against Random", getpid()]))
     p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
@@ -270,7 +272,8 @@ def evaluate_model(game, player, status, config, connection):
         eval_mcts_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
-        player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
+    player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
+    player.cfg.NOISE_BASE = noise_base # Restore noise.
 
 def get_game(game_name, size, rand_seed, wildcard="."):
     lower = game_name.lower()

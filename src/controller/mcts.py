@@ -191,7 +191,8 @@ class MCTS(GameAI):
             self.game.store_search_statistics(None)
             return False # Simulate pass.
 
-        self.add_exploration_noise(root_node)
+        if self.cfg.NOISE_BASE != 0:
+            self.add_exploration_noise(root_node)
         return True
 
     def execute_action(self, node):

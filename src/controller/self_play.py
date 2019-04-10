@@ -159,7 +159,7 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
             #this part adds the q_value to q_value_history
             #TODO: it is a bit hacky, might want to improve
             if is_mcts(player): #TODO: check if works
-                node = player.choose_action(roots[i])
+                node = player.chosen_node
                 game.q_value_history.append(node.q_value)
 
             if gui is not None:
@@ -367,7 +367,7 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
     connection.recv()
 
     games, player_1_agents, player_2_agents = copy_games_and_players(game, p1, p2, cfg.ACTORS // 3)
-    for i in range(len(games)):
+    for i in range(1, len(games)):
         player_1_agents[i].set_config(cfg)
         player_2_agents[i].set_config(cfg)
 

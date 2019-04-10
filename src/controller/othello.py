@@ -151,7 +151,7 @@ class Othello(Game):
             return action_map
         for action in actions:
             y, x = action.dest
-            logit = np.exp(logits[y * self.size + x % self.size])
+            logit = np.exp(logits[y * self.size + x])
             action_map[action] = logit
             policy_sum += logit
         for action, policy in action_map.items():
@@ -164,5 +164,5 @@ class Othello(Game):
             if a is None:
                 continue
             y, x = a.dest
-            policies[y * self.size + x % self.size] = p
+            policies[y * self.size + x] = p
         return (policies,)

@@ -122,8 +122,8 @@ class Gui():
             self.mouseclick_move_list.append(coords)
             self.draw_status_text("Selected source coords: ({})".format(coords))
         elif self.game.action_type == "single":
-            if self.is_legal_move(coords, None):
-                self.make_move(self.state, Action(coords, None))
+            if self.is_legal_move(None, coords):
+                self.make_move(self.state, Action(None, coords))
                 self.mouseclick_move_list.clear()
         else:
             if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
@@ -353,7 +353,6 @@ class Gui():
         new_actions = self.game.actions(self.state)
         if new_actions == [None] and not self.game.terminal_test(self.state):
             self.show_move(self.state, None) # Simulate 'pass' move.
-
         if self.listener is not None:
             self.listener.action_made(self.state)
             self.listener = None

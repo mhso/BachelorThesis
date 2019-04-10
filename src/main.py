@@ -55,8 +55,8 @@ def initialize(game, p1, p2, **kwargs):
                                       name=f"Process {(i+1):02d}",
                                       args=(game, p1, p2, child, gui, config))
             else:
-                game_thread = Thread(target=self_play.play_loop,
-                                     args=([game], [p1], [p2], 0, gui, config, child))
+                game_thread = Thread(target=self_play.init_self_play,
+                                     args=(game, p1, p2, child, gui, config))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file
@@ -178,6 +178,7 @@ if __name__ == "__main__":
             # If GUI is active, only run with 1 process
             # and no performance evaluation.
             Config.GAME_THREADS = 1
+            Config.ACTORS = 1
             Config.EVAL_CHECKPOINT = {}
         """
         if "-dl" in options:
@@ -187,6 +188,7 @@ if __name__ == "__main__":
     elif Config.GAME_THREADS > 1:
         # If we are not playing with MCTS,
         # disable multi-threading.
+        Config.ACTORS = 1
         Config.GAME_THREADS = 1
 
     initialize(GAME, P_WHITE, P_BLACK,

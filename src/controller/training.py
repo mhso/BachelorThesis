@@ -147,7 +147,7 @@ def eval_checkpoint(training_step):
     checkpoints = Config.EVAL_CHECKPOINT
     if type(checkpoints) is int:
         return checkpoints
-    eval_cp = None
+    eval_cp = 1
     for k in checkpoints:
         if training_step >= k:
             eval_cp = checkpoints[k]

@@ -68,3 +68,6 @@ class Action:
 
     def __str__(self):
         return "<Action: source({}), dest({})>".format(self.source, self.dest)
+
+    def __repr__(self):
+        return self.__str__()

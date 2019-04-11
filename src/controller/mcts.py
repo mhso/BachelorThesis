@@ -26,6 +26,9 @@ class Node():
     def __str__(self):
         return self.pretty_desc()
 
+    def __repr__(self):
+        return self.pretty_desc()
+
     def crazy_print(self):
         children = ", ".join([str(c) for c in self.children.values()])
         return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
@@ -125,15 +128,12 @@ class MCTS(GameAI):
         if self.game.terminal_test(state):
             new_value = self.game.utility(state, state.player)
 
-        if actions == [None]: # Only action is a 'pass'.
-            return new_value
-
         # Expand node.
         self.expand(node, actions, policy_logits)
 
         return new_value
 
-    def softmax_sample(self, child_nodes, visit_counts, tempature=0.5):
+    def softmax_sample(self, child_nodes, visit_counts, tempature=0.7):
         """
         Perform softmax sampling on a set of nodes
         based on a probability distribution of their
@@ -142,6 +142,7 @@ class MCTS(GameAI):
         sum_visits = sum(visit_counts)
         prob_visits = [v/sum_visits for v in visit_counts]
         exps = np.exp(prob_visits) * tempature
+        log(f"Probabilities of softmax: {exps/sum(exps)}")
 
         return np.random.choice(child_nodes,
                                 p=exps/sum(exps))
@@ -156,6 +157,8 @@ class MCTS(GameAI):
         Otherwise, the node with most visits is chosen.
         """
         child_nodes = [n for n in node.children.values()]
+        if child_nodes == []:
+            return Node(self.game.result(node.state, None), None)
         visit_counts = [n.visits for n in child_nodes]
         if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
             # Perform softmax sampling of available actions,
@@ -185,19 +188,12 @@ class MCTS(GameAI):
 
     def prepare_action(self, root_node):
         """
-        Adds Exploration noise. If root_node has no actions/children, simulate a pass
+        Adds Exploration noise.
         """
-        if root_node.children == {}: # State has no actions (children).
-            self.game.store_search_statistics(None)
-            return False # Simulate pass.
-
         if self.cfg.NOISE_BASE != 0:
             self.add_exploration_noise(root_node)
-        return True
 
     def execute_action(self, node):
-        if node.children == {}: # Node is a 'pass' action.
-            return self.game.result(node.state, None)
         best_node = self.choose_action(node)
         self.chosen_node = best_node
 

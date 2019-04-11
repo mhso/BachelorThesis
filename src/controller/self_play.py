@@ -59,7 +59,6 @@ def prepare_actions(games, nodes):
     Add exploration noise and check for 'pass' action
     on a batch of nodes.
     """
-    valid_nodes = [] # States that have possible actions.
     for i, data in enumerate(games):
         game = data[0]
         state = data[1]
@@ -69,10 +68,7 @@ def prepare_actions(games, nodes):
 
         player = player_1 if game.player(state) else player_2
 
-        valid_node = player.prepare_action(root)
-        if valid_node:
-            valid_nodes.append(root)
-    return valid_nodes
+        player.prepare_action(root)
 
 def expand_nodes(games, nodes, policies, values):
     """
@@ -118,10 +114,10 @@ def play_as_mcts(active_games, config, connection):
     connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
     policies, values = connection.recv()
     expand_nodes(active_games, roots, policies, values)
-    valid_roots = prepare_actions(active_games, roots)
+    prepare_actions(active_games, roots)
 
     for _ in range(config.MCTS_ITERATIONS):
-        selected_nodes = select_nodes(active_games, valid_roots)
+        selected_nodes = select_nodes(active_games, roots)
 
         connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)]))
         policies, values = connection.recv()

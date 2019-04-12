@@ -103,7 +103,7 @@ def backprop_nodes(games, nodes, values):
 
         player = player_1 if game.player(state) else player_2
 
-        player.back_propagate(node, -value)
+        player.back_propagate(node, 1-value)
 
 def play_as_mcts(active_games, config, connection):
     """

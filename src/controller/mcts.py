@@ -34,6 +34,23 @@ class Node():
         return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
             self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
 
+def normalize_value(value):
+    return (value + 1) * 0.5
+
+def softmax_sample(child_nodes, visit_counts, tempature=0.7):
+    """
+    Perform softmax sampling on a set of nodes
+    based on a probability distribution of their
+    visit counts.
+    """
+    sum_visits = sum(visit_counts)
+    prob_visits = [v/sum_visits for v in visit_counts]
+    exps = np.exp(prob_visits) * tempature
+    log(f"Probabilities of softmax: {exps/sum(exps)}")
+
+    return np.random.choice(child_nodes,
+                            p=exps/sum(exps))
+
 class MCTS(GameAI):
     """
     Implementation of MCTS. This is implemented in terms
@@ -131,21 +148,7 @@ class MCTS(GameAI):
         # Expand node.
         self.expand(node, actions, policy_logits)
 
-        return new_value
-
-    def softmax_sample(self, child_nodes, visit_counts, tempature=0.7):
-        """
-        Perform softmax sampling on a set of nodes
-        based on a probability distribution of their
-        visit counts.
-        """
-        sum_visits = sum(visit_counts)
-        prob_visits = [v/sum_visits for v in visit_counts]
-        exps = np.exp(prob_visits) * tempature
-        log(f"Probabilities of softmax: {exps/sum(exps)}")
-
-        return np.random.choice(child_nodes,
-                                p=exps/sum(exps))
+        return normalize_value(new_value)
 
     def choose_action(self, node):
         """
@@ -163,7 +166,7 @@ class MCTS(GameAI):
         if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
             # Perform softmax sampling of available actions,
             # based on visit counts.
-            return self.softmax_sample(child_nodes, visit_counts)
+            return softmax_sample(child_nodes, visit_counts)
         # Return node with highest visit count.
         return max(child_nodes, key=lambda n: n.visits)
 

@@ -218,6 +218,10 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
     for result in results:
         wins += game.utility(result, mcts_player)
         game.reset()
+    results = None
+    games = None
+    p1s = None
+    p2s = None
     return wins/num_games # Return ratio of games won.
 
 def minimax_for_game(game):
@@ -271,6 +275,8 @@ def evaluate_model(game, player, status, config, connection):
         eval_mcts_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
+    p_1 = None # Mark for GC.
+    p_2 = None # Mark for GC.
     player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
     player.cfg.NOISE_BASE = noise_base # Restore noise.
 

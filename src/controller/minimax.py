@@ -158,7 +158,7 @@ class Minimax(GameAI):
         if actions == [None]:
             return self.game.result(state, None)
         best_action = None
-        highest_value = -10000
+        highest_value = -float("inf")
 
         self.time_started = time()
         # Traverse possible actions, using minimax to calculate best action to take.

@@ -131,7 +131,7 @@ class MCTS(GameAI):
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, -value)
+        self.back_propagate(node.parent, 1-value)
 
     def set_evaluation_data(self, node, policy_logits, value):
         """

@@ -135,10 +135,6 @@ class Minimax(GameAI):
             return self.evaluate_board(state, depth)
 
         actions = self.game.actions(state)
-        if actions == [None]:
-            # Handle 'pass' case.
-            result = self.game.result(state, None)
-            return self.minimax(result, depth-1, not maxing_player, alpha, beta)
 
         worth = -10000 if maxing_player else 10000
         for action in actions:

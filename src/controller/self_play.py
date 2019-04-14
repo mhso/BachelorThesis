@@ -392,6 +392,4 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
         player_1_agents[i].set_config(cfg)
         player_2_agents[i].set_config(cfg)
 
-    if getpid() == "Process 03":
-        tracemalloc.start()
     play_loop(games, player_1_agents, player_2_agents, 0, gui, cfg, connection)

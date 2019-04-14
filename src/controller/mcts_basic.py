@@ -55,7 +55,7 @@ class MCTS_Basic(GameAI):
             self.ITERATIONS = playout_options[self.game.size-4]
             self.MAX_MOVES = max_moves[self.game.size-4]
 
-        print("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES), flush=True)
+        log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
 
     def select(self, node, sim_acc):
         """
@@ -178,7 +178,7 @@ class MCTS_Basic(GameAI):
                 actions = self.game.actions(node.state)
                 self.expand(node, actions)
                 node = node.children[actions[0]] # Select first child of expanded Node.
-            self.state_map[node.state.stringify()] = node
+            #self.state_map[node.state.stringify()] = node
 
             # Perform rollout, simulate till end of game and return outcome.
             value = self.rollout(original_node.state, node)
@@ -191,14 +191,9 @@ class MCTS_Basic(GameAI):
             log(node.pretty_desc())
 
         best_node = max(original_node.children.values(), key=lambda n: n.visits)
+        original_node = None
 
         #Graph.plot_data("Player {}".format(state.str_player()), None, best_node.mean_value, "Turn", "Win Probability")
         log("MCTS action: {}, likelihood of win: {}%".format(best_node.action, int((best_node.mean_value*50)+50)))
 
         return best_node.state
-
-    def __str__(self):
-        states_explored = ""
-        for v in self.state_map:
-            states_explored += str(self.state_map[v]) + ",\n"
-        return "[MCTS:\n{}]".format(states_explored)

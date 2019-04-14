@@ -10,6 +10,8 @@ from multiprocessing import current_process
 from config import Config
 from view.log import log
 from view.graph import GraphHandler
+import tracemalloc
+import linecache
 
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
@@ -234,6 +236,19 @@ def minimax_for_game(game):
         return "Minimax_Othello"
     return "unknown"
 
+def write_snapshot(txt):
+    if getpid() == "Process 03":
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        with open("../memleak.txt", "a") as file:
+            file.write(txt + "\n")
+            for stat in top_stats[:10]:
+                frame = stat.traceback[0]
+                file.write(str(stat) + "\n")
+                line = linecache.getline(frame.filename, frame.lineno).strip()
+                if line:
+                    file.write(line + "\n")
+
 def evaluate_model(game, player, status, config, connection):
     """
     Evaluate MCTS/NN model against three different AI
@@ -267,12 +282,14 @@ def evaluate_model(game, player, status, config, connection):
 
         connection.send((f"perform_mini", (eval_mini_w, eval_mini_b)))
         """
+        #write_snapshot("======== BEFORE EVAL ========")
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
         p_1, p_2 = player, get_ai_algorithm("MCTS_Basic", game, ".")
 
         eval_mcts_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
         p_2, p_1 = p_1, p_2
         eval_mcts_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
+        #write_snapshot("======== AFTER EVAL ========")
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
     p_1 = None # Mark for GC.
@@ -375,4 +392,6 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
         player_1_agents[i].set_config(cfg)
         player_2_agents[i].set_config(cfg)
 
+    if getpid() == "Process 03":
+        tracemalloc.start()
     play_loop(games, player_1_agents, player_2_agents, 0, gui, cfg, connection)

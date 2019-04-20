@@ -90,7 +90,7 @@ class Game(ABC):
         Stores the visit counts for the children nodes of the given node
         """
         if node is None:
-            self.visit_counts.append({None: 0})
+            self.visit_counts.append({None: 1})
         else:
             sum_visits = sum(child.visits for child in node.children.values())
             self.visit_counts.append({

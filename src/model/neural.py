@@ -175,6 +175,13 @@ class NeuralNetwork:
     def save_as_image(self):
         plot_model(self.model, to_file='../resources/model_graph.png', show_shapes=True)
 
+    def shape_input(self, inp):
+        reshaped = inp
+        if len(inp.shape) < 4:
+            size = self.game.size
+            reshaped = np.array([inp]).reshape((-1, self.input_stacks, size, size))
+        return reshaped
+
     def evaluate(self, inp):
         """
         Evaluate a given state 'image' using the network.
@@ -186,10 +193,8 @@ class NeuralNetwork:
         - z: A value indicating the expected outcome of
         the game from the given state.
         """
-        if len(inp.shape) < 4:
-            size = self.game.size
-            inp = np.array([inp]).reshape((-1, self.input_stacks, size, size))
-        output = self.model.predict(inp)
+        shaped_input = self.shape_input(inp)
+        output = self.model.predict(shaped_input)
         game_type = type(self.game).__name__
 
         policy_moves = output[0][:]
@@ -210,18 +215,3 @@ class NeuralNetwork:
         result = self.model.fit(inputs, expected_out, batch_size=Config.BATCH_SIZE, verbose=0,
                                 epochs=Config.EPOCHS_PER_BATCH, validation_split=Config.VALIDATION_SPLIT)
         return result.history
-
-class DummyNetwork(NeuralNetwork):
-    """
-    The dummy network is used at the start
-    of training, to save on performance.
-    It simply returns random policies and value.
-    """
-    def __init__(self, board_size, action_space=4):
-        NeuralNetwork.__init__(self, board_size, action_space)
-
-    def evaluate(self, inp):
-        shape = inp.shape
-        policy_moves = np.random.uniform(0, 1, (shape[0], shape[1], self.action_space))
-        policy_remove = np.random.uniform(0, 1, (shape[0], shape[1], 1))
-        return (policy_moves, policy_remove), np.random.uniform()

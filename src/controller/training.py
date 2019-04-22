@@ -248,7 +248,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                             replay_storage.save_game_to_sql(game)
                         new_games += 1
 
-                        should_train = game_over(conn, new_games)
+                        should_train = game_over(new_games)
                         finished = False
                         if should_train:
                             # Tell network to train on a batch of data.

@@ -84,7 +84,7 @@ def handle_performance_data(step, perform_data, game_name):
             save_perform_data(p3, "mcts", step, game_name) # Save to file.
         perform_data[2] = None
 
-def game_over(conn, new_games):
+def game_over(new_games):
     """
     Handle cases for when a game is completed on a process.
     These include:

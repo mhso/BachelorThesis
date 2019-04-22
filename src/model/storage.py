@@ -6,7 +6,7 @@ import numpy as np
 from config import Config
 import pickle
 import os
-from model.neural import NeuralNetwork, DummyNetwork, set_nn_config
+from model.neural import NeuralNetwork, set_nn_config
 from glob import glob
 from keras.models import save_model, load_model, Model
 from util.sqlUtil import SqlUtil

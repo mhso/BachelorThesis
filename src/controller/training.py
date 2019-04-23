@@ -210,6 +210,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         - the result of performance evaluation games.
         - logging events.
     """
+    game_name = type(game).__name__
     start_training_status()
     set_total_steps(Config.TRAINING_STEPS)
     FancyLogger.start_timing()
@@ -227,7 +228,6 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     alert_perform = {game_conns[-1]: False}
     new_games = 0
     new_training_steps = training_step % eval_checkpoint(training_step)
-    game_name = type(game).__name__
 
     try:
         while True:

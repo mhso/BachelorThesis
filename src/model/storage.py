@@ -53,8 +53,10 @@ class ReplayStorage:
                 expected_outputs[i].append(target_policies[i])
             expected_outputs[-1].append(target_value)
 
-        expected_outputs = [np.array(arr) for arr in expected_outputs]
-        return np.array(images), expected_outputs
+        expected_outputs = [np.array(arr, dtype="float32") for arr in expected_outputs]
+        print(expected_outputs[0][0])
+        print(np.array(images, dtype="float32")[0])
+        return np.array(images, dtype="float32"), expected_outputs
 
     def full_buffer(self):
         return len(self.buffer) == Config.BATCH_SIZE

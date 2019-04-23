@@ -1,18 +1,32 @@
 from time import time
 from testing import assertion
-from controller.mcts import MCTS, Node
+from controller.mcts import MCTS, Node, softmax_sample
 from controller.latrunculi import Latrunculi
 from controller.othello import Othello
 
 def run_tests():
-    # Test selection.
-    # Test first selection.
+    # Test softmax sampling.
     game = Othello(8)
+
     mcts = MCTS(game)
     state = game.start_state()
 
     actions = game.actions(state)
-    root = Node(state, None, [])
+    root = Node(state, None)
+    probs = [0.08, 0.09, 0.5, 0.4]
+    visits = [6, 6, 98, 90]
+    root.children = {a: Node(game.result(state, a), a, p, root) for (a, p) in zip(actions, probs)}
+    for i, n in enumerate(root.children.values()):
+        n.visits = visits[i]
+        n.value = visits
+
+    nodes = [n for n in root.children.values()]
+    sampling = softmax_sample(nodes, [n.visits for n in nodes], 1.7)
+    print(f"Softmax sampling: {sampling}")
+
+    # =================================
+    # Test selection.
+    # Test first selection.
     probabilities = [0.2, 0.4, 0.1, 0.6]
     child_nodes = {action: Node(game.result(state, action), action, prob, root) for action, prob in zip(actions, probabilities)}
     root.children = child_nodes
@@ -61,7 +75,6 @@ def run_tests():
     assertion.assert_true(parent_is_root, "expansion correct parent")
 
     # =================================
-    # Test simulation/rollout
 
 def run_iteration_tests(log_type=None):
     print("run iteration timing test MCTS")

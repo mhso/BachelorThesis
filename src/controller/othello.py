@@ -135,14 +135,14 @@ class Othello(Game):
 
     def structure_data(self, state):
         super.__doc__
-        pos_pieces = np.where(state.board == 1, state.board, np.zeros((self.size, self.size), dtype='b'))
-        neg_pieces = -np.where(state.board == -1, state.board, np.zeros((self.size, self.size), dtype='b'))
+        pos_pieces = np.where(state.board == 1, state.board, np.zeros((self.size, self.size), dtype="b"))
+        neg_pieces = -np.where(state.board == -1, state.board, np.zeros((self.size, self.size), dtype="b"))
 
         # Structure data as a 4x4x2 stack.
         if state.player:
-            return np.array([pos_pieces, neg_pieces])
+            return np.array([pos_pieces, neg_pieces], dtype="float32")
         else:
-            return np.array([neg_pieces, pos_pieces])
+            return np.array([neg_pieces, pos_pieces], dtype="float32")
 
     def map_logits(self, actions, logits):
         action_map = dict()

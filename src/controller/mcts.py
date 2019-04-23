@@ -44,8 +44,8 @@ def softmax_sample(child_nodes, visit_counts, tempature=0.7):
     visit counts.
     """
     sum_visits = sum(visit_counts)
-    prob_visits = [v/sum_visits for v in visit_counts]
-    exps = np.exp(prob_visits) * tempature
+    prob_visits = [(v/sum_visits) * tempature for v in visit_counts]
+    exps = np.exp(prob_visits)
     log(f"Probabilities of softmax: {exps/sum(exps)}")
 
     return np.random.choice(child_nodes,
@@ -115,9 +115,9 @@ class MCTS(GameAI):
         taking any possible actions from the current node.
         """
         logit_map = self.game.map_logits(actions, policies)
-        policy_sum = sum(logit_map.values())
+        log(f"Logits:\n{logit_map}")
         for a, p in logit_map.items():
-            node.children[a] = Node(self.game.result(node.state, a), a, p / policy_sum if policy_sum else 0, node)
+            node.children[a] = Node(self.game.result(node.state, a), a, p, node)
 
     def back_propagate(self, node, value):
         """
@@ -140,6 +140,9 @@ class MCTS(GameAI):
         of available actions from the current state.
         """
         state = node.state
+        log(f"State:\n{state.board}")
+        log(f"Policies:\n{policy_logits}")
+        log(f"Value: {value}")
         actions = self.game.actions(state)
         new_value = value
         if self.game.terminal_test(state):

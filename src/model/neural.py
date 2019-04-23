@@ -25,7 +25,6 @@ def softmax_cross_entropy_with_logits(y_bool, y_pred):
 
     where_false = tf.fill(tf.shape(y_bool), -100.0)
     pred = tf.where(where_true, where_false, y_pred)
-    
     return tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_bool, logits=pred)
 
 def set_nn_config():
@@ -71,7 +70,7 @@ class NeuralNetwork:
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = self.conv_layer(out, 4, 1)
+        policy = self.conv_layer(out, 2, 1)
 
         # Game specific policy outputs.
         outputs = self.policy_layers(game, policy)
@@ -103,7 +102,7 @@ class NeuralNetwork:
         Construct a 2D convolutional, rectified, batchnormalized
         layer with the given input, filters and kernel size.
         """
-        out = Conv2D(filters, kernel_size=kernel_size, strides=1, padding="same",
+        out = Conv2D(filters, kernel_size=(kernel_size, kernel_size), strides=1, padding="same",
                      use_bias=Config.USE_BIAS,
                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(inp)
         out = BatchNormalization()(out)
@@ -122,17 +121,19 @@ class NeuralNetwork:
         optimizer, and compile the neural network model.
         """
         game_name = type(game).__name__
-        # Policy head loss function.
+        # Policy head loss weights & loss function.
+        loss_weights = [0.5, 0.5]
         loss_funcs = [softmax_cross_entropy_with_logits]
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
-        # Value head loss function.
+        # Value head loss weights & loss function.
         loss_funcs.append(losses.mean_squared_error)
 
         # Stochastic Gradient Descent optimizer with momentum.
         model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                     decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
+                      loss_weights=loss_weights,
                       loss=loss_funcs,
                       metrics=[softmax_cross_entropy_with_logits, "accuracy"])
 

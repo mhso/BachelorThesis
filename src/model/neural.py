@@ -122,24 +122,19 @@ class NeuralNetwork:
         optimizer, and compile the neural network model.
         """
         game_name = type(game).__name__
-        # Policy head weights & loss function.
-        loss_weights = [0.5]
+        # Policy head loss function.
         loss_funcs = [softmax_cross_entropy_with_logits]
         if game_name == "Latrunculi":
             loss_funcs.append(losses.binary_crossentropy)
-            loss_weights[0] = 0.25
-            loss_weights.append(0.25)
-        # Value head weights & loss function.
-        loss_weights.append(0.5)
+        # Value head loss function.
         loss_funcs.append(losses.mean_squared_error)
 
         # Stochastic Gradient Descent optimizer with momentum.
         model.compile(optimizer=SGD(lr=Config.LEARNING_RATE,
                                     decay=Config.WEIGHT_DECAY,
                                     momentum=Config.MOMENTUM),
-                      loss_weights=loss_weights,
                       loss=loss_funcs,
-                      metrics=["accuracy"])
+                      metrics=[softmax_cross_entropy_with_logits, "accuracy"])
 
     def input_layer(self, game):
         game_type = type(game).__name__

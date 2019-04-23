@@ -2,13 +2,13 @@
 storage: Stores/saves/loads neural network models for use in
 training and self-play, as well as replay buffers generated from self-play.
 """
-import numpy as np
-from config import Config
+from glob import glob
 import pickle
 import os
-from model.neural import NeuralNetwork, set_nn_config
-from glob import glob
+import numpy as np
 from keras.models import save_model, load_model, Model
+from model.neural import set_nn_config
+from config import Config
 from util.sqlUtil import SqlUtil
 from util.timerUtil import TimerUtil
 
@@ -17,12 +17,10 @@ class ReplayStorage:
     This class manages the saving/loading of replays from games.
     """
     def __init__(self):
-        self.max_games = Config.MAX_GAME_STORAGE
-        self.batch_size = Config.BATCH_SIZE
         self.buffer = []
 
     def save_game(self, game):
-        if len(self.buffer) >= self.max_games:
+        if len(self.buffer) >= Config.MAX_GAME_STORAGE:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
 
@@ -39,7 +37,7 @@ class ReplayStorage:
         # of moves made in that game.
         batch = np.random.choice(
             self.buffer,
-            size=self.batch_size,
+            size=Config.BATCH_SIZE,
             p=[len(g.history)/move_sum for g in self.buffer]
         )
         # Draw random state index values from all chosen games.

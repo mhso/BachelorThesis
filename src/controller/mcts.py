@@ -142,8 +142,8 @@ class MCTS(GameAI):
         state = node.state
         actions = self.game.actions(state)
         new_value = value
-        #if self.game.terminal_test(state):
-        #    new_value = self.game.utility(state, state.player)
+        if self.game.terminal_test(state):
+            new_value = self.game.utility(state, state.player)
 
         # Expand node.
         self.expand(node, actions, policy_logits)

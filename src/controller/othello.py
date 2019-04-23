@@ -140,9 +140,9 @@ class Othello(Game):
 
         # Structure data as a 4x4x2 stack.
         if state.player:
-            return np.array([pos_pieces, neg_pieces]).reshape(1, -1)
+            return np.array([pos_pieces, neg_pieces])
         else:
-            return np.array([neg_pieces, pos_pieces]).reshape(1, -1)
+            return np.array([neg_pieces, pos_pieces])
 
     def map_logits(self, actions, logits):
         action_map = dict()

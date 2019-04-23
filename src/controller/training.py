@@ -219,6 +219,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     update_num_games(len(replay_storage.buffer))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
 
+    #train_network(network_storage, replay_storage, training_step, game_name)
+
     # Notify processes that network is ready.
     for conn in game_conns:
         conn.send("go")

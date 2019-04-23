@@ -217,9 +217,9 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
         player = p1s[i] if mcts_player else p2s[i]
         player.set_config(config)
     results = play_games(games, p1s, p2s, config, connection=connection)
-    for result in results:
-        wins += game.utility(result, mcts_player)
-        game.reset()
+    for i, result in enumerate(results):
+        wins += games[i].utility(result, mcts_player)
+        games[i].reset()
     return wins/num_games # Return ratio of games won.
 
 def minimax_for_game(game):

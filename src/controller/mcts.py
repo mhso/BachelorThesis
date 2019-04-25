@@ -37,7 +37,7 @@ class Node():
 def normalize_value(value):
     return (value + 1) * 0.5
 
-def softmax_sample(child_nodes, visit_counts, tempature=0.7):
+def softmax_sample(child_nodes, visit_counts, tempature=2.5):
     """
     Perform softmax sampling on a set of nodes
     based on a probability distribution of their
@@ -115,7 +115,6 @@ class MCTS(GameAI):
         taking any possible actions from the current node.
         """
         logit_map = self.game.map_logits(actions, policies)
-        log(f"Logits:\n{logit_map}")
         for a, p in logit_map.items():
             node.children[a] = Node(self.game.result(node.state, a), a, p, node)
 
@@ -140,13 +139,10 @@ class MCTS(GameAI):
         of available actions from the current state.
         """
         state = node.state
-        log(f"State:\n{state.board}")
-        log(f"Policies:\n{policy_logits}")
         actions = self.game.actions(state)
         new_value = value
         if self.game.terminal_test(state):
             new_value = self.game.utility(state, state.player)
-        log(f"Value: {new_value}")
 
         # Expand node.
         self.expand(node, actions, policy_logits)

@@ -89,6 +89,8 @@ class Connect_Four(Game):
     def map_logits(self, actions, logits):
         action_map = dict()
         policy_sum = 0
+        logits -= np.min(logits)
+        logits /= np.ptp(logits)
         for action in actions:
             y, x = action.dest
             logit = np.exp(logits[y * self.size + x % self.size])

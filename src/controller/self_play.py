@@ -115,7 +115,9 @@ def play_as_mcts(active_games, config, connection):
     # Get network evaluation from main process.
     connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
     policies, values = connection.recv()
-    expand_nodes(active_games, roots, policies, values)
+    log(f"Root policies:\n{policies}")
+    values = expand_nodes(active_games, roots, policies, values)
+    log(f"Root values: {values}")
     prepare_actions(active_games, roots)
 
     for _ in range(config.MCTS_ITERATIONS):
@@ -219,7 +221,7 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
     results = play_games(games, p1s, p2s, config, connection=connection)
     for i, result in enumerate(results):
         wins += games[i].utility(result, mcts_player)
-        games[i].reset()
+    game.reset()
     return wins/num_games # Return ratio of games won.
 
 def minimax_for_game(game):
@@ -257,11 +259,10 @@ def evaluate_model(game, player, status, config, connection):
     player.cfg.NOISE_BASE = 0 # Disable noise during evaluation.
 
     connection.send(("log", ["Evaluating against Random", getpid()]))
-    p_1, p_2 = player, get_ai_algorithm("Random", game, ".")
+    rand_ai = get_ai_algorithm("Random", game, ".")
 
-    eval_rand_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
-    p_2, p_1 = p_1, p_2
-    eval_rand_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
+    eval_rand_w = evaluate_against_ai(game, player, rand_ai, True, num_games // 2, config, connection)
+    eval_rand_b = evaluate_against_ai(game, rand_ai, player, False, num_games // 2, config, connection)
 
     connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
 
@@ -279,11 +280,10 @@ def evaluate_model(game, player, status, config, connection):
         connection.send((f"perform_mini", (eval_mini_w, eval_mini_b)))
         """
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
-        p_1, p_2 = player, get_ai_algorithm("MCTS_Basic", game, ".")
+        mcts_ai = get_ai_algorithm("MCTS_Basic", game, ".")
 
-        eval_mcts_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
-        p_2, p_1 = p_1, p_2
-        eval_mcts_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
+        eval_mcts_w = evaluate_against_ai(game, player, mcts_ai, True, num_games // 2, config, connection)
+        eval_mcts_b = evaluate_against_ai(game, mcts_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
     player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.

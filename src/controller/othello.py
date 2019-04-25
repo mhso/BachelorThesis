@@ -146,6 +146,8 @@ class Othello(Game):
 
     def map_logits(self, actions, logits):
         action_map = dict()
+        logits -= np.min(logits)
+        logits /= np.ptp(logits)
         policy_sum = 0
         if actions == [None]:
             action_map[None] = 1

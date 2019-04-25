@@ -5,6 +5,7 @@ from time import time
 from util.excelUtil import ExcelUtil
 from util.sqlUtil import SqlUtil
 from numpy.random import uniform
+import numpy as np
 
 def run_tests():
     # Test possible initial actions.
@@ -13,22 +14,22 @@ def run_tests():
     state = game.start_state()
 
     expected_actions = [
-        Action((test_size-1, 0), None), Action((test_size-1, 1), None),
-        Action((test_size-1, 2), None), Action((test_size-1, 3), None),
-        Action((test_size-1, 4), None), Action((test_size-1, 5), None)
+        Action(None, (test_size-1, 0)), Action(None, (test_size-1, 1)),
+        Action(None, (test_size-1, 2)), Action(None, (test_size-1, 3)),
+        Action(None, (test_size-1, 4)), Action(None, (test_size-1, 5))
     ]
 
     assertion.assert_all_equal(expected_actions, game.actions(state), "correct actions")
     # =================================
     # Test possible mid-game actions.
-    result = game.result(state, Action((test_size-1, 0), None))
-    result = game.result(result, Action((test_size-1, 2), None))
-    result = game.result(result, Action((test_size-2, 0), None))
+    result = game.result(state, Action(None, (test_size-1, 0)))
+    result = game.result(result, Action(None, (test_size-1, 2)))
+    result = game.result(result, Action(None, (test_size-2, 0)))
 
     expected_actions = [
-        Action((test_size-3, 0), None), Action((test_size-1, 1), None),
-        Action((test_size-2, 2), None), Action((test_size-1, 3), None),
-        Action((test_size-1, 4), None), Action((test_size-1, 5), None)
+        Action(None, (test_size-3, 0)), Action(None, (test_size-1, 1)),
+        Action(None, (test_size-2, 2)), Action(None, (test_size-1, 3)),
+        Action(None, (test_size-1, 4)), Action(None, (test_size-1, 5))
     ]
 
     assertion.assert_all_equal(expected_actions, game.actions(result), "correct actions moved")
@@ -37,9 +38,9 @@ def run_tests():
     # Test terminal state vertical.
 
     result.player = not result.player
-    result = game.result(result, Action((test_size-3, 0), None))
+    result = game.result(result, Action(None, (test_size-3, 0)))
     result.player = not result.player
-    result = game.result(result, Action((test_size-4, 0), None))
+    result = game.result(result, Action(None, (test_size-4, 0)))
 
     assertion.assert_true(game.terminal_test(result), "terminal test vertical")
 
@@ -50,6 +51,20 @@ def run_tests():
 
     assertion.assert_equal(1, utility_w, "utility white")
     assertion.assert_equal(-1, utility_b, "utility black")
+
+    # =================================
+    # Test policy normalization.
+    logits = np.array([
+        -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
+        -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
+        -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
+        -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
+        -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
+        -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
+    ])
+    state = game.start_state()
+    mapping = game.map_logits(game.actions(state), logits)
+
 
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF

@@ -12,8 +12,7 @@ class Connect_Four(Game):
     __observers = []
 
     def __init__(self, size, rand_seed=None):
-        Game.__init__(self)
-        self.size = size
+        Game.__init__(self, size)
         self.terminal_kernels = [
             np.array([[1, 1, 1, 1]]),
             np.array([[1], [1], [1], [1]]),
@@ -68,13 +67,6 @@ class Connect_Four(Game):
                 return -1 if player else 1
         return 0
 
-    def clone(self):
-        clone = Connect_Four(self.size)
-        clone.history = self.history
-        clone.visit_counts = self.visit_counts
-        clone.q_value_history = self.q_value_history
-        return clone
-
     def structure_data(self, state):
         super.__doc__
         pos_pieces = np.where(state.board == 1, state.board, np.zeros((self.size, self.size), dtype='b'))
@@ -89,11 +81,11 @@ class Connect_Four(Game):
     def map_logits(self, actions, logits):
         action_map = dict()
         policy_sum = 0
-        logits -= np.min(logits)
-        logits /= np.ptp(logits)
+        #logits -= np.min(logits)
+        #logits /= np.ptp(logits)
         for action in actions:
             y, x = action.dest
-            logit = np.exp(logits[y * self.size + x % self.size])
+            logit = np.exp(logits[y * self.size + x])
             action_map[action] = logit
             policy_sum += logit
         for action, policy in action_map.items():
@@ -104,5 +96,5 @@ class Connect_Four(Game):
         policies = np.zeros((self.size * self.size))
         for a, p in target_policies.items():
             y, x = a.dest
-            policies[y * self.size + x % self.size] = p
+            policies[y * self.size + x] = p
         return (policies,)

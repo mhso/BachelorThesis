@@ -4,19 +4,10 @@ from testing import assertion
 from model.state import Action, State
 from model.storage import ReplayStorage
 from controller.latrunculi import Latrunculi
+from controller.connect_four import Connect_Four
 from view.graph import Graph
-
-def test_graph(storage):
-    sleep(0.5)
-    evaluated = False
-    if storage.eval_performance():
-        evaluated = True
-        data = storage.reset_perform_data()
-        assertion.assert_true(data != [], "Performance data not empty")
-        Graph.plot_data("DATA STUFF", None, data)
-
-    assertion.assert_true(evaluated, "Performance was evaluated")
-    assertion.assert_equal([], storage.perform_eval_buffer, "Buffer reset")
+from controller.self_play import evaluate_against_ai, get_ai_algorithm
+from config import Config
 
 def run_tests():
     # Test Action ID.
@@ -34,3 +25,11 @@ def run_tests():
     dictionary[state.stringify()] = "wow"
 
     assertion.assert_equal("wow", dictionary[state.stringify()], "state hashing")
+
+    # =================================
+    # Test self-play performance evaluation.
+    game = Connect_Four(6)
+    as_white = evaluate_against_ai(game, get_ai_algorithm("Random", game), get_ai_algorithm("Random", game), True, 5, Config, None)
+    as_black = evaluate_against_ai(game, get_ai_algorithm("Random", game), get_ai_algorithm("Random", game), False, 5, Config, None)
+    print(as_white)
+    print(as_black)

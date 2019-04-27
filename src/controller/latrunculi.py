@@ -216,6 +216,7 @@ def fast_utility(board, player):
 
 class Latrunculi(Game):
     rand_seed_used = None
+    init_state = None
     action_type = "dual"
 
     def populate_board(self, seed):
@@ -256,9 +257,8 @@ class Latrunculi(Game):
         return self.rand_seed_used
 
     def __init__(self, size, start_seed=None):
-        Game.__init__(self)
-        self.size = size
-        self.populate_board(start_seed)
+        Game.__init__(self, size)
+        self.rand_seed_used = start_seed
         self.num_actions = 80 # 4 (possible destinations for any piece) * 16 (board size) + 16 (remove enemy piece)
 
     def notify_observers(self, *args, **kwargs):
@@ -267,6 +267,8 @@ class Latrunculi(Game):
 
     def start_state(self):
         super.__doc__
+        if self.init_state is None:
+            self.populate_board(self.rand_seed_used)
         return self.init_state
 
     def player(self, state):
@@ -401,12 +403,6 @@ class Latrunculi(Game):
     def utility(self, state, player):
         super.__doc__
         return fast_utility(state.board, player)
-
-    def clone(self):
-        clone = Latrunculi(self.size, None)
-        clone.history = self.history
-        clone.visit_counts = self.visit_counts
-        return clone
 
     def structure_data(self, state):
         super.__doc__

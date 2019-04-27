@@ -183,6 +183,11 @@ if __name__ == "__main__":
             cfg.ACTORS = 1
             Config.EVAL_CHECKPOINT = {}
             cfg.EVAL_CHECKPOINT = {}
+        if not self_play.is_mcts(P_WHITE) or not self_play.is_mcts(P_BLACK):
+            cfg.NOISE_BASE = 0
+            Config.NOISE_BASE = 0
+            cfg.NUM_SAMPLING_MOVES = 0
+            cfg.NUM_SAMPLING_MOVES = 0
         """
         if "-dl" in options:
             REPLAY_STORAGE.load_game_from_sql()

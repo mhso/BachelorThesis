@@ -59,8 +59,7 @@ class Othello(Game):
     curr_actions = None
 
     def __init__(self, size, rand_seed=None):
-        Game.__init__(self)
-        self.size = size
+        Game.__init__(self, size)
         self.num_actions = self.size * self.size
 
     def populate_board(self):
@@ -126,12 +125,6 @@ class Othello(Game):
     def utility(self, state, player):
         super.__doc__
         return utility(state.board, state.pieces, player)
-
-    def clone(self):
-        clone = Othello(self.size)
-        clone.history = self.history
-        clone.visit_counts = self.visit_counts
-        return clone
 
     def structure_data(self, state):
         super.__doc__

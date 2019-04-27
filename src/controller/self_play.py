@@ -105,7 +105,7 @@ def backprop_nodes(games, nodes, values):
 
         player = player_1 if game.player(state) else player_2
 
-        player.back_propagate(node, 1-value)
+        player.back_propagate(node, node.state.player, value)
 
 def play_as_mcts(active_games, config, connection):
     """
@@ -116,8 +116,9 @@ def play_as_mcts(active_games, config, connection):
     connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
     policies, values = connection.recv()
     log(f"Root policies:\n{policies}")
+    log(f"OG root values: {values}")
     values = expand_nodes(active_games, roots, policies, values)
-    log(f"Root values: {values}")
+    log(f"Normed root values: {values}")
     prepare_actions(active_games, roots)
 
     for _ in range(config.MCTS_ITERATIONS):
@@ -136,7 +137,6 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
     active_games = [[games[i], games[i].start_state(), player_white[i], player_black[i]] for i in range(len(games))]
     total_games = len(games)
     counters = [0 for _ in games]
-    results = []
 
     if gui is not None:
         sleep(1)
@@ -155,7 +155,6 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
             state = player.execute_action(roots[i] if is_mcts(player) else state) #gives a root node to the method if MCTS, else it gives a state
             active_games[i][1] = state
 
-            game.history.append(state)
             #this part adds the q_value to q_value_history
             #TODO: it is a bit hacky, might want to improve
             if is_mcts(player): #TODO: check if works
@@ -168,14 +167,18 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
                 elif type(player_black).__name__ != "Human" and state.player:
                     sleep(config.GUI_AI_SLEEP)
                 gui.update(state)
+            
+            log(state)
 
             counters[i] = counters[i] + 1
             if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
                 finished_games_indexes.append(i)
-                results.append(state)
                 util = game.utility(state, True)
+                game.terminal_value = util
                 winner = "White" if util == 1 else "Black" if util == -1 else "Draw"
                 log(f"Game over! Winner: {winner}")
+            else:
+                game.history.append(state)
 
         turn_took = "{0:.3f}".format((time() - time_turn))
         num_active = len(active_games)
@@ -193,7 +196,6 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
             if name_1 != "MCTS" or name_2 != "MCTS":
                 status += " - Eval vs. {}".format(name_1 if name_2 == "MCTS" else name_2)
             connection.send(("log", [status, getpid()]))
-    return results
 
 def align_with_spacing(number, total_length):
     """
@@ -218,9 +220,11 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
     for i in range(len(games)):
         player = p1s[i] if mcts_player else p2s[i]
         player.set_config(config)
-    results = play_games(games, p1s, p2s, config, connection=connection)
-    for i, result in enumerate(results):
-        wins += games[i].utility(result, mcts_player)
+    play_games(games, p1s, p2s, config, connection=connection)
+    for g in games:
+        val = g.terminal_value
+        win_v = val if mcts_player or val == 0 else -val
+        wins += win_v
     game.reset()
     return wins/num_games # Return ratio of games won.
 
@@ -333,8 +337,6 @@ def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None
             p1 = p1s[i]
             p2 = p2s[i]
             clones.append(game.clone())
-            game.__init__(game.size, "random")
-
             game.reset() # Reset game history.
         try:
             if connection and not gui:

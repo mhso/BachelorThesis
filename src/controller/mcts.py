@@ -20,7 +20,7 @@ class Node():
         self.q_value = 0
 
     def pretty_desc(self):
-        return "<Node: a: {}, n: {}, v: {}, m: {}, p: {}>".format(
+        return "<Node: a: {}, n: {}, v: {}, q: {}, p: {}>".format(
             self.action, self.visits, self.value, "%.3f" % self.q_value, "%.3f" % self.prior_prob)
 
     def __str__(self):
@@ -35,7 +35,7 @@ class Node():
             self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
 
 def normalize_value(value):
-    return (value + 1) * 0.5
+    return (value * 0.5) + 0.5
 
 def softmax_sample(child_nodes, visit_counts, tempature=2.5):
     """
@@ -118,19 +118,19 @@ class MCTS(GameAI):
         for a, p in logit_map.items():
             node.children[a] = Node(self.game.result(node.state, a), a, p, node)
 
-    def back_propagate(self, node, value):
+    def back_propagate(self, node, player, value):
         """
         After a full simulation, propagate result up the tree.
         Invert value at every node, to align 'perspective' to
         the current player of that node.
         """
         node.visits += 1
-        node.value += value
+        node.value += 1-value if node.state.player == player else value
         node.q_value = node.value / node.visits
 
         if node.parent is None:
             return
-        self.back_propagate(node.parent, 1-value)
+        self.back_propagate(node.parent, player, value)
 
     def set_evaluation_data(self, node, policy_logits, value):
         """
@@ -143,9 +143,9 @@ class MCTS(GameAI):
         new_value = value
         if self.game.terminal_test(state):
             new_value = self.game.utility(state, state.player)
-
-        # Expand node.
-        self.expand(node, actions, policy_logits)
+        else:
+            # Expand node.
+            self.expand(node, actions, policy_logits)
 
         return normalize_value(new_value)
 

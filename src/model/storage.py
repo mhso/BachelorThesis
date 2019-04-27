@@ -49,6 +49,16 @@ class ReplayStorage:
             images.append(game.structure_data(game.history[index]))
             target_value, policies = game.make_target(index)
             target_policies = game.map_actions(policies)
+            """
+            print(f"State at index {index}:\n{game.history[index]}")
+            winner = "White" if game.terminal_value == 1 else "Black" if target_value else "Draw"
+            print(f"Last state:\n{game.history[-1]}")
+            print(f"Winner: {winner}")
+            print(f"Policies:\n{policies}")
+            print(f"Target policies:\n{target_policies}")
+            print(f"Terminal value: {game.terminal_value}")
+            print(f"Target value: {target_value}")
+            """
             for i in range(len(target_policies)):
                 expected_outputs[i].append(target_policies[i])
             expected_outputs[-1].append(target_value)

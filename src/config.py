@@ -214,6 +214,7 @@ def set_game_specific_values(cfg, game):
         sampling_options = [3, 2, 2, 2, 2]
         # Avg actions are always equal to board size.
         noise = 10/game.size
+        noise = 0.3
         sample_moves = sampling_options[8-game.size]
     if cfg:
         cfg.NOISE_BASE = noise

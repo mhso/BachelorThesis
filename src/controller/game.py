@@ -9,12 +9,14 @@ class Game(ABC):
     __observers = []
     action_type = "single"
 
-    def __init__(self, history=None, q_value_history=None):
-        self.history = history or []
+    def __init__(self, size, history=None, q_value_history=None):
+        self.size = size
+        self.history = history or [self.start_state()]
         self.visit_counts = []
         self.num_actions = 0 # Overriden in subclasses.
         self.__observers = []
         self.q_value_history = q_value_history or [] #TODO: might need to be given a parameter, same as history...
+        self.terminal_value = 0
 
     @abstractmethod
     def start_state(self):
@@ -66,24 +68,27 @@ class Game(ABC):
         """
         pass
 
-    @abstractmethod
     def clone(self):
-        pass
+        game_clone = self.__class__(self.size)
+        game_clone.history = self.history
+        game_clone.visit_counts = self.visit_counts
+        game_clone.q_value_history = self.q_value_history
+        game_clone.terminal_value = self.terminal_value
+        return game_clone
 
     def make_target(self, state_index):
         """
         Return terminal value of given state at index, as well as
         probability distribution for actions at that state.
         """
-
         #uses the average of z-value and q-value, instead of just z-value
         #terminal_state = self.history[-1]
         #return (((self.utility(terminal_state, self.history[state_index].player) + self.q_value_history[state_index]) / 2),
         #        self.visit_counts[state_index])
-
-        terminal_state = self.history[-1]
-        return (self.utility(terminal_state, self.history[state_index].player),
-                self.visit_counts[state_index])
+        player = self.history[state_index].player
+        target_val = self.terminal_value
+        return (target_val if player or target_val == 0 else -target_val,
+               self.visit_counts[state_index])
 
     def store_search_statistics(self, node):
         """
@@ -110,7 +115,7 @@ class Game(ABC):
         self.visit_counts.append(rand_stats)
 
     def reset(self):
-        self.history = []
+        self.history = [self.start_state()]
         self.visit_counts = []
         self.q_value_history = []
 

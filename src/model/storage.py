@@ -174,13 +174,17 @@ class NetworkStorage:
     def latest_network(self):
         return self.networks[self.curr_step]
 
+    def get_network(self, step):
+        network_id = step if step != -1 else self.curr_step
+        return self.networks[network_id]
+
     def save_network(self, step, network):
         self.networks[step] = network
         if len(self.networks) > Config.MAX_NETWORK_STORAGE:
             new_dict = dict()
             lowest_step = min(self.networks)
             for s, n in self.networks.items():
-                if s != lowest_step:
+                if s != lowest_step or s %Config.SAVE_CHECKPOINT_MACRO == 0:
                     new_dict[s] = n
             self.networks = new_dict
         self.curr_step = step

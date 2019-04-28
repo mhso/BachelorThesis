@@ -97,7 +97,7 @@ def game_over(new_games):
         return True
     return False
 
-def evaluate_games(game, eval_queue, network_storage):
+def evaluate_games(game, network_id, eval_queue, network_storage):
     """
     Evaluate a queue of games using the latest neural network.
     """
@@ -108,7 +108,7 @@ def evaluate_games(game, eval_queue, network_storage):
         amount.append(len(eval_queue[i][1])+amount[-1])
 
     arr = array(joined)
-    policies, values = network_storage.latest_network().evaluate(arr)
+    policies, values = network_storage.networks.get_network(network_id).evaluate(arr)
     # Send result to all processes in the queue.
     g_name = type(game).__name__
     logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
@@ -117,17 +117,17 @@ def evaluate_games(game, eval_queue, network_storage):
         conn = data[0]
         conn.send((logits[amount[i]:amount[i+1]], values[amount[i]:amount[i+1], 0]))
 
+def should_evaluate(eval_queue):
+    items = 0
+    for data in eval_queue.values():
+        items += len(data)
+    return items == Config.GAME_THREADS
+
 def load_all_perform_data(game_name):
-    rand_streak = 0
     perf_rand = load_perform_data("random", None, game_name)
     if perf_rand:
-        streak = 0
         for t_step, data in perf_rand:
             show_performance_data("Versus Random", 0, t_step, data)
-            if data[0] == 1.0:
-                streak += 1
-        if streak >= 2:
-            rand_streak = 24
     perf_mini = load_perform_data("minimax", None, game_name)
     if perf_mini:
         for t_step, data in perf_mini:
@@ -136,8 +136,6 @@ def load_all_perform_data(game_name):
     if perf_mcts:
         for t_step, data in perf_mcts:
             show_performance_data("Versus MCTS", 2, t_step, data)
-
-    return rand_streak
 
 def eval_checkpoint(training_step):
     """
@@ -176,7 +174,6 @@ def initialize_network(game, network_storage):
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
-    wins_vs_rand = 0
     if "-l" in argv or "-dl" in argv or "-ln" in argv:
         training_step = network_storage.curr_step + Config.ITERATIONS_PER_TRAINING
         # Load previously saved network loss + performance data.
@@ -187,7 +184,7 @@ def initialize_network(game, network_storage):
             losses[1].append(loss_pol)
             losses[2].append(loss_val)
         update_loss([losses[0][-1], losses[1][-1], losses[2][-1]])
-        wins_vs_rand = load_all_perform_data(GAME_NAME)
+        load_all_perform_data(GAME_NAME)
 
         GraphHandler.plot_data("Average Loss", "Training Loss", None, losses[0])
         GraphHandler.plot_data("Policy Loss", "Training Loss", None, losses[1])
@@ -199,7 +196,7 @@ def initialize_network(game, network_storage):
         network = NeuralNetwork(game)
         network_storage.save_network(0, network)
         FancyLogger.set_network_status("Waiting for data...")
-    return training_step, wins_vs_rand
+    return training_step
 
 def monitor_games(game_conns, game, network_storage, replay_storage):
     """
@@ -214,7 +211,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     start_training_status()
     set_total_steps(Config.TRAINING_STEPS)
     FancyLogger.start_timing()
-    training_step, wins_vs_rand = initialize_network(game, network_storage)
+    training_step = initialize_network(game, network_storage)
     update_training_step(training_step)
     update_num_games(len(replay_storage.buffer))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
@@ -225,7 +222,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     for conn in game_conns:
         conn.send("go")
 
-    eval_queue = []
+    eval_queue = {}
     perform_data = [None, None, None]
     alert_perform = {game_conns[-1]: False}
     new_games = 0
@@ -234,14 +231,19 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     try:
         while True:
             for conn in wait(game_conns):
-                status, val = conn.recv()
+                status, data = conn.recv()
                 if status == "evaluate":
-                    eval_queue.append((conn, val))
-                    if len(eval_queue) == Config.GAME_THREADS:
-                        evaluate_games(game, eval_queue, network_storage)
-                        eval_queue = []
+                    network_id = data[0]
+                    if eval_queue.get(network_id) is not None:
+                        eval_queue[network_id].append(data[1])
+                    else:
+                        eval_queue[network_id] = [(conn, data)]
+                    if should_evaluate(eval_queue):
+                        for n_id, eval_data in eval_queue.items():
+                            evaluate_games(game, n_id, eval_data, network_storage)
+                        eval_queue = {}
                 elif status == "game_over":
-                    for game in val:
+                    for game in data:
                         update_num_games()
                         replay_storage.save_game(game)
                         if "-s" in argv:
@@ -275,18 +277,18 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                             return
                     if alert_perform.get(conn, False):
                         # Tell the process to start running perform eval games.
-                        conn.send(wins_vs_rand >= 24)
+                        conn.send(training_step)
                         alert_perform[conn] = False
                     else:
                         # Nothing of note happens, indicate that process should carry on as usual.
                         conn.send(None)
                 elif status == "log":
-                    FancyLogger.set_thread_status(val[1], val[0])
+                    FancyLogger.set_thread_status(data[1], data[0])
                 elif status[:7] == "perform":
                     # Get performance data from games against alternate AIs.
-                    total = (val[0] + val[1])/2
-                    as_white = val[0]
-                    as_black = val[1]
+                    total = (data[0] + data[1])/2
+                    as_white = data[0]
+                    as_black = data[1]
                     index = None
                     if status == "perform_rand":
                         if wins_vs_rand < 24:

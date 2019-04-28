@@ -107,13 +107,14 @@ def backprop_nodes(games, nodes, values):
 
         player.back_propagate(node, node.state.player, value)
 
-def play_as_mcts(active_games, config, connection):
+def play_as_mcts(active_games, network, config, connection):
     """
     Play a batch of games as MCTS vs. MCTS.
     """
+    network_id = network if network == -1 else network[active_games[0][1].player]
     roots = create_roots(active_games)
     # Get network evaluation from main process.
-    connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)]))
+    connection.send(("evaluate", (network_id, [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)])))
     policies, values = connection.recv()
     log(f"Root policies:\n{policies}")
     log(f"OG root values: {values}")
@@ -124,13 +125,13 @@ def play_as_mcts(active_games, config, connection):
     for _ in range(config.MCTS_ITERATIONS):
         selected_nodes = select_nodes(active_games, roots)
 
-        connection.send(("evaluate", [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)]))
+        connection.send(("evaluate", (network_id, [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)])))
         policies, values = connection.recv()
         values = expand_nodes(active_games, selected_nodes, policies, values)
         backprop_nodes(active_games, selected_nodes, values)
     return roots
 
-def play_games(games, player_white, player_black, config, gui=None, connection=None):
+def play_games(games, player_white, player_black, config, network=-1, gui=None, connection=None):
     """
     Play a number of games to the end, and return the resulting states.
     """
@@ -147,19 +148,13 @@ def play_games(games, player_white, player_black, config, gui=None, connection=N
         time_turn = time()
         if is_mcts(player):
             # Run MCTS simulations. Get resulting root nodes.
-            roots = play_as_mcts(active_games, config, connection)
+            roots = play_as_mcts(active_games, network, config, connection)
 
         finished_games_indexes = []
         for (i, (game, state, player_1, player_2)) in enumerate(active_games):
             player = player_1 if game.player(state) else player_2
             state = player.execute_action(roots[i] if is_mcts(player) else state) #gives a root node to the method if MCTS, else it gives a state
             active_games[i][1] = state
-
-            #this part adds the q_value to q_value_history
-            #TODO: it is a bit hacky, might want to improve
-            if is_mcts(player): #TODO: check if works
-                node = player.chosen_node
-                game.q_value_history.append(node.q_value)
 
             if gui is not None:
                 if type(player_white).__name__ != "Human" and not state.player:
@@ -207,7 +202,7 @@ def align_with_spacing(number, total_length):
         val += " "
     return "{}{}".format(val, str(number))
 
-def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection):
+def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection, network_id=-1):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -218,9 +213,12 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
     wins = 0
     games, p1s, p2s = copy_games_and_players(game, player1, player2, num_games)
     for i in range(len(games)):
-        player = p1s[i] if mcts_player else p2s[i]
-        player.set_config(config)
-    play_games(games, p1s, p2s, config, connection=connection)
+        if is_mcts(p1s[i]):
+            p1s[i].set_config(config)
+        if is_mcts(p2s[i]):
+            p2s[i].set_config(config)
+
+    play_games(games, p1s, p2s, config, network=network_id, connection=connection)
     for g in games:
         val = g.terminal_value
         win_v = val if mcts_player or val == 0 else -val
@@ -251,7 +249,7 @@ def write_snapshot(txt):
                 if line:
                     file.write(line + "\n")
 
-def evaluate_model(game, player, status, config, connection):
+def evaluate_model(game, player, step, config, connection):
     """
     Evaluate MCTS/NN model against three different AI
     algorithms. Print/plot result of evaluation.
@@ -270,16 +268,15 @@ def evaluate_model(game, player, status, config, connection):
 
     connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
 
-    if status:
+    if step > 100:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
         """
         connection.send(("log", ["Evaluating against Minimax", getpid()]))
-        p_1, p_2 = player, get_ai_algorithm("Minimax", game, ".")
+        mini_ai = get_ai_algorithm("Minimax", game, ".")
 
-        eval_mini_w = evaluate_against_ai(game, p_1, p_2, True, num_games // 2, config, connection)
-        p_2, p_1 = p_1, p_2
-        eval_mini_b = evaluate_against_ai(game, p_1, p_2, False, num_games // 2, config, connection)
+        eval_mini_w = evaluate_against_ai(game, player, mini_ai, True, num_games // 2, config, connection)
+        eval_mini_b = evaluate_against_ai(game, mini_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mini", (eval_mini_w, eval_mini_b)))
         """
@@ -290,6 +287,16 @@ def evaluate_model(game, player, status, config, connection):
         eval_mcts_b = evaluate_against_ai(game, mcts_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
+
+        connection.send(("log", ["Evaluating against macro network", getpid()]))
+        macro_ai = get_ai_algorithm("MCTS", game, ".")
+        macro_ai.set_config(config)
+
+        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games // 2, config, connection, step)
+        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games // 2, config, connection, step)
+
+        connection.send((f"perform_macro", (eval_macro_w, eval_macro_b)))
+
     player.cfg.NUM_SAMPLING_MOVES = num_sample_moves # Restore softmax sampling.
     player.cfg.NOISE_BASE = noise_base # Restore noise.
 

@@ -55,22 +55,10 @@ def utility(board, pieces, player):
     return 1 if diff > 0 else -1 if diff else 0
 
 class Othello(Game):
-    init_state = None
-    curr_actions = None
 
     def __init__(self, size, rand_seed=None):
         Game.__init__(self, size)
         self.num_actions = self.size * self.size
-
-    def populate_board(self):
-        board = np.zeros((self.size, self.size), dtype="b")
-        half = self.size // 2
-        board[half][half-1] = 1
-        board[half-1][half] = 1
-        board[half][half] = -1
-        board[half-1][half-1] = -1
-        pieces = [(half, half-1), (half-1, half), (half, half), (half-1, half-1)]
-        self.init_state = State(board, True, pieces=pieces)
 
     def start_state(self):
         super.__doc__
@@ -139,8 +127,8 @@ class Othello(Game):
 
     def map_logits(self, actions, logits):
         action_map = dict()
-        logits -= np.min(logits)
-        logits /= np.ptp(logits)
+        #logits -= np.min(logits)
+        #logits /= np.ptp(logits)
         policy_sum = 0
         if actions == [None]:
             action_map[None] = 1

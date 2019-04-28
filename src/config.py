@@ -111,6 +111,12 @@ class Config():
     # Use bias.
     USE_BIAS = False
 
+    # Value to use when training 'value head' of network. Options include:
+    # z = actual outcome of game (1 = white won, 0 = draw, -1 = black won).
+    # q = MCTS predicted value of simulations.
+    # avg = Average of the above two.
+    TARGET_VAL = "z"
+
     # Kernel initializer.
     # Options:0 'uniform', 'normal'.
     WEIGHT_INITIALIZER = "uniform"
@@ -204,20 +210,21 @@ def set_game_specific_values(cfg, game):
         sample_moves = sampling_options[8-game.size]
     elif game_name == "Othello":
         # Avg actions: 4, 6, 9, 11, and 14.
-        noise_options = [2.5, 1.66, 1.11, 0.9, 0.7]
+        noise_options = [2.5, 1.66, 1, 0.9, 0.7]
         # Avg game length: 10, 20, 30, 45, and 60.
         sampling_options = [2, 3, 5, 5, 7]
         noise = noise_options[8-game.size]
         sample_moves = sampling_options[8-game.size]
     elif game_name == "Connect_Four":
         # Avg game length: 40, 22, 18, 15, and 10.
-        sampling_options = [3, 2, 2, 2, 2]
+        sampling_options = [3, 3, 3, 2, 2]
         # Avg actions are always equal to board size.
         noise = 10/game.size
-        noise = 0.3
         sample_moves = sampling_options[8-game.size]
     if cfg:
         cfg.NOISE_BASE = noise
         cfg.NUM_SAMPLING_MOVES = sample_moves
     Config.NOISE_BASE = noise
     Config.NUM_SAMPLING_MOVES = sample_moves
+
+    game.val_type = cfg.TARGET_VAL if cfg else Config.TARGET_VAL

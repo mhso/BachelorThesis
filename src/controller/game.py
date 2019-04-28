@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 class Game(ABC):
     __observers = []
     action_type = "single"
+    val_type = "z"
 
     def __init__(self, size, history=None, q_value_history=None):
         self.size = size
@@ -74,6 +75,7 @@ class Game(ABC):
         game_clone.visit_counts = self.visit_counts
         game_clone.q_value_history = self.q_value_history
         game_clone.terminal_value = self.terminal_value
+        game_clone.val_type = self.val_type
         return game_clone
 
     def make_target(self, state_index):
@@ -81,26 +83,31 @@ class Game(ABC):
         Return terminal value of given state at index, as well as
         probability distribution for actions at that state.
         """
-        #uses the average of z-value and q-value, instead of just z-value
-        #terminal_state = self.history[-1]
-        #return (((self.utility(terminal_state, self.history[state_index].player) + self.q_value_history[state_index]) / 2),
-        #        self.visit_counts[state_index])
         player = self.history[state_index].player
-        target_val = self.terminal_value
-        return (target_val if player or target_val == 0 else -target_val,
-               self.visit_counts[state_index])
+        term_val = self.terminal_value
+        # 'Z' value. Traditional terminal value of game (1 = white wins, -1 = black wins, 0 = draw).
+        target_val = term_val if player or term_val == 0 else -term_val
+        if self.val_type == "q":
+            # Use 'q' value instead of 'z'. This is MCTS's predicted value for the state.
+            target_val = self.q_value_history[state_index]
+        elif self.val_type == "avg":
+            # Use average of 'q' and 'z' value.
+            target_val = (target_val + self.q_value_history[state_index]) / 2
+        return (target_val, self.visit_counts[state_index])
 
     def store_search_statistics(self, node):
         """
         Stores the visit counts for the children nodes of the given node
         """
-        if node is None:
+        if node.children == {}:
             self.visit_counts.append({None: 1})
+            self.q_value_history.append(0)
         else:
             sum_visits = sum(child.visits for child in node.children.values())
             self.visit_counts.append({
                 a: node.children[a].visits / sum_visits for a in node.children
             })
+            self.q_value_history.append(node.q_value)
 
     def store_value_statistics(self, node):
         """

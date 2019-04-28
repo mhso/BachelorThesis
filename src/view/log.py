@@ -77,8 +77,9 @@ class FancyLogger:
             clear_console()
             print("-=-=- Network status -=-=-")
             network_string = f"Network is using {Config.CONV_FILTERS} conv filters, "
-            network_string += f"{Config.RES_LAYERS} residual layers "
-            network_string += f"and a batch size of {Config.BATCH_SIZE}."
+            network_string += f"{Config.RES_LAYERS} residual layers, "
+            network_string += f"a batch size of {Config.BATCH_SIZE}, "
+            network_string += f"and is targeting '{Config.TARGET_VAL}' value."
             print(network_string)
             print(FancyLogger.network_status)
 

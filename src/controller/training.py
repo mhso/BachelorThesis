@@ -68,6 +68,7 @@ def handle_performance_data(step, perform_data, game_name):
     p1 = perform_data[0]
     p2 = perform_data[1]
     p3 = perform_data[2]
+    p4 = perform_data[3]
     if p1 is not None:
         show_performance_data("Versus Random", 0, step, p1)
         if "-s" in argv:
@@ -83,6 +84,11 @@ def handle_performance_data(step, perform_data, game_name):
         if "-s" in argv:
             save_perform_data(p3, "mcts", step, game_name) # Save to file.
         perform_data[2] = None
+    elif p4 is not None:
+        show_performance_data("Versus Macro Network", 3, step, p4)
+        if "-s" in argv:
+            save_perform_data(p4, "macro", step, game_name) # Save to file.
+        perform_data[3] = None
 
 def game_over(new_games):
     """
@@ -136,6 +142,10 @@ def load_all_perform_data(game_name):
     if perf_mcts:
         for t_step, data in perf_mcts:
             show_performance_data("Versus MCTS", 2, t_step, data)
+    perf_macro = load_perform_data("macro", None, game_name)
+    if perf_macro:
+        for t_step, data in perf_macro:
+            show_performance_data("Versus Macro Network", 3, t_step, data)
 
 def eval_checkpoint(training_step):
     """
@@ -223,7 +233,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
         conn.send("go")
 
     eval_queue = {}
-    perform_data = [None, None, None]
+    perform_data = [None, None, None, None]
     alert_perform = {game_conns[-1]: False}
     new_games = 0
     new_training_steps = training_step % eval_checkpoint(training_step)
@@ -291,13 +301,13 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                     as_black = data[1]
                     index = None
                     if status == "perform_rand":
-                        if wins_vs_rand < 24:
-                            wins_vs_rand = wins_vs_rand + Config.EVAL_GAMES if total == 1 else 0
                         index = 0
                     elif status == "perform_mini":
                         index = 1
                     elif status == "perform_mcts":
                         index = 2
+                    elif status == "perform_macro":
+                        index = 3
 
                     perform_data[index] = (total, as_white, as_black)
                     handle_performance_data(training_step, perform_data, game_name)

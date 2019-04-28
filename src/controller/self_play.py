@@ -292,8 +292,12 @@ def evaluate_model(game, player, step, config, connection):
         macro_ai = get_ai_algorithm("MCTS", game, ".")
         macro_ai.set_config(config)
 
-        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games // 2, config, connection, step)
-        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games // 2, config, connection, step)
+        macro_step = round(step, -2)
+        macro_step = macro_step if macro_step < step else macro_step - 100
+        network_ids = {True: -1, False: macro_step}
+        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games // 2, config, connection, network_ids)
+        network_ids = {True: macro_step, False: -1}
+        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games // 2, config, connection, network_ids)
 
         connection.send((f"perform_macro", (eval_macro_w, eval_macro_b)))
 

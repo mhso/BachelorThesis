@@ -191,7 +191,8 @@ def play_games(games, player_white, player_black, config, network_step=None, gui
             if name_1 != "MCTS" or name_2 != "MCTS":
                 status += " - Eval vs. {}".format(name_1 if name_2 == "MCTS" else name_2)
             elif network_step is not None:
-                status += " - Eval vs Macro Step {}".format(network_step)
+                old_network = network_step[True] if network_step[True] != -1 else network_step[False]
+                status += " - Eval vs Macro Step {}".format(old_network)
             connection.send(("log", [status, getpid()]))
 
 def align_with_spacing(number, total_length):
@@ -294,12 +295,16 @@ def evaluate_model(game, player, step, config, connection):
         macro_ai = get_ai_algorithm("MCTS", game)
         macro_ai.set_config(config)
 
+        # Final evaluation against a previous generation of the neural network
+        # (called the 'macro network', i.e: the latest 100th network).
         macro_step = round(step, -2)
         macro_step = macro_step if macro_step < step - 10 else macro_step - config.SAVE_CHECKPOINT_MACRO
+        # We only play one game as white and one as black, since subsequent
+        # games will be identical.
         network_ids = {True: -1, False: macro_step}
-        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games // 2, config, connection, network_ids)
+        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, 1, config, connection, network_ids)
         network_ids = {True: macro_step, False: -1}
-        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games // 2, config, connection, network_ids)
+        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, 1, config, connection, network_ids)
 
         connection.send((f"perform_macro", (eval_macro_w, eval_macro_b)))
 
@@ -372,12 +377,12 @@ def copy_games_and_players(game, p1, p2, amount):
     p_1_agents = [p1]
     p_2_agents = [p2]
     for _ in range(1, amount):
-        game = get_game(type(game).__name__, game.size, "random", ".")
-        player_1 = get_ai_algorithm(type(p1).__name__, game, ".")
-        player_2 = get_ai_algorithm(type(p2).__name__, game, ".")
+        g = game.clone()
+        player_1 = get_ai_algorithm(type(p1).__name__, g, ".")
+        player_2 = get_ai_algorithm(type(p2).__name__, g, ".")
         p_1_agents.append(player_1)
         p_2_agents.append(player_2)
-        games.append(game)
+        games.append(g)
     return games, p_1_agents, p_2_agents
 
 def init_self_play(game, p1, p2, connection, gui=None, config=None):

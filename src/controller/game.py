@@ -8,9 +8,8 @@ from abc import ABC, abstractmethod
 class Game(ABC):
     __observers = []
     action_type = "single"
-    val_type = "z"
 
-    def __init__(self, size, history=None, q_value_history=None):
+    def __init__(self, size, history=None, q_value_history=None, val_type=None):
         self.size = size
         self.history = history or [self.start_state()]
         self.visit_counts = []
@@ -18,6 +17,7 @@ class Game(ABC):
         self.__observers = []
         self.q_value_history = q_value_history or [] #TODO: might need to be given a parameter, same as history...
         self.terminal_value = 0
+        self.val_type = val_type or "z"
 
     @abstractmethod
     def start_state(self):
@@ -71,9 +71,9 @@ class Game(ABC):
 
     def clone(self):
         game_clone = self.__class__(self.size)
-        game_clone.history = self.history
-        game_clone.visit_counts = self.visit_counts
-        game_clone.q_value_history = self.q_value_history
+        game_clone.history = [s for s in self.history]
+        game_clone.visit_counts = [v for v in self.visit_counts]
+        game_clone.q_value_history = [q for q in self.q_value_history]
         game_clone.terminal_value = self.terminal_value
         game_clone.val_type = self.val_type
         return game_clone

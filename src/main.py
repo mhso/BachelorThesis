@@ -40,11 +40,8 @@ def initialize(game, p1, p2, **kwargs):
             # Don't use plot/GUI if several games are played.
             gui = None
         pipes = []
+        games, p1s, p2s = self_play.copy_games_and_players(game, p1, p2, Config.GAME_THREADS)
         for i in range(Config.GAME_THREADS):
-            if i > 0: # Make copies of game and players.
-                game = self_play.get_game(type(game).__name__, game.size, "random", ".")
-                p1 = self_play.get_ai_algorithm(type(p1).__name__, game, ".")
-                p2 = self_play.get_ai_algorithm(type(p2).__name__, game, ".")
             child = None
             if self_play.is_mcts(p1) or self_play.is_mcts(p2):
                 parent, child = Pipe()
@@ -53,10 +50,10 @@ def initialize(game, p1, p2, **kwargs):
             if gui is None:
                 game_thread = Process(target=self_play.init_self_play,
                                       name=f"Process {(i+1):02d}",
-                                      args=(game, p1, p2, child, gui, config))
+                                      args=(games[i], p1s[i], p2s[i], child, gui, config))
             else:
                 game_thread = Thread(target=self_play.init_self_play,
-                                     args=(game, p1, p2, child, gui, config))
+                                     args=(games[i], p1s[i], p2s[i], child, gui, config))
             game_thread.start() # Start game logic thread.
 
         #if "-l" option is selected load old replays from file
@@ -149,10 +146,9 @@ if __name__ == "__main__":
                             RAND_SEED = args[5] # Use numpy-determined random seed.
 
     GAME = self_play.get_game(GAME_NAME, BOARD_SIZE, RAND_SEED, WILDCARD)
+    set_game_specific_values(cfg, GAME)
     P_WHITE = self_play.get_ai_algorithm(PLAYER_1, GAME, WILDCARD)
     P_BLACK = self_play.get_ai_algorithm(PLAYER_2, GAME, WILDCARD)
-
-    set_game_specific_values(cfg, GAME)
 
     print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
         type(GAME).__name__, BOARD_SIZE, BOARD_SIZE, type(P_WHITE).__name__, type(P_BLACK).__name__), flush=True)

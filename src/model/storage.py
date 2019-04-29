@@ -56,6 +56,7 @@ class ReplayStorage:
             print(f"Winner: {winner}")
             print(f"Policies:\n{policies}")
             print(f"Target policies:\n{target_policies}")
+            print(f"Value type of game: {game.val_type}")
             print(f"Terminal value: {game.terminal_value}")
             print(f"Target value: {target_value}")
             """
@@ -183,13 +184,16 @@ class NetworkStorage:
         if len(self.networks) > Config.MAX_NETWORK_STORAGE:
             # Don't remove latest macro network.
             macro = round(self.curr_step, -2)
-            macro = macro if macro < self.curr_step else macro - Config.SAVE_CHECKPOINT_MACRO
+            macro = macro if macro <= self.curr_step else macro - Config.SAVE_CHECKPOINT_MACRO
+            prev_macro = macro - Config.SAVE_CHECKPOINT_MACRO
             if macro == 0:
                 macro = -1
+            if prev_macro == 0:
+                prev_macro = -1
             # Find step of oldest nework, apart from the macro network.
             lowest_step = self.curr_step
             for s in self.networks:
-                if s < lowest_step and s != macro:
+                if s < lowest_step and s != macro and s != prev_macro:
                     lowest_step = s
             # Copy all networks, but the oldest.
             new_dict = dict()

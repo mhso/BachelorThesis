@@ -181,9 +181,12 @@ def initialize_network(game, network_storage):
     if "-l" in argv or "-ln" in argv:
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
+        old_step = network_storage.curr_step
+        # Load macro network.
         macro_model, macro_step = network_storage.load_macro_network_from_file(network_storage.curr_step, GAME_NAME)
         macro_network = NeuralNetwork(game, model=macro_model)
         network_storage.save_network(macro_step, macro_network)
+        network_storage.curr_step = old_step
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
@@ -203,6 +206,7 @@ def initialize_network(game, network_storage):
         GraphHandler.plot_data("Policy Loss", "Training Loss", None, losses[1])
         GraphHandler.plot_data("Value Loss", "Training Loss", None, losses[2])
         FancyLogger.start_timing()
+        # Load newest network.
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step, network)
     else:

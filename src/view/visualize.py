@@ -329,6 +329,10 @@ class Gui():
         self.canvas_remove_tags(['board_field', 'status_text'])
         self.draw_board(state.board)
 
+        new_actions = self.game.actions(self.state)
+        if new_actions == [None] and not self.game.terminal_test(self.state):
+            self.show_move(self.state, None) # Simulate 'pass' move.
+
     def show_move(self, state, action):
         player_color = self.player_color(state.player)
         if action:
@@ -350,9 +354,6 @@ class Gui():
         """
         self.show_move(state, action)
 
-        new_actions = self.game.actions(self.state)
-        if new_actions == [None] and not self.game.terminal_test(self.state):
-            self.show_move(self.state, None) # Simulate 'pass' move.
         if self.listener is not None:
             self.listener.action_made(self.state)
             self.listener = None

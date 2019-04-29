@@ -93,6 +93,7 @@ class Game(ABC):
         elif self.val_type == "avg":
             # Use average of 'q' and 'z' value.
             target_val = (target_val + self.q_value_history[state_index]) / 2
+            print(f"Q-value: {self.q_value_history[state_index]}")
         return (target_val, self.visit_counts[state_index])
 
     def store_search_statistics(self, node):

@@ -125,7 +125,7 @@ class MCTS(GameAI):
         the current player of that node.
         """
         node.visits += 1
-        node.value += 1-value if node.state.player == player else value
+        node.value += -value if node.state.player == player else value
         node.q_value = node.value / node.visits
 
         if node.parent is None:
@@ -147,7 +147,7 @@ class MCTS(GameAI):
             # Expand node.
             self.expand(node, actions, policy_logits)
 
-        return normalize_value(new_value)
+        return new_value
 
     def choose_action(self, node):
         """

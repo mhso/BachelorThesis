@@ -111,7 +111,7 @@ def play_as_mcts(active_games, network, config, connection):
     """
     Play a batch of games as MCTS vs. MCTS.
     """
-    network_id = network if network == -1 else network[active_games[0][1].player]
+    network_id = -1 if network is None else network[active_games[0][1].player]
     roots = create_roots(active_games)
     # Get network evaluation from main process.
     connection.send(("evaluate", (network_id, [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)])))
@@ -131,7 +131,7 @@ def play_as_mcts(active_games, network, config, connection):
         backprop_nodes(active_games, selected_nodes, values)
     return roots
 
-def play_games(games, player_white, player_black, config, network=-1, gui=None, connection=None):
+def play_games(games, player_white, player_black, config, network_step=None, gui=None, connection=None):
     """
     Play a number of games to the end, and return the resulting states.
     """
@@ -148,7 +148,7 @@ def play_games(games, player_white, player_black, config, network=-1, gui=None, 
         time_turn = time()
         if is_mcts(player):
             # Run MCTS simulations. Get resulting root nodes.
-            roots = play_as_mcts(active_games, network, config, connection)
+            roots = play_as_mcts(active_games, network_step, config, connection)
 
         finished_games_indexes = []
         for (i, (game, state, player_1, player_2)) in enumerate(active_games):
@@ -190,6 +190,8 @@ def play_games(games, player_white, player_black, config, network=-1, gui=None, 
                       f"{num_active}/{total_games}. Turn took {turn_took} s")
             if name_1 != "MCTS" or name_2 != "MCTS":
                 status += " - Eval vs. {}".format(name_1 if name_2 == "MCTS" else name_2)
+            elif network_step is not None:
+                status += " - Eval vs Macro Step {}".format(network_step)
             connection.send(("log", [status, getpid()]))
 
 def align_with_spacing(number, total_length):
@@ -202,7 +204,7 @@ def align_with_spacing(number, total_length):
         val += " "
     return "{}{}".format(val, str(number))
 
-def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection, network_id=-1):
+def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection, network_id=None):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -218,7 +220,7 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
         if is_mcts(p2s[i]):
             p2s[i].set_config(config)
 
-    play_games(games, p1s, p2s, config, network=network_id, connection=connection)
+    play_games(games, p1s, p2s, config, network_step=network_id, connection=connection)
     for g in games:
         val = g.terminal_value
         win_v = val if mcts_player or val == 0 else -val
@@ -289,11 +291,11 @@ def evaluate_model(game, player, step, config, connection):
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
 
         connection.send(("log", ["Evaluating against macro network", getpid()]))
-        macro_ai = get_ai_algorithm("MCTS", game, ".")
+        macro_ai = get_ai_algorithm("MCTS", game)
         macro_ai.set_config(config)
 
         macro_step = round(step, -2)
-        macro_step = macro_step if macro_step < step else macro_step - 100
+        macro_step = macro_step if macro_step < step - 10 else macro_step - config.SAVE_CHECKPOINT_MACRO
         network_ids = {True: -1, False: macro_step}
         eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games // 2, config, connection, network_ids)
         network_ids = {True: macro_step, False: -1}
@@ -340,7 +342,7 @@ def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None
         print("{} is done with training!".format(getpid()))
         return
     try:
-        play_games(games, p1s, p2s, config, gui, connection)
+        play_games(games, p1s, p2s, config, gui=gui, connection=connection)
         clones = []
 
         for i in range(len(games)):

@@ -27,7 +27,7 @@ class FancyLogger:
     thread_statuses = dict()
     train_step = 0
     train_ratio = 0
-    performance_values = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    performance_values = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     total_games = 0
     time_started = 0
     eval_checkpoint = 0
@@ -96,6 +96,8 @@ class FancyLogger:
             print("Against Minimax: {}%. As White: {}%. As Black: {}%.".format(perf_mini[0], perf_mini[1], perf_mini[2]))
             perf_mcts = FancyLogger.performance_values[2]
             print("Against base MCTS: {}%. As White: {}%. As Black: {}%.".format(perf_mcts[0], perf_mcts[1], perf_mcts[2]))
+            perf_macro = FancyLogger.performance_values[3]
+            print("Against previous macro network: {}%. As White: {}%. As Black: {}%.".format(perf_macro[0], perf_macro[1], perf_macro[2]))
             print(f"Evaluating {Config.EVAL_GAMES} times every {FancyLogger.eval_checkpoint}th training step.")
 
             print("")

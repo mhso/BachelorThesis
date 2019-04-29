@@ -181,10 +181,20 @@ class NetworkStorage:
     def save_network(self, step, network):
         self.networks[step] = network
         if len(self.networks) > Config.MAX_NETWORK_STORAGE:
+            # Don't remove latest macro network.
+            macro = round(self.curr_step, -2)
+            macro = macro if macro < self.curr_step else macro - Config.SAVE_CHECKPOINT_MACRO
+            if macro == 0:
+                macro = -1
+            # Find step of oldest nework, apart from the macro network.
+            lowest_step = self.curr_step
+            for s in self.networks:
+                if s < lowest_step and s != macro:
+                    lowest_step = s
+            # Copy all networks, but the oldest.
             new_dict = dict()
-            lowest_step = min(self.networks)
             for s, n in self.networks.items():
-                if s != lowest_step or s %Config.SAVE_CHECKPOINT_MACRO == 0:
+                if s != lowest_step:
                     new_dict[s] = n
             self.networks = new_dict
         self.curr_step = step
@@ -272,7 +282,7 @@ class NetworkStorage:
         folder_name = "../resources/"
         data_type = "/macroNetworks/"
         file_name = "network"
-
+        current_step = step
         try:
             if step is None:
                 current_step = len(glob(folder_name + game_type + data_type + "*"))-1
@@ -284,8 +294,8 @@ class NetworkStorage:
             version_nn = str(current_step)
 
             network_model = load_model(folder_name + game_type + data_type + file_name + str(version_nn), None, True)
-            print("Macro Neural Network was loaded from file")
-            return network_model
+            print(f"Macro Neural Network was loaded from file at step {current_step}")
+            return network_model, current_step
         except IOError:
             if not os.path.exists((folder_name + game_type + data_type + file_name + str(version_nn))):
                 print("macro network file was not found: " + folder_name + game_type + data_type + file_name + str(version_nn))

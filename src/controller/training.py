@@ -54,7 +54,7 @@ def show_performance_data(ai, index, step, data):
     total = data[0]
     as_white = data[1] if data[1] is not None else 0.0
     as_black = data[2] if data[2] is not None else 0.0
-    values = [None, None, None]
+    values = [None, None, None, None]
     values[index] = [total, as_white, as_black]
     update_perf_values(values)
 
@@ -114,7 +114,7 @@ def evaluate_games(game, network_id, eval_queue, network_storage):
         amount.append(len(eval_queue[i][1])+amount[-1])
 
     arr = array(joined)
-    policies, values = network_storage.networks.get_network(network_id).evaluate(arr)
+    policies, values = network_storage.get_network(network_id).evaluate(arr)
     # Send result to all processes in the queue.
     g_name = type(game).__name__
     logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
@@ -181,6 +181,9 @@ def initialize_network(game, network_storage):
     if "-l" in argv or "-ln" in argv:
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
+        macro_model, macro_step = network_storage.load_macro_network_from_file(network_storage.curr_step, GAME_NAME)
+        macro_network = NeuralNetwork(game, model=macro_model)
+        network_storage.save_network(macro_step, macro_network)
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
@@ -245,9 +248,9 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                 if status == "evaluate":
                     network_id = data[0]
                     if eval_queue.get(network_id) is not None:
-                        eval_queue[network_id].append(data[1])
+                        eval_queue[network_id].append((conn, data[1]))
                     else:
-                        eval_queue[network_id] = [(conn, data)]
+                        eval_queue[network_id] = [(conn, data[1])]
                     if should_evaluate(eval_queue):
                         for n_id, eval_data in eval_queue.items():
                             evaluate_games(game, n_id, eval_data, network_storage)
@@ -405,6 +408,9 @@ def update_perf_values(values):
         elif values[2] is not None:
             insert_str = "eval_mcts=%s"
             val = values[2][0]
+        elif values[3] is not None:
+            insert_str = "eval_macro=%s"
+            val = values[3][0]
         SqlUtil.set_status(SqlUtil.connection, insert_str, float(val))
 
 def update_active(active):

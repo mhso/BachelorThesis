@@ -125,7 +125,7 @@ class MCTS(GameAI):
         the current player of that node.
         """
         node.visits += 1
-        node.value += -value if node.state.player == player else value
+        node.value += value if node.state.player == player else -value
         node.q_value = node.value / node.visits
 
         if node.parent is None:

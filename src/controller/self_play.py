@@ -4,14 +4,12 @@ self_play: Run game iterations, with any combination of players.
 May be run in a seperate process.
 ----------------------------------------------------------------
 """
-from sys import argv
 from time import time, sleep
 from multiprocessing import current_process
 from config import Config
 from view.log import log
 from view.graph import GraphHandler
-import tracemalloc
-import linecache
+import numpy as np
 
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
@@ -105,7 +103,7 @@ def backprop_nodes(games, nodes, values):
 
         player = player_1 if game.player(state) else player_2
 
-        player.back_propagate(node, node.state.player, value)
+        player.back_propagate(node, node.state.player, -value)
 
 def play_as_mcts(active_games, network, config, connection):
     """
@@ -119,7 +117,6 @@ def play_as_mcts(active_games, network, config, connection):
     log(f"Root policies:\n{policies}")
     log(f"OG root values: {values}")
     values = expand_nodes(active_games, roots, policies, values)
-    log(f"Normed root values: {values}")
     prepare_actions(active_games, roots)
 
     for _ in range(config.MCTS_ITERATIONS):
@@ -162,7 +159,7 @@ def play_games(games, player_white, player_black, config, network_step=None, gui
                 elif type(player_black).__name__ != "Human" and state.player:
                     sleep(config.GUI_AI_SLEEP)
                 gui.update(state)
-            
+
             log(state)
 
             counters[i] = counters[i] + 1
@@ -238,19 +235,6 @@ def minimax_for_game(game):
     if game_name == "Othello":
         return "Minimax_Othello"
     return "unknown"
-
-def write_snapshot(txt):
-    if getpid() == "Process 03":
-        snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('lineno')
-        with open("../memleak.txt", "a") as file:
-            file.write(txt + "\n")
-            for stat in top_stats[:10]:
-                frame = stat.traceback[0]
-                file.write(str(stat) + "\n")
-                line = linecache.getline(frame.filename, frame.lineno).strip()
-                if line:
-                    file.write(line + "\n")
 
 def evaluate_model(game, player, step, config, connection):
     """
@@ -398,7 +382,8 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
         p2.set_config(cfg)
 
     # Wait for initial construction/compilation of network.
-    connection.recv()
+    if connection:
+        connection.recv()
     games, player_1_agents, player_2_agents = copy_games_and_players(game, p1, p2, cfg.ACTORS // 3)
     for i in range(1, len(games)):
         player_1_agents[i].set_config(cfg)

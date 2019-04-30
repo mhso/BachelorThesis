@@ -51,14 +51,16 @@ class ReplayStorage:
             target_policies = game.map_actions(policies)
             """
             print(f"State at index {index}:\n{game.history[index]}")
-            winner = "White" if game.terminal_value == 1 else "Black" if target_value else "Draw"
+            winner = "White" if game.terminal_value == 1 else "Black" if game.terminal_value != 0 else "Draw"
             print(f"Last state:\n{game.history[-1]}")
             print(f"Winner: {winner}")
             print(f"Policies:\n{policies}")
             print(f"Target policies:\n{target_policies}")
             print(f"Value type of game: {game.val_type}")
             print(f"Terminal value: {game.terminal_value}")
+            print(f"Q-value: {game.q_value_history[index]}")
             print(f"Target value: {target_value}")
+            print(f"===============================================")
             """
             for i in range(len(target_policies)):
                 expected_outputs[i].append(target_policies[i])

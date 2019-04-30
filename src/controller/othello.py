@@ -89,11 +89,11 @@ class Othello(Game):
 
     def result(self, state, action):
         super.__doc__
-        if not action:
-            return State(state.board, not state.player, [p for p in state.pieces])
-        player_num = 1 if state.player else -1
         copy_arr = np.copy(state.board)
         new_state = State(copy_arr, not state.player, [p for p in state.pieces])
+        if not action:
+            return new_state
+        player_num = 1 if state.player else -1
         y, x = action.dest
         result(copy_arr, y, x, self.size, player_num)
         new_state.pieces.append((y, x))

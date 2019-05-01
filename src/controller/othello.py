@@ -125,7 +125,8 @@ class Othello(Game):
         else:
             return np.array([neg_pieces, pos_pieces], dtype="float32")
 
-    def map_logits(self, actions, logits):
+    def map_actions(self, actions, logits):
+        super.__doc__
         action_map = dict()
         #logits -= np.min(logits)
         #logits /= np.ptp(logits)
@@ -142,9 +143,10 @@ class Othello(Game):
             action_map[action] = policy/policy_sum if policy_sum else 0
         return action_map
 
-    def map_actions(self, target_policies):
+    def map_visits(self, visits):
+        super.__doc__
         policies = np.zeros((self.size * self.size), dtype="float32")
-        for a, p in target_policies.items():
+        for a, p in visits.items():
             if a is None:
                 continue
             y, x = a.dest

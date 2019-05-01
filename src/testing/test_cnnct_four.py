@@ -63,7 +63,7 @@ def run_tests():
         -0.42, 0.23, -0.33, 0.23, -0.11, 0.19,
     ])
     state = game.start_state()
-    mapping = game.map_logits(game.actions(state), logits)
+    mapping = game.map_actions(game.actions(state), logits)
 
 
 def run_iteration_timing_test(log_type=None):

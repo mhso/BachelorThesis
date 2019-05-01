@@ -69,6 +69,22 @@ class Game(ABC):
         """
         pass
 
+    @abstractmethod
+    def map_actions(self, actions, logits):
+        """
+        Returns a mapping between the given actions and logits and
+        normalizes the logits based on which ones represent legal actions.
+        """
+        pass
+    
+    @abstractmethod
+    def map_visits(self, visits):
+        """
+        Returns a tensor (of game-specific size/shape) for the network to train on,
+        with visit probabilities for each action in the provided dictionary.
+        """
+        pass
+
     def clone(self):
         game_clone = self.__class__(self.size)
         game_clone.history = [s for s in self.history]

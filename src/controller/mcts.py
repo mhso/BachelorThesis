@@ -114,7 +114,7 @@ class MCTS(GameAI):
         Expand the tree with new nodes, corresponding to
         taking any possible actions from the current node.
         """
-        logit_map = self.game.map_logits(actions, policies)
+        logit_map = self.game.map_actions(actions, policies)
         for a, p in logit_map.items():
             node.children[a] = Node(self.game.result(node.state, a), a, p, node)
 

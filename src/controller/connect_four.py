@@ -78,7 +78,8 @@ class Connect_Four(Game):
         else:
             return np.array([neg_pieces, pos_pieces], dtype="float32")
 
-    def map_logits(self, actions, logits):
+    def map_actions(self, actions, logits):
+        super.__doc__
         action_map = dict()
         policy_sum = 0
         #logits -= np.min(logits)
@@ -92,9 +93,10 @@ class Connect_Four(Game):
             action_map[action] = policy/policy_sum if policy_sum else 0
         return action_map
 
-    def map_actions(self, target_policies):
+    def map_visits(self, visits):
+        super.__doc__
         policies = np.zeros((self.size * self.size), dtype="float32")
-        for a, p in target_policies.items():
+        for a, p in visits.items():
             y, x = a.dest
             policies[y * self.size + x] = p
         return (policies,)

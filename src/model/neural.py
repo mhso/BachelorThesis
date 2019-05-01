@@ -70,30 +70,12 @@ class NeuralNetwork:
             out = Residual(Config.CONV_FILTERS, Config.CONV_FILTERS, out)
 
         # -=-=-=-=-=- Policy 'head'. -=-=-=-=-=-
-        policy = self.conv_layer(out, 2, 1)
-
-        # Game specific policy outputs.
-        outputs = self.policy_layers(game, policy)
+        policy = self.policy_head(game, out)
 
         # -=-=-=-=-=- Value 'head'. -=-=-=-=-=-
-        value = self.conv_layer(out, 1, 1)
+        value = self.value_head(out)
 
-        # Flatten into linear layer.
-        value = Flatten()(value)
-        value = Dense(Config.CONV_FILTERS, use_bias=Config.USE_BIAS,
-                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(value)
-        value = LeakyReLU()(value)
-
-        # Final value layer. Linar layer with one output neuron.
-        value = Dense(1,
-                      kernel_regularizer=l2(Config.REGULARIZER_CONST),
-                      use_bias=Config.USE_BIAS)(value)
-        # Tanh activation, outputs probability of win/loss/draw as scalar value between -1 and 1.
-        value = Activation("tanh", name="value_head")(value)
-
-        outputs.append(value)
-
-        self.model = Model(inputs=inp, outputs=outputs)
+        self.model = Model(inputs=inp, outputs=[policy, value])
         self.compile_model(self.model, game)
         self.model._make_predict_function()
 
@@ -147,7 +129,8 @@ class NeuralNetwork:
         self.input_stacks = input_depth
         return Input((input_depth, game.size, game.size))
 
-    def policy_layers(self, game, prev):
+    def policy_head(self, game, prev):
+        policy = self.conv_layer(prev, 2, 1)
         game_type = type(game).__name__
         if game_type == "Latrunculi":
             # Split into...
@@ -157,16 +140,32 @@ class NeuralNetwork:
 
             # ...delete captured pieces policy.
             policy_delete = Conv2D(1, kernel_size=3, strides=1, padding="same",
-                                   use_bias=Config.USE_BIAS, name="policy_head2")(prev)
-            return [policy_moves, policy_delete]
+                                   use_bias=Config.USE_BIAS, name="policy_head2")(policy)
+            return policy_moves
         else:
             # Vector of probabilities for all squares.
-            policy = Flatten()(prev)
+            policy = Flatten()(policy)
             policy = Dense(game.size*game.size,
                            kernel_regularizer=l2(Config.REGULARIZER_CONST),
                            use_bias=Config.USE_BIAS, name="policy_head")(policy)
-            return [policy]
-        return []
+        return policy
+
+    def value_head(self, prev):
+        value = self.conv_layer(prev, 1, 1)
+
+        # Flatten into linear layer.
+        value = Flatten()(value)
+        value = Dense(Config.CONV_FILTERS, use_bias=Config.USE_BIAS,
+                      kernel_regularizer=l2(Config.REGULARIZER_CONST))(value)
+        value = LeakyReLU()(value)
+
+        # Final value layer. Linar layer with one output neuron.
+        value = Dense(1,
+                      kernel_regularizer=l2(Config.REGULARIZER_CONST),
+                      use_bias=Config.USE_BIAS)(value)
+        # Tanh activation, outputs probability of win/loss/draw as scalar value between -1 and 1.
+        value = Activation("tanh", name="value_head")(value)
+        return value
 
     def save_as_image(self):
         plot_model(self.model, to_file='../resources/model_graph.png', show_shapes=True)

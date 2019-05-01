@@ -531,7 +531,7 @@ class Latrunculi_s(Game):
         else:
             return np.array([neg_pieces, neg_captured, pos_pieces, pos_captured]).reshape((4, 4, -1))
 
-    def map_logits(self, actions, logits):
+    def map_actions(self, actions, logits):
         """
         Map actions to neural network output 
         policy logits. Set all other logits
@@ -568,10 +568,10 @@ class Latrunculi_s(Game):
 
         return action_map
 
-    def map_actions(self, target_policies):
+    def map_visits(self, visits):
         policy_moves = np.zeros((self.size, self.size, 4))
         policy_remove = np.zeros((self.size, self.size, 1))
-        for a, p in target_policies.items():
+        for a, p in visits.items():
             if a is None:
                 continue
             y1, x1 = a.source

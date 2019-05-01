@@ -123,7 +123,7 @@ class Game(ABC):
             self.visit_counts.append({
                 a: node.children[a].visits / sum_visits for a in node.children
             })
-            self.q_value_history.append(node.q_value)
+            self.q_value_history.append(-node.q_value)
 
     def store_value_statistics(self, node):
         """

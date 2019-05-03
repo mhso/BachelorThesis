@@ -105,36 +105,37 @@ def game_over(new_games):
         return True
     return False
 
-def evaluate_games(game, eval_queue, network_storage):
+def evaluate_games(eval_queue, network_storage):
     """
-    Evaluate a queue of games using the latest neural network.
+    Evaluate a queue of games using the specified
+    generations of neural networks.
     """
     results = {}
-    g_name = type(game).__name__
+    # Iterate through each network, and associated data, in the queue.
     for n_id, data in eval_queue.items():
         joined = []
-        amount = [0]
+        amount = [0] # Keep track of amount of data from each process.
+        # Join data for the current network into one batch.
         for conn, vals in data.items():
             joined.extend(vals)
             amount.append(len(vals)+amount[-1])
         arr = array(joined)
         policies, values = network_storage.get_network(n_id).evaluate(arr)
 
-        # Send result to all processes in the queue.
-        logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
-
+        # For each process, sum up all results into one list.
         for i, conn in enumerate(data):
             old_data = results.get(conn)
             if old_data is None:
-                results[conn] = (logits[amount[i]:amount[i+1]], values[amount[i]:amount[i+1], 0])
+                results[conn] = (policies[amount[i]:amount[i+1]], values[amount[i]:amount[i+1], 0])
             else:
-                old_logits, old_values = old_data
+                old_policies, old_values = old_data
 
-                old_logits = concatenate((old_logits, logits[amount[i]:amount[i+1]]))
+                old_policies = concatenate((old_policies, policies[amount[i]:amount[i+1]]))
                 old_values = concatenate((old_values, values[amount[i]:amount[i+1], 0]))
 
-                results[conn] = (old_logits, old_values)
-
+                results[conn] = (old_policies, old_values)
+    
+    # Finally, send the relevant evaluation data to all processes.
     for conn, data in results.items():
         conn.send(data)
 
@@ -285,7 +286,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         else:
                             eval_queue[n_id] = {conn: [eval_data]}
                     if new_eval_data == Config.GAME_THREADS:
-                        evaluate_games(game, eval_queue, network_storage)
+                        evaluate_games(eval_queue, network_storage)
                         eval_queue = {}
                         new_eval_data = 0
                 elif status == "game_over":

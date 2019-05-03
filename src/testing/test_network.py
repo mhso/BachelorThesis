@@ -39,8 +39,11 @@ def run_tests():
     # Test output shape of multiple inputs.
 
     policies, values = network.evaluate(array([in1, in2, in3]))
+    print(values)
 
     assertion.assert_equal((3, 36), policies.shape, "Multiple inputs - policy shape")
     assertion.assert_equal((3, 1), values.shape, "Multiple inputs - value shape")
     assertion.assert_equal(policies[0][0], policy[0][0], "Multiple and single policy equal")
     assertion.assert_equal(value[0][0], value[0][0], "Multiple and single value equal")
+
+    # =================================

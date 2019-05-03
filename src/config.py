@@ -79,7 +79,10 @@ class Config():
     MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.S
 
     # Amount of netwroks stored at one time in network storage.
-    MAX_NETWORK_STORAGE = 10
+    MAX_NETWORK_STORAGE = 2
+    
+    # How many macro networks to save and evaluate against.
+    MAX_MACRO_STORAGE = 5
 
     # Batch size for neural network input.
     BATCH_SIZE = 256

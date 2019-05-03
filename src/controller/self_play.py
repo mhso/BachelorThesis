@@ -9,7 +9,6 @@ from multiprocessing import current_process
 from config import Config
 from view.log import log
 from view.graph import GraphHandler
-import numpy as np
 
 def force_quit(gui):
     return gui is not None and not gui.active or GraphHandler.closed()
@@ -105,14 +104,20 @@ def backprop_nodes(games, nodes, values):
 
         player.back_propagate(node, node.state.player, -value)
 
-def play_as_mcts(active_games, network, config, connection):
+def pack_data_for_eval(active_games, networks, nodes):
+    return [(-1 if networks is None else networks[g[0]][g[1].player],
+             g[0].structure_data(n.state)) for (g, n) in zip(active_games, nodes)]
+
+def play_as_mcts(active_games, networks, config, connection):
     """
     Play a batch of games as MCTS vs. MCTS.
     """
-    network_id = -1 if network is None else network[active_games[0][1].player]
     roots = create_roots(active_games)
+
     # Get network evaluation from main process.
-    connection.send(("evaluate", (network_id, [g[0].structure_data(n.state) for (g, n) in zip(active_games, roots)])))
+    data = pack_data_for_eval(active_games, networks, roots)
+    connection.send(("evaluate", data))
+
     policies, values = connection.recv()
     log(f"Root policies:\n{policies}")
     log(f"OG root values: {values}")
@@ -122,13 +127,14 @@ def play_as_mcts(active_games, network, config, connection):
     for _ in range(config.MCTS_ITERATIONS):
         selected_nodes = select_nodes(active_games, roots)
 
-        connection.send(("evaluate", (network_id, [g[0].structure_data(n.state) for (g, n) in zip(active_games, selected_nodes)])))
+        data = pack_data_for_eval(active_games, networks, selected_nodes)
+        connection.send(("evaluate", data))
         policies, values = connection.recv()
         values = expand_nodes(active_games, selected_nodes, policies, values)
         backprop_nodes(active_games, selected_nodes, values)
     return roots
 
-def play_games(games, player_white, player_black, config, network_step=None, gui=None, connection=None):
+def play_games(games, player_white, player_black, config, network_steps=None, gui=None, connection=None):
     """
     Play a number of games to the end, and return the resulting states.
     """
@@ -145,7 +151,7 @@ def play_games(games, player_white, player_black, config, network_step=None, gui
         time_turn = time()
         if is_mcts(player):
             # Run MCTS simulations. Get resulting root nodes.
-            roots = play_as_mcts(active_games, network_step, config, connection)
+            roots = play_as_mcts(active_games, network_steps, config, connection)
 
         finished_games_indexes = []
         for (i, (game, state, player_1, player_2)) in enumerate(active_games):
@@ -187,9 +193,8 @@ def play_games(games, player_white, player_black, config, network_step=None, gui
                       f"{num_active}/{total_games}. Turn took {turn_took} s")
             if name_1 != "MCTS" or name_2 != "MCTS":
                 status += " - Eval vs. {}".format(name_1 if name_2 == "MCTS" else name_2)
-            elif network_step is not None:
-                old_network = network_step[True] if network_step[True] != -1 else network_step[False]
-                status += " - Eval vs Macro Step {}".format(old_network)
+            elif network_steps is not None:
+                status += " - Eval vs Macro Networks"
             connection.send(("log", [status, getpid()]))
 
 def align_with_spacing(number, total_length):
@@ -202,7 +207,7 @@ def align_with_spacing(number, total_length):
         val += " "
     return "{}{}".format(val, str(number))
 
-def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection, network_id=None):
+def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, connection, step=None):
     """
     Evaluate MCTS/NN model against a given AI algorithm.
     Plays out a given number of games and returns
@@ -212,13 +217,19 @@ def evaluate_against_ai(game, player1, player2, mcts_player, num_games, config, 
     """
     wins = 0
     games, p1s, p2s = copy_games_and_players(game, player1, player2, num_games)
+    network_steps = {}
     for i in range(len(games)):
         if is_mcts(p1s[i]):
             p1s[i].set_config(config)
         if is_mcts(p2s[i]):
             p2s[i].set_config(config)
+        if step is not None:
+            # Set up which networks to target (if against macro network).
+            network_steps[games[i]] = {mcts_player: -1, not mcts_player: step - (i * 100)}
 
-    play_games(games, p1s, p2s, config, network_step=network_id, connection=connection)
+    network_steps = network_steps if network_steps != {} else None
+
+    play_games(games, p1s, p2s, config, network_steps=network_steps, connection=connection)
     for g in games:
         val = g.terminal_value
         win_v = val if mcts_player or val == 0 else -val
@@ -246,7 +257,7 @@ def evaluate_model(game, player, step, config, connection):
     noise_base = player.cfg.NOISE_BASE
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
     player.cfg.NOISE_BASE = 0 # Disable noise during evaluation.
-
+    """
     connection.send(("log", ["Evaluating against Random", getpid()]))
     rand_ai = get_ai_algorithm("Random", game, ".")
 
@@ -254,7 +265,7 @@ def evaluate_model(game, player, step, config, connection):
     eval_rand_b = evaluate_against_ai(game, rand_ai, player, False, num_games // 2, config, connection)
 
     connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
-
+    """
     if step > 100:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
@@ -266,7 +277,6 @@ def evaluate_model(game, player, step, config, connection):
         eval_mini_b = evaluate_against_ai(game, mini_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mini", (eval_mini_w, eval_mini_b)))
-        """
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
         mcts_ai = get_ai_algorithm("MCTS_Basic", game, ".")
 
@@ -274,21 +284,19 @@ def evaluate_model(game, player, step, config, connection):
         eval_mcts_b = evaluate_against_ai(game, mcts_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
+        """
 
         connection.send(("log", ["Evaluating against macro network", getpid()]))
         macro_ai = get_ai_algorithm("MCTS", game)
         macro_ai.set_config(config)
-
         # Final evaluation against a previous generation of the neural network
         # (called the 'macro network', i.e: the latest 100th network).
         macro_step = round(step, -2)
         macro_step = macro_step if macro_step < step - 10 else macro_step - config.SAVE_CHECKPOINT_MACRO
-        # We only play one game as white and one as black, since subsequent
-        # games will be identical.
-        network_ids = {True: -1, False: macro_step}
-        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, 1, config, connection, network_ids)
-        network_ids = {True: macro_step, False: -1}
-        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, 1, config, connection, network_ids)
+        num_games = min(macro_step // 100, 5)
+
+        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games, config, connection, macro_step)
+        eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games, config, connection, macro_step)
 
         connection.send((f"perform_macro", (eval_macro_w, eval_macro_b)))
 
@@ -331,6 +339,8 @@ def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None
         print("{} is done with training!".format(getpid()))
         return
     try:
+        if getpid() == "Process 03":
+            evaluate_model(games[0], p1s[0], 1112, config, connection)
         play_games(games, p1s, p2s, config, gui=gui, connection=connection)
         clones = []
 

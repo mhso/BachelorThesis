@@ -9,18 +9,19 @@ import os
 from multiprocessing.connection import wait
 from glob import glob
 from sys import argv
-from numpy import array
+from numpy import array, concatenate
 from model.neural import NeuralNetwork
 from view.log import FancyLogger
 from view.graph import GraphHandler
 from config import Config
 from util.sqlUtil import SqlUtil
 
-def train_network(network_storage, replay_storage, training_step, game_name):
+def train_network(network_storage, replay_storage, training_step, game):
     """
     Trains the network by sampling a batch of data
     from replay buffer.
     """
+    game_name = type(game).__name__
     network = network_storage.latest_network()
     FancyLogger.set_network_status("Training...")
 
@@ -40,6 +41,7 @@ def train_network(network_storage, replay_storage, training_step, game_name):
         GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1+i, loss[2])
 
     if not training_step % Config.SAVE_CHECKPOINT:
+        network = NeuralNetwork(game, network.model)
         network_storage.save_network(training_step, network)
         if "-s" in argv:
             network_storage.save_network_to_file(training_step, network, game_name)
@@ -103,25 +105,38 @@ def game_over(new_games):
         return True
     return False
 
-def evaluate_games(game, network_id, eval_queue, network_storage):
+def evaluate_games(game, eval_queue, network_storage):
     """
     Evaluate a queue of games using the latest neural network.
     """
-    joined = eval_queue[0][1]
-    amount = [0, len(eval_queue[0][1])]
-    for i in range(1, len(eval_queue)):
-        joined.extend(eval_queue[i][1])
-        amount.append(len(eval_queue[i][1])+amount[-1])
-
-    arr = array(joined)
-    policies, values = network_storage.get_network(network_id).evaluate(arr)
-    # Send result to all processes in the queue.
+    results = {}
     g_name = type(game).__name__
-    logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
+    for n_id, data in eval_queue.items():
+        joined = []
+        amount = [0]
+        for conn, vals in data.items():
+            joined.extend(vals)
+            amount.append(len(vals)+amount[-1])
+        arr = array(joined)
+        policies, values = network_storage.get_network(n_id).evaluate(arr)
 
-    for i, data in enumerate(eval_queue):
-        conn = data[0]
-        conn.send((logits[amount[i]:amount[i+1]], values[amount[i]:amount[i+1], 0]))
+        # Send result to all processes in the queue.
+        logits = policies if g_name != "Latrunculi" else (policies[0], policies[1])
+
+        for i, conn in enumerate(data):
+            old_data = results.get(conn)
+            if old_data is None:
+                results[conn] = (logits[amount[i]:amount[i+1]], values[amount[i]:amount[i+1], 0])
+            else:
+                old_logits, old_values = old_data
+
+                old_logits = concatenate((old_logits, logits[amount[i]:amount[i+1]]))
+                old_values = concatenate((old_values, values[amount[i]:amount[i+1], 0]))
+
+                results[conn] = (old_logits, old_values)
+
+    for conn, data in results.items():
+        conn.send(data)
 
 def should_evaluate(eval_queue):
     items = 0
@@ -173,6 +188,18 @@ def parse_load_step(args):
         pass
     return step
 
+def load_macro_networks(game, network_storage, game_name, step):
+    steps = []
+    while step >= 100 and len(steps) < Config.MAX_MACRO_STORAGE:
+        macro_model, macro_step = network_storage.load_macro_network_from_file(step, game_name)
+        macro_network = NeuralNetwork(game, model=macro_model)
+        network_storage.networks[macro_step] = macro_network
+        steps.append(macro_step)
+        step = macro_step - 100
+    steps.reverse() # Order networks, oldest -> newest.
+    network_storage.macro_steps = steps
+    print("Loaded all macro networks.")
+
 def initialize_network(game, network_storage):
     training_step = 0
     # Construct the initial network.
@@ -181,12 +208,9 @@ def initialize_network(game, network_storage):
     if "-l" in argv or "-ln" in argv:
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
-        old_step = network_storage.curr_step
-        # Load macro network.
-        macro_model, macro_step = network_storage.load_macro_network_from_file(network_storage.curr_step, GAME_NAME)
-        macro_network = NeuralNetwork(game, model=macro_model)
-        network_storage.save_network(macro_step, macro_network)
-        network_storage.curr_step = old_step
+        # Load macro network(s).
+        load_macro_networks(game, network_storage, GAME_NAME, network_storage.curr_step)
+
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
@@ -233,13 +257,14 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     update_num_games(len(replay_storage.buffer))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
 
-    #train_network(network_storage, replay_storage, training_step, game_name)
+    #train_network(network_storage, replay_storage, training_step, game)
 
     # Notify processes that network is ready.
     for conn in game_conns:
         conn.send("go")
 
     eval_queue = {}
+    new_eval_data = 0
     perform_data = [None, None, None, None]
     alert_perform = {game_conns[-1]: False}
     new_games = 0
@@ -250,15 +275,19 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
             for conn in wait(game_conns):
                 status, data = conn.recv()
                 if status == "evaluate":
-                    network_id = data[0]
-                    if eval_queue.get(network_id) is not None:
-                        eval_queue[network_id].append((conn, data[1]))
-                    else:
-                        eval_queue[network_id] = [(conn, data[1])]
-                    if should_evaluate(eval_queue):
-                        for n_id, eval_data in eval_queue.items():
-                            evaluate_games(game, n_id, eval_data, network_storage)
+                    new_eval_data += 1
+                    for n_id, eval_data in data:
+                        if eval_queue.get(n_id) is not None:
+                            if eval_queue[n_id].get(conn) is None:
+                                eval_queue[n_id][conn] = [eval_data]
+                            else:
+                                eval_queue[n_id][conn].append(eval_data)
+                        else:
+                            eval_queue[n_id] = {conn: [eval_data]}
+                    if new_eval_data == Config.GAME_THREADS:
+                        evaluate_games(game, eval_queue, network_storage)
                         eval_queue = {}
+                        new_eval_data = 0
                 elif status == "game_over":
                     for game in data:
                         update_num_games()
@@ -277,7 +306,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                             new_step = training_step + Config.ITERATIONS_PER_TRAINING
                             update_training_step(new_step)
                             finished = train_network(network_storage, replay_storage,
-                                                    training_step, game_name)
+                                                    training_step, game)
                             training_step = new_step
                             new_games = 0
                             if (not finished and Config.EVAL_CHECKPOINT and

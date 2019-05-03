@@ -172,6 +172,7 @@ class NetworkStorage:
     """
     def __init__(self):
         self.networks = {}
+        self.macro_steps = []
         self.curr_step = 0
 
     def latest_network(self):
@@ -181,28 +182,29 @@ class NetworkStorage:
         network_id = step if step != -1 else self.curr_step
         return self.networks[network_id]
 
+    def remove_network(self, step):
+        new_dict = dict()
+        for s, n in self.networks.items():
+            if s != step:
+                new_dict[s] = n
+        self.networks = new_dict
+
     def save_network(self, step, network):
         self.networks[step] = network
-        if len(self.networks) > Config.MAX_NETWORK_STORAGE:
-            # Don't remove latest macro network.
-            macro = round(self.curr_step, -2)
-            macro = macro if macro <= self.curr_step else macro - Config.SAVE_CHECKPOINT_MACRO
-            prev_macro = macro - Config.SAVE_CHECKPOINT_MACRO
-            if macro == 0:
-                macro = -1
-            if prev_macro == 0:
-                prev_macro = -1
+        if step > 0 and step % Config.SAVE_CHECKPOINT_MACRO == 0:
+            self.macro_steps.append(step)
+            if len(self.macro_steps) > Config.MAX_MACRO_STORAGE:
+                macro = self.macro_steps.pop(0)
+                # Remove oldest macro network.
+                self.remove_network(macro)
+        elif len(self.networks) - len(self.macro_steps) > Config.MAX_NETWORK_STORAGE:
             # Find step of oldest nework, apart from the macro network.
             lowest_step = self.curr_step
             for s in self.networks:
-                if s < lowest_step and s != macro and s != prev_macro:
+                if s < lowest_step and not s in self.macro_steps:
                     lowest_step = s
             # Copy all networks, but the oldest.
-            new_dict = dict()
-            for s, n in self.networks.items():
-                if s != lowest_step:
-                    new_dict[s] = n
-            self.networks = new_dict
+            self.remove_network(lowest_step)
         self.curr_step = step
 
     def save_network_to_file(self, step, network, game_type):

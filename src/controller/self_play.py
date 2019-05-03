@@ -257,7 +257,6 @@ def evaluate_model(game, player, step, config, connection):
     noise_base = player.cfg.NOISE_BASE
     player.cfg.NUM_SAMPLING_MOVES = 0 # Disable softmax sampling during evaluation.
     player.cfg.NOISE_BASE = 0 # Disable noise during evaluation.
-    """
     connection.send(("log", ["Evaluating against Random", getpid()]))
     rand_ai = get_ai_algorithm("Random", game, ".")
 
@@ -265,7 +264,6 @@ def evaluate_model(game, player, step, config, connection):
     eval_rand_b = evaluate_against_ai(game, rand_ai, player, False, num_games // 2, config, connection)
 
     connection.send((f"perform_rand", (eval_rand_w, eval_rand_b)))
-    """
     if step > 100:
         # If we have a good winrate against random,
         # we additionally evaluate against better AIs.
@@ -277,6 +275,7 @@ def evaluate_model(game, player, step, config, connection):
         eval_mini_b = evaluate_against_ai(game, mini_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mini", (eval_mini_w, eval_mini_b)))
+        """
         connection.send(("log", ["Evaluating against basic MCTS", getpid()]))
         mcts_ai = get_ai_algorithm("MCTS_Basic", game, ".")
 
@@ -284,13 +283,12 @@ def evaluate_model(game, player, step, config, connection):
         eval_mcts_b = evaluate_against_ai(game, mcts_ai, player, False, num_games // 2, config, connection)
 
         connection.send((f"perform_mcts", (eval_mcts_w, eval_mcts_b)))
-        """
 
         connection.send(("log", ["Evaluating against macro network", getpid()]))
         macro_ai = get_ai_algorithm("MCTS", game)
         macro_ai.set_config(config)
-        # Final evaluation against a previous generation of the neural network
-        # (called the 'macro network', i.e: the latest 100th network).
+        # Final evaluation against previous generations of the neural network
+        # (called the 'macro networks', i.e: 5 of the latest 100th networks).
         macro_step = round(step, -2)
         macro_step = macro_step if macro_step < step - 10 else macro_step - config.SAVE_CHECKPOINT_MACRO
         num_games = min(macro_step // 100, 5)
@@ -339,8 +337,6 @@ def play_loop(games, p1s, p2s, iteration, gui=None, config=None, connection=None
         print("{} is done with training!".format(getpid()))
         return
     try:
-        if getpid() == "Process 03":
-            evaluate_model(games[0], p1s[0], 1112, config, connection)
         play_games(games, p1s, p2s, config, gui=gui, connection=connection)
         clones = []
 

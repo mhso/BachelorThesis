@@ -6,7 +6,7 @@ neural: Neural Network wrapper.
 import numpy as np
 import tensorflow as tf
 from keras import losses
-from keras.backend.tensorflow_backend import set_session, clear_session
+from keras.backend.tensorflow_backend import set_session, clear_session, get_session
 from keras.layers import Dense, Conv2D, BatchNormalization, Input, Flatten
 from keras.layers.core import Activation
 from keras.optimizers import SGD
@@ -177,6 +177,24 @@ class NeuralNetwork:
             reshaped = np.array([inp]).reshape((-1, self.input_stacks, size, size))
         return reshaped
 
+    def log_flops(self):
+        """
+        Function for testing FLOPS (Floating Operations Per Second)
+        for a specific network model.
+        Curtesy of: https://stackoverflow.com/a/47561171
+        """
+        run_meta = tf.RunMetadata()
+        opts = tf.profiler.ProfileOptionBuilder.float_operation()    
+        flops = tf.profiler.profile(get_session().graph, run_meta=run_meta, cmd='op', options=opts)
+
+        opts = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()    
+        params = tf.profiler.profile(get_session().graph, run_meta=run_meta, cmd='op', options=opts)
+
+        if flops is not None:
+            with open("../resources/flops_summary.txt", "w") as file:
+                file.write(flops.total_float_ops+"\n")
+                file.write(params.total_parameters)
+
     def evaluate(self, inp):
         """
         Evaluate a given state 'image' using the network.
@@ -193,6 +211,9 @@ class NeuralNetwork:
         game_type = type(self.game).__name__
 
         policy_moves = output[0][:]
+
+        if False:
+            self.log_flops()
 
         if game_type == "Latrunculi":
             policy_delete = output[1][:]

@@ -120,6 +120,10 @@ class Config():
     # avg = Average of the above two.
     TARGET_VAL = "z"
 
+    # If using TARGET_VAL = 'mixed', this specifies the epoch at which
+    # 'q' val is prioritized fully and 'z' value is no longer used.
+    Q_LINEAR_FALLOFF = 600
+
     # Kernel initializer.
     # Options:0 'uniform', 'normal'.
     WEIGHT_INITIALIZER = "uniform"

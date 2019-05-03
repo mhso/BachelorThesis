@@ -24,7 +24,7 @@ class ReplayStorage:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
 
-    def sample_batch(self):
+    def sample_batch(self, training_step=None):
         """
         Draw a set amount of random samples from the saved games.
         @returns - A tuple of two arrays, one with input data for
@@ -47,7 +47,7 @@ class ReplayStorage:
         # Create input/expected output data for neural network training.
         for game, index in state_indices:
             images.append(game.structure_data(game.history[index]))
-            target_value, policies = game.make_target(index)
+            target_value, policies = game.make_target(index, training_step)
             target_policies = game.map_visits(policies)
             """
             print(f"State at index {index}:\n{game.history[index]}")

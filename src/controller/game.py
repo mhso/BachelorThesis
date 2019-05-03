@@ -4,6 +4,7 @@ game: Super class for game. Implements actions, evaluations, terminal tests, etc
 ---------------------------------------------------------------------------------
 """
 from abc import ABC, abstractmethod
+from config import Config
 
 class Game(ABC):
     __observers = []
@@ -94,21 +95,32 @@ class Game(ABC):
         game_clone.val_type = self.val_type
         return game_clone
 
-    def make_target(self, state_index):
+    def make_target(self, state_index, training_step=None):
         """
         Return terminal value of given state at index, as well as
         probability distribution for actions at that state.
         """
         player = self.history[state_index].player
         term_val = self.terminal_value
-        # 'Z' value. Traditional terminal value of game (1 = white wins, -1 = black wins, 0 = draw).
-        target_val = term_val if player or term_val == 0 else -term_val
+        z_val = term_val if player or term_val == 0 else -term_val
+        if self.val_type == "z":
+            # Use 'z' value. Traditional terminal value of game
+            # (1 = white wins, -1 = black wins, 0 = draw).
+            target_val = z_val
         if self.val_type == "q":
             # Use 'q' value instead of 'z'. This is MCTS's predicted value for the state.
             target_val = self.q_value_history[state_index]
         elif self.val_type == "avg":
             # Use average of 'q' and 'z' value.
-            target_val = (target_val + self.q_value_history[state_index]) / 2
+            target_val = (z_val + self.q_value_history[state_index]) / 2
+        elif self.val_type == "mixed" and training_step is not None:
+            # Use linear fall-off of 'z' and 'q' value.
+            # This means that 'q' is weighed higher, the larger the current epoch,
+            # and 'z' is weighed lower.
+            ratio = training_step / Config.Q_LINEAR_FALLOFF
+            z_val *= (1 - ratio)
+            q_val = self.q_value_history[state_index] * ratio
+            target_val = z_val + q_val
         return (target_val, self.visit_counts[state_index])
 
     def store_search_statistics(self, node):

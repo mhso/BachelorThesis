@@ -6,9 +6,9 @@ log: Log stuff, models (neural & mcts) and board to console and/or file.
 from sys import argv
 from time import time
 import os
-from config import Config
 import datetime
 import math
+from config import Config
 
 debug = "-v" in argv
 

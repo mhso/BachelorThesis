@@ -293,8 +293,8 @@ def evaluate_model(game, player, step, config, connection):
         macro_step = macro_step if macro_step < step - 10 else macro_step - config.SAVE_CHECKPOINT_MACRO
         num_games = min(macro_step // 100, 5)
 
-        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games, config, connection, macro_step)
         eval_macro_w = evaluate_against_ai(game, player, macro_ai, True, num_games, config, connection, macro_step)
+        eval_macro_b = evaluate_against_ai(game, macro_ai, player, False, num_games, config, connection, macro_step)
 
         connection.send((f"perform_macro", (eval_macro_w, eval_macro_b)))
 

@@ -9,6 +9,7 @@ import os
 from multiprocessing.connection import wait
 from glob import glob
 from sys import argv
+from time import time
 from numpy import array, concatenate
 from model.neural import NeuralNetwork
 from view.log import FancyLogger
@@ -230,7 +231,6 @@ def initialize_network(game, network_storage):
         GraphHandler.plot_data("Average Loss", "Training Loss", None, losses[0])
         GraphHandler.plot_data("Policy Loss", "Training Loss", None, losses[1])
         GraphHandler.plot_data("Value Loss", "Training Loss", None, losses[2])
-        FancyLogger.start_timing()
         # Load newest network.
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step, network)
@@ -252,8 +252,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     game_name = type(game).__name__
     start_training_status()
     set_total_steps(Config.TRAINING_STEPS)
-    FancyLogger.start_timing()
     training_step = initialize_network(game, network_storage)
+    start_timing(game_name)
     update_training_step(training_step)
     update_num_games(len(replay_storage.buffer))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
@@ -295,6 +295,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
                         replay_storage.save_game(game)
                         if "-s" in argv:
                             replay_storage.save_replay(game, training_step, game_name)
+                            save_time_spent(time() - FancyLogger.time_started, game_name)
                         if "-ds" in argv:
                             replay_storage.save_game_to_sql(game)
                         new_games += 1
@@ -377,6 +378,21 @@ def save_loss(loss, step, game_name):
 
     pickle.dump(loss, open(location + filename, "wb"))
 
+def save_time_spent(time_spent, game_name):
+    location = "../resources/" + game_name + "/misc/"
+    filename = "time_spent.bin"
+    if not os.path.exists((location)):
+        os.makedirs((location))
+
+    pickle.dump(time_spent, open(location + filename, "wb"))
+
+def load_time_spent(game_name):
+    try:
+        time_spent = pickle.load(open(f"../resources/{game_name}/misc/time_spent.bin", "rb"))
+        return time_spent
+    except IOError:
+        return 0
+
 def load_perform_data(ai, step, game_name):
     try:
         data = None
@@ -406,6 +422,12 @@ def load_loss(step, game_name):
         return loss[0], loss[1], loss[2]
     except IOError:
         return 1, 1, 1
+
+def start_timing(game_name):
+    FancyLogger.start_timing()
+    if "-l" in argv:
+        time_spent = load_time_spent(game_name)
+        FancyLogger.time_started -= time_spent
 
 def update_training_step(step):
     FancyLogger.set_training_step(step)

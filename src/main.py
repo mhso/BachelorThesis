@@ -65,8 +65,12 @@ def initialize(game, p1, p2, **kwargs):
             replay_storage.load_games_from_sql()
 
         if pipes != []:
+            # Set whether program is running in 'test' mode, or actively training.
+            test_mode = not self_play.is_mcts(p1) or not self_play.is_mcts(p2) or gui is not None
             # Start monitor thread.
-            monitor = Thread(target=monitor_games, args=(pipes, game, network_storage, replay_storage))
+            monitor = Thread(target=monitor_games,
+                             args=(pipes, game, network_storage,
+                                   replay_storage, test_mode))
             monitor.start()
 
         if gui is not None:

@@ -202,7 +202,7 @@ def load_macro_networks(game, network_storage, game_name, step):
     network_storage.macro_steps = steps
     print("Loaded all macro networks.")
 
-def initialize_network(game, network_storage):
+def initialize_network(game, network_storage, test_mode):
     training_step = 0
     # Construct the initial network.
     #if the -l option is selected, load a network from files
@@ -211,7 +211,8 @@ def initialize_network(game, network_storage):
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
         # Load macro network(s).
-        load_macro_networks(game, network_storage, GAME_NAME, network_storage.curr_step)
+        if not test_mode: # Don't load macro networks, if we are not actively training.
+            load_macro_networks(game, network_storage, GAME_NAME, network_storage.curr_step)
 
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
@@ -240,7 +241,7 @@ def initialize_network(game, network_storage):
         FancyLogger.set_network_status("Waiting for data...")
     return training_step
 
-def monitor_games(game_conns, game, network_storage, replay_storage):
+def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=False):
     """
     Listen for updates from self-play processes.
     These include:
@@ -252,7 +253,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage):
     game_name = type(game).__name__
     start_training_status()
     set_total_steps(Config.TRAINING_STEPS)
-    training_step = initialize_network(game, network_storage)
+    training_step = initialize_network(game, network_storage, test_mode)
     start_timing(game_name)
     update_training_step(training_step)
     update_num_games(len(replay_storage.buffer))

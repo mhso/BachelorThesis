@@ -79,7 +79,7 @@ class Graph:
                 changed_labels.append(label)
 
         if changed_labels == []:
-            return
+            return False
 
         handles, labels = self.ax.get_legend_handles_labels()
 
@@ -95,9 +95,11 @@ class Graph:
             self.canvas.draw()
             self.changed_plots[label] = False
 
-        if self.save_to_file:
-            title = self.ax.get_title().lower().replace(" ", "_")
-            self.ax.get_figure().savefig(f"../resources/graph_{title}.png")
+        return True
+
+    def save_as_image(self, game_name):
+        title = self.ax.get_title().lower().replace(" ", "_")
+        self.ax.get_figure().savefig(f"../resources/{game_name}/graph_{title}.png")
 
     def clear(self):
         # Reset graph window.
@@ -157,20 +159,21 @@ class GraphHandler:
     graphs = dict()
 
     @staticmethod
-    def update_graphs(root_graph):
+    def update_graphs(root_graph, game_name):
         for graph in GraphHandler.graphs.values():
-            graph.check_change()
-        root_graph.root.after(200, lambda g: GraphHandler.update_graphs(g), root_graph)
+            if graph.check_change():
+                graph.save_as_image(game_name)
+        root_graph.root.after(200, lambda g: GraphHandler.update_graphs(g, game_name), root_graph)
 
     @staticmethod
-    def new_graph(title, gui_parent=None, x_label=None, y_label=None, same_window=True):
+    def new_graph(title, game_name, gui_parent=None, x_label=None, y_label=None, same_window=True):
         graph = Graph(title, gui_parent, same_window, x_label, y_label)
         if len(GraphHandler.graphs) < 2:
             graph.canvas.get_tk_widget().grid(row=len(GraphHandler.graphs), column=0)
         else:
             graph.canvas.get_tk_widget().grid(row=len(GraphHandler.graphs)-2, column=1)
         GraphHandler.graphs[title] = graph
-        graph.root.after(200, lambda g: GraphHandler.update_graphs(g), graph)
+        graph.root.after(200, lambda g: GraphHandler.update_graphs(g, game_name), graph)
         return graph
 
     @staticmethod

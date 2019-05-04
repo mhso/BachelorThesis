@@ -6,6 +6,7 @@ main: Extract arguments and initialize things.
 if __name__ == "__main__":
     # This atrocious if statement is needed since these imports would
     # otherwise be run everytime we start a new process (no bueno).
+    import os
     from threading import Thread
     from multiprocessing import Process, Pipe
     from sys import argv
@@ -31,6 +32,7 @@ def initialize(game, p1, p2, **kwargs):
     network_storage = kwargs.get("network_storage", None)
     replay_storage = kwargs.get("replay_storage", None)
     config = kwargs.get("config", None)
+    game_name = type(game).__name__
 
     if gui is not None or plot_data or self_play.is_mcts(p1) or self_play.is_mcts(p2):
         # If GUI is used, if a non-human is playing, or if
@@ -60,9 +62,18 @@ def initialize(game, p1, p2, **kwargs):
         #else if "-ld" option is selected load old replays sql database
         if "-l" in argv or "-lg" in argv:
             step = parse_load_step(argv)
-            replay_storage.load_replay(step, GAME_NAME)
+            replay_storage.load_replay(step, game_name)
         elif "-dl" in argv:
             replay_storage.load_games_from_sql()
+        if "-s" in argv:
+            location = f"../resources/{game_name}/"
+            if not os.path.exists(location):
+                os.makedirs((location))
+                try:
+                    cfg_file = open("../resources/config.txt", "r").readlines()
+                    open(location+"config.txt", "w").writelines(cfg_file)
+                except IOError:
+                    print("Error when copying cfg file.")
 
         if pipes != []:
             # Set whether program is running in 'test' mode, or actively training.
@@ -76,10 +87,10 @@ def initialize(game, p1, p2, **kwargs):
         if gui is not None:
             gui.run() # Start GUI on main thread.
         elif plot_data:
-            graph_1 = GraphHandler.new_graph("Policy Loss", gui, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Value Loss", graph_1, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_3 = GraphHandler.new_graph("Average Loss", graph_2, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_4 = GraphHandler.new_graph("Training Evaluation", graph_3, "Training Iteration", "Winrate") # Start graph window in main thread.
+            graph_1 = GraphHandler.new_graph("Policy Loss", game_name, gui, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_2 = GraphHandler.new_graph("Value Loss", game_name, graph_1, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_3 = GraphHandler.new_graph("Average Loss", game_name, graph_2, "Training Iteration", "Loss") # Start graph window in main thread.
+            graph_4 = GraphHandler.new_graph("Training Evaluation", game_name, graph_3, "Training Iteration", "Winrate") # Start graph window in main thread.
             if gui is None:
                 graph_4.run()
     else:

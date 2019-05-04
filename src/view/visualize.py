@@ -80,7 +80,7 @@ class Gui():
         self.root = tk.Tk()
         self.root.bind("<Button 1>", self.getorigin)
         self.root.bind("<Destroy>", lambda e: self.close())
-        self.root.title("Latrunculi - The Game")
+        self.root.title("Basic Square Boardgame Visualizator")
         self.root.iconbitmap('./view/gfx/favicon.ico')
         self.root.configure(background='lightgray')
         w = self.board_hlen + self.left_space + 20
@@ -175,16 +175,16 @@ class Gui():
         hello = self.hello
         # create a pulldown menu, and add it to the menu bar
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open replay", command=hello)
-        filemenu.add_command(label="Save replay", command=hello)
+        filemenu.add_command(label="Open replay", command=hello, state="disabled")
+        filemenu.add_command(label="Save replay", command=hello, state="disabled")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
 
         # create more pulldown menus
         optionmenu = tk.Menu(menubar, tearoff=0)
-        optionmenu.add_command(label="Human vs. AI", command=hello)
-        optionmenu.add_command(label="AI vs. AI", command=hello)
+        optionmenu.add_command(label="Human vs. AI", command=hello, state="disabled")
+        optionmenu.add_command(label="AI vs. AI", command=hello, state="disabled")
         menubar.add_cascade(label="Options", menu=optionmenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)

@@ -190,14 +190,18 @@ class NetworkStorage:
         self.networks = new_dict
 
     def save_network(self, step, network):
-        self.networks[step] = network
-        if step > 0 and step % Config.SAVE_CHECKPOINT_MACRO == 0:
+        macro_step = step > 0 and step % Config.SAVE_CHECKPOINT_MACRO == 0
+        if macro_step:
+            # Create deep copy of network and save as macro network.
+            model_copy = network.copy_model(network.game)
+            network.model = model_copy
             self.macro_steps.append(step)
             if len(self.macro_steps) > Config.MAX_MACRO_STORAGE:
                 macro = self.macro_steps.pop(0)
                 # Remove oldest macro network.
                 self.remove_network(macro)
-        elif len(self.networks) - len(self.macro_steps) > Config.MAX_NETWORK_STORAGE:
+        self.networks[step] = network
+        if len(self.networks) - len(self.macro_steps) > Config.MAX_NETWORK_STORAGE:
             # Find step of oldest nework, apart from the macro network.
             lowest_step = self.curr_step
             for s in self.networks:

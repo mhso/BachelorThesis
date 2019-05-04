@@ -10,7 +10,7 @@ from keras.backend.tensorflow_backend import set_session, clear_session, get_ses
 from keras.layers import Dense, Conv2D, BatchNormalization, Input, Flatten
 from keras.layers.core import Activation
 from keras.optimizers import SGD
-from keras.models import Model
+from keras.models import Model, clone_model
 from keras.initializers import random_uniform, random_normal
 from keras.regularizers import l2
 from keras.utils import get_custom_objects
@@ -176,6 +176,13 @@ class NeuralNetwork:
             size = self.game.size
             reshaped = np.array([inp]).reshape((-1, self.input_stacks, size, size))
         return reshaped
+
+    def copy_model(self, game):
+        model_copy = clone_model(self.model)
+        model_copy.build(self.input_layer(game))
+        self.compile_model(model_copy, game)
+        model_copy.set_weights(self.model.get_weights())
+        return model_copy
 
     def log_flops(self):
         """

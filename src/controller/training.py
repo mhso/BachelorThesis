@@ -10,6 +10,7 @@ from multiprocessing.connection import wait
 from glob import glob
 from sys import argv
 from time import time
+import datetime
 from numpy import array, concatenate
 from model.neural import NeuralNetwork
 from view.log import FancyLogger
@@ -296,7 +297,6 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                         replay_storage.save_game(game)
                         if "-s" in argv:
                             replay_storage.save_replay(game, training_step, game_name)
-                            save_time_spent(time() - FancyLogger.time_started, game_name)
                         if "-ds" in argv:
                             replay_storage.save_game_to_sql(game)
                         new_games += 1
@@ -331,6 +331,10 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                     else:
                         # Nothing of note happens, indicate that process should carry on as usual.
                         conn.send(None)
+                    if "-s" in argv:
+                        time_spent = time() - FancyLogger.time_started
+                        save_time_spent(time_spent, game_name)
+                        save_run_report(time_spent, game_name)
                 elif status == "log":
                     FancyLogger.set_thread_status(data[1], data[0])
                 elif status[:7] == "perform":
@@ -378,6 +382,27 @@ def save_loss(loss, step, game_name):
         os.makedirs((location))
 
     pickle.dump(loss, open(location + filename, "wb"))
+
+def save_run_report(time_spent, game_name):
+    location = "../resources/" + game_name + "/"
+    filename = "run_report.txt"
+
+    date = datetime.datetime.fromtimestamp(time())
+    report = [
+        f"=== Run report - {date.ctime()} ===\n",
+        f"Time spent: {datetime.timedelta(seconds=int(time_spent))}\n",
+        f"Game: {game_name}\n",
+        f"Board size: {FancyLogger.board_size}\n",
+        f"Training steps: {FancyLogger.train_step}\n",
+        FancyLogger.network_status+"\n",
+        f"Games generated: {FancyLogger.total_games}"
+    ]
+
+    try:
+        with open(location + filename, "w") as file:
+            file.writelines(report)
+    except IOError:
+        print("Saving run report failed.")
 
 def save_time_spent(time_spent, game_name):
     location = "../resources/" + game_name + "/misc/"

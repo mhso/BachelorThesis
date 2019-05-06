@@ -350,6 +350,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                     elif status == "perform_mcts":
                         index = 2
                     elif status == "perform_macro":
+                        network_storage.macro_in_use = False
                         index = 3
 
                     perform_data[index] = (total, as_white, as_black)

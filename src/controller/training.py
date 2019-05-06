@@ -29,7 +29,7 @@ def train_network(network_storage, replay_storage, training_step, game):
 
     loss = 0
     for i in range(Config.ITERATIONS_PER_TRAINING):
-        inputs, expected_out = replay_storage.sample_batch()
+        inputs, expected_out = replay_storage.sample_batch(training_step)
 
         loss_hist = network.train(inputs, expected_out)
         loss = [loss_hist["loss"][-1],

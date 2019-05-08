@@ -11,6 +11,7 @@ __pycache__/
 resources/*/
 resources/config.txt
 resources/*.png
+resources/flops_summary*
 
 # Distribution / packaging
 .Python

@@ -117,10 +117,13 @@ class Game(ABC):
             # Use linear fall-off of 'z' and 'q' value.
             # This means that 'q' is weighed higher, the larger the current epoch,
             # and 'z' is weighed lower.
-            ratio = training_step / Config.Q_LINEAR_FALLOFF
-            z_val *= (1 - ratio)
-            q_val = self.q_value_history[state_index] * ratio
-            target_val = z_val + q_val
+            if training_step < Config.Q_LINEAR_FALLOFF:
+                ratio = training_step / Config.Q_LINEAR_FALLOFF
+                z_val *= (1 - ratio)
+                q_val = self.q_value_history[state_index] * ratio
+                target_val = z_val + q_val
+            else:
+                target_val = self.q_value_history[state_index]
         return (target_val, self.visit_counts[state_index])
 
     def store_search_statistics(self, node):

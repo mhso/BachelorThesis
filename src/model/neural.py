@@ -199,8 +199,9 @@ class NeuralNetwork:
 
         if flops is not None:
             with open("../resources/flops_summary.txt", "w") as file:
-                file.write(flops.total_float_ops+"\n")
-                file.write(params.total_parameters)
+                file.write("FLOPS SUMMARY:\n")
+                file.write(str(flops.total_float_ops)+" FLOPS\n")
+                file.write(str(params.total_parameters) + " params.")
 
     def evaluate(self, inp):
         """

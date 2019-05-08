@@ -257,7 +257,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
     training_step = initialize_network(game, network_storage, test_mode)
     start_timing(game_name)
     update_training_step(training_step)
-    update_num_games(len(replay_storage.buffer))
+    update_num_games(replay_storage.get_replay_count(game_name))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
 
     #train_network(network_storage, replay_storage, training_step, game)

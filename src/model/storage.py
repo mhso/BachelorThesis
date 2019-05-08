@@ -139,6 +139,16 @@ class ReplayStorage:
         except IOError:
             print("something went wrong when trying to load games into buffer")
 
+    def get_replay_count(self, game_type):
+        """
+        Method for counting the amount of saved games on disk.
+        """
+        try:
+            amount = sum([len(folder) for folder in
+                          os.listdir(f"../resources/{game_type}/replays/")])
+            return amount
+        except (FileNotFoundError, IOError):
+            return 0
 
     def save_game_to_sql(self, game):
         filename = "game"

@@ -122,12 +122,13 @@ class ReplayStorage:
                 current_step = step
 
             step_counter = current_step
+            max_num_files = Config.MAX_GAME_STORAGE + (current_step * Config.MAX_GAME_GROWTH)
             file_counter = 0
-            while step_counter >= 0 and file_counter < Config.MAX_GAME_STORAGE:
+            while step_counter >= 0 and file_counter < max_num_files:
                 file_list = glob(folders[step_counter] + "/" + "*" + file_extension)
 
                 for f in file_list:
-                    if file_counter < Config.MAX_GAME_STORAGE:
+                    if file_counter < max_num_files:
                         open_file = open(f, "rb")
                         game = pickle.load(open_file)
                         self.buffer.append(game)

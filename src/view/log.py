@@ -110,6 +110,8 @@ class FancyLogger:
 
             print("----------")
             print("Number of actors: {}.".format(Config.ACTORS))
-            print("Total games generated: {}".format(FancyLogger.total_games))
+            print(f"Total games generated: {FancyLogger.total_games}.")
+            max_buffer = Config.MAX_GAME_STORAGE + (FancyLogger.train_step * Config.MAX_GAME_GROWTH)
+            print(f"Max buffer size: {max_buffer}.")
             time_spent = time() - FancyLogger.time_started
             print("Time spent: {0:.3f} s [{1}]".format(time_spent, datetime.timedelta(seconds=math.ceil(time_spent))))

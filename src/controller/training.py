@@ -294,7 +294,7 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                 elif status == "game_over":
                     for game in data:
                         update_num_games()
-                        replay_storage.save_game(game)
+                        replay_storage.save_game(game, training_step)
                         if "-s" in argv:
                             replay_storage.save_replay(game, training_step, game_name)
                         if "-ds" in argv:

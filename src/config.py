@@ -76,11 +76,14 @@ class Config():
     SAVE_CHECKPOINT_MACRO = 100
 
     # Amount of games stored, at one time, in replay storage.
-    MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.S
+    MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.
+
+    # Amount to increase game buffer with, for each training epoch.
+    MAX_GAME_GROWTH = 0
 
     # Amount of netwroks stored at one time in network storage.
     MAX_NETWORK_STORAGE = 2
-    
+
     # How many macro networks to save and evaluate against.
     MAX_MACRO_STORAGE = 5
 
@@ -202,7 +205,7 @@ def set_game_specific_values(cfg, game):
     """
     game_name = type(game).__name__
 
-    noise = 0.3
+    noise = Config.NOISE_BASE
     sample_moves = 30
     if game_name == "Latrunculi":
         # Noise values for board sizes 4-8.
@@ -228,6 +231,7 @@ def set_game_specific_values(cfg, game):
         # Avg actions are always equal to board size.
         noise = 10/game.size
         sample_moves = sampling_options[8-game.size]
+    noise = cfg.NOISE_BASE if cfg is not None and cfg.NOISE_BASE != 0.3 else noise
     if cfg:
         cfg.NOISE_BASE = noise
         cfg.NUM_SAMPLING_MOVES = sample_moves

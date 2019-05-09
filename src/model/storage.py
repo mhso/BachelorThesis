@@ -19,8 +19,9 @@ class ReplayStorage:
     def __init__(self):
         self.buffer = []
 
-    def save_game(self, game):
-        if len(self.buffer) >= Config.MAX_GAME_STORAGE:
+    def save_game(self, game, training_step=0):
+        max_step = Config.MAX_GAME_STORAGE + (training_step * Config.MAX_GAME_GROWTH)
+        if len(self.buffer) >= max_step:
             self.buffer.pop(0) # Remove oldest game.
         self.buffer.append(game)
 

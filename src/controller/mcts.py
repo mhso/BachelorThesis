@@ -89,7 +89,7 @@ class MCTS(GameAI):
         #e_base = self.cfg.EXPLORE_BASE
         #e_init = self.cfg.EXPLORE_INIT
         #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
-        explore_val = 1.27 # TODO: Maybe change later.
+        explore_val = 1.27
         val = node.q_value + (
             explore_val * node.prior_prob
             * parent_visits / (1+node.visits)
@@ -196,6 +196,7 @@ class MCTS(GameAI):
             self.add_exploration_noise(root_node)
 
     def execute_action(self, node):
+        super.__doc__
         best_node = self.choose_action(node)
         self.chosen_node = best_node
 

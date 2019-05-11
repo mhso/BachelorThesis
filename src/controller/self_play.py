@@ -19,13 +19,13 @@ def is_mcts(ai):
 def getpid():
     return current_process().name
 
-def create_roots(games):
+def create_roots(batch_data):
     """
     Create root nodes for use in MCTS simulation. Takes as a parameter a list of tuples,
     containing data for each game. This data consist of: gametype, state, type of player 1 and type of player 2
     """
     root_nodes = []
-    for data in games:
+    for data in batch_data:
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -35,13 +35,13 @@ def create_roots(games):
         root_nodes.append(player.create_root_node(state))
     return root_nodes
 
-def select_nodes(games, roots):
+def select_nodes(batch_data, roots):
     """
     Run 'select' in MCTS on a batch of root nodes.
     """
     nodes = []
     for i, root in enumerate(roots):
-        data = games[i]
+        data = batch_data[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -53,12 +53,12 @@ def select_nodes(games, roots):
         nodes.append(player.select(root))
     return nodes
 
-def prepare_actions(games, nodes):
+def prepare_actions(batch_data, nodes):
     """
     Add exploration noise and check for 'pass' action
     on a batch of nodes.
     """
-    for i, data in enumerate(games):
+    for i, data in enumerate(batch_data):
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -69,14 +69,14 @@ def prepare_actions(games, nodes):
 
         player.prepare_action(root)
 
-def expand_nodes(games, nodes, policies, values):
+def expand_nodes(batch_data, nodes, policies, values):
     """
     Expand a batch of node based on policy logits
     acquired from the neural network.
     """
     return_values = []
     for i, node in enumerate(nodes):
-        data = games[i]
+        data = batch_data[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -87,13 +87,13 @@ def expand_nodes(games, nodes, policies, values):
         return_values.append(player.set_evaluation_data(node, policy, values[i]))
     return return_values
 
-def backprop_nodes(games, nodes, values):
+def backprop_nodes(batch_data, nodes, values):
     """
     Backpropagate values from the neural network
     to update a batch of nodes.
     """
     for i, node in enumerate(nodes):
-        data = games[i]
+        data = batch_data[i]
         game = data[0]
         state = data[1]
         player_1 = data[2]
@@ -104,9 +104,9 @@ def backprop_nodes(games, nodes, values):
 
         player.back_propagate(node, node.state.player, -value)
 
-def pack_data_for_eval(active_games, networks, nodes):
+def pack_data_for_eval(batch_data, networks, nodes):
     return [(-1 if networks is None else networks[g[0]][g[1].player],
-             g[0].structure_data(n.state)) for (g, n) in zip(active_games, nodes)]
+             g[0].structure_data(n.state)) for (g, n) in zip(batch_data, nodes)]
 
 def play_as_mcts(active_games, networks, config, connection):
     """
@@ -134,35 +134,54 @@ def play_as_mcts(active_games, networks, config, connection):
         backprop_nodes(active_games, selected_nodes, values)
     return roots
 
-def play_games(games, player_white, player_black, config, network_steps=None, gui=None, connection=None):
+def play_games(games, w_players, b_players, config, network_steps=None, gui=None, connection=None):
     """
-    Play a number of games to the end, and return the resulting states.
+    Play a number of games to the end, with capabilities for playing as any
+    type of agent and any type of game.
+
+    Parameters:
+        games         - List of game objects to be played out, the state of the games
+                        (result and state history) are updated during the process.
+        w_players     - List of agents controlling the white pieces.
+        b_players     - List of agents controlling the black pieces.
+        config        - Config object with a variety of parameters to be used during the game.
+        network_steps - Dictionary of game -> dict, mapping which game should target which
+                        generation of neural network. Only relevant if MCTS is used.
+        gui           - GUI object used to visualize the games, only available if batch-play
+                        is not active, meaning only one game is played.
+        connection    - Pipe object with connection to the main processes. Used when requesting
+                        network evaluating among other things.
     """
-    active_games = [[games[i], games[i].start_state(), player_white[i], player_black[i]] for i in range(len(games))]
+    # List of lists. Each containing a game to be played,
+    # the current state for that game, the agent playing as player1,
+    # and the agent playing as player 2.
+    batch_data = [[games[i], games[i].start_state(), w_players[i], b_players[i]] for i in range(len(games))]
     total_games = len(games)
-    counters = [0 for _ in games]
+    counters = [0 for _ in games] # Counting amount of moves for each game.
 
     if gui is not None:
         sleep(1)
-        gui.update(active_games[0][1]) # Update GUI, to clear board, if several games are played sequentially.
+        # Update GUI, to clear board, if several games are played sequentially.
+        gui.update(batch_data[0][1])
 
-    while active_games:
-        player = active_games[0][2] if active_games[0][0].player(active_games[0][1]) else active_games[0][3]
+    while batch_data:
+        player = batch_data[0][2] if batch_data[0][0].player(batch_data[0][1]) else batch_data[0][3]
         time_turn = time()
         if is_mcts(player):
             # Run MCTS simulations. Get resulting root nodes.
-            roots = play_as_mcts(active_games, network_steps, config, connection)
+            roots = play_as_mcts(batch_data, network_steps, config, connection)
 
         finished_games_indexes = []
-        for (i, (game, state, player_1, player_2)) in enumerate(active_games):
+        for (i, (game, state, player_1, player_2)) in enumerate(batch_data):
             player = player_1 if game.player(state) else player_2
-            state = player.execute_action(roots[i] if is_mcts(player) else state) #gives a root node to the method if MCTS, else it gives a state
-            active_games[i][1] = state
+            # execute_action receives a root node if player is MCTS, else it gives a state.
+            state = player.execute_action(roots[i] if is_mcts(player) else state)
+            batch_data[i][1] = state
 
             if gui is not None:
-                if type(player_white).__name__ != "Human" and not state.player:
+                if type(w_players).__name__ != "Human" and not state.player:
                     sleep(config.GUI_AI_SLEEP)
-                elif type(player_black).__name__ != "Human" and state.player:
+                elif type(b_players).__name__ != "Human" and state.player:
                     sleep(config.GUI_AI_SLEEP)
                 gui.update(state)
 
@@ -176,19 +195,22 @@ def play_games(games, player_white, player_black, config, network_steps=None, gu
                 winner = "White" if util == 1 else "Black" if util == -1 else "Draw"
                 log(f"Game over! Winner: {winner}")
             else:
+                # Append state to game history, unless the state is terminal.
                 game.history.append(state)
 
         turn_took = "{0:.3f}".format((time() - time_turn))
-        num_active = len(active_games)
-        num_moves = len(active_games[0][0].history)
-        name_1, name_2 = type(active_games[0][2]).__name__, type(active_games[0][3]).__name__
+        num_active = len(batch_data)
+        num_moves = len(batch_data[0][0].history)
+        name_1, name_2 = type(batch_data[0][2]).__name__, type(batch_data[0][3]).__name__
         elems_removed = 0
+        # Removes games that are finished.
         for i in finished_games_indexes:
-            active_games.pop(i-elems_removed)
+            batch_data.pop(i-elems_removed)
             elems_removed += 1
 
         num_active -= elems_removed
         if connection:
+            # Send logging information to main process if playing as MCTS.
             status = (f"Moves: {num_moves}. Active games: "+
                       f"{num_active}/{total_games}. Turn took {turn_took} s")
             if name_1 != "MCTS" or name_2 != "MCTS":

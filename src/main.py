@@ -35,6 +35,8 @@ def initialize(game, p1, p2, **kwargs):
     game_name = type(game).__name__
 
     if gui is not None or plot_data or self_play.is_mcts(p1) or self_play.is_mcts(p2):
+        # Set whether program is running in 'test' mode, or actively training.
+        test_mode = not self_play.is_mcts(p1) or not self_play.is_mcts(p2) or gui is not None
         # If GUI is used, if a non-human is playing, or if
         # several games are being played in parallel,
         # create seperate thread(s) to run the AI game logic in.
@@ -60,7 +62,7 @@ def initialize(game, p1, p2, **kwargs):
 
         #if "-l" option is selected load old replays from file
         #else if "-ld" option is selected load old replays sql database
-        if "-l" in argv or "-lg" in argv:
+        if "-l" in argv or "-lg" in argv and not test_mode:
             step = parse_load_step(argv)
             replay_storage.load_replay(step, game_name)
         elif "-dl" in argv:
@@ -76,8 +78,7 @@ def initialize(game, p1, p2, **kwargs):
                     print("Error when copying cfg file.")
 
         if pipes != []:
-            # Set whether program is running in 'test' mode, or actively training.
-            test_mode = not self_play.is_mcts(p1) or not self_play.is_mcts(p2) or gui is not None
+            
             # Start monitor thread.
             monitor = Thread(target=monitor_games,
                              args=(pipes, game, network_storage,

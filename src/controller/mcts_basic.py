@@ -1,6 +1,6 @@
 """
 ------------------------------------
-mcts: Monte Carlo Tree Search.
+mcts_basic: Monte Carlo Tree Search.
 ------------------------------------
 """
 import numpy as np

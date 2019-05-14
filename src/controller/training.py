@@ -21,17 +21,30 @@ from util.sqlUtil import SqlUtil
 def train_network(network_storage, replay_storage, training_step, game):
     """
     Trains the network by sampling a batch of data
-    from replay buffer.
+    from the replay buffer. Also plots loss and saves
+    these to file if enabed.
+
+    Parameters:
+        network_storage - NetworkStorage instance with methods for retrieving
+                          the latest generation of the network.
+        replay_storage  - ReplayStorage instance with methods for sampling batches
+                          of training data, generated during self-play.
+        training_step   - The current step/epoch of training.
+        game            - The game currently being played.
+    
+    Returns:
+        A boolean value indicating whether training is finished.
     """
     game_name = type(game).__name__
     network = network_storage.latest_network()
-    FancyLogger.set_network_status("Training...")
+    FancyLogger.set_network_status("Training...") # Get the latest network.
 
     loss = 0
     for i in range(Config.ITERATIONS_PER_TRAINING):
+        # Sample batch, to get random game state to train on.
         inputs, expected_out = replay_storage.sample_batch(training_step)
 
-        loss_hist = network.train(inputs, expected_out)
+        loss_hist = network.train(inputs, expected_out) # Train and get loss metrics.
         loss = [loss_hist["loss"][-1],
                 loss_hist["policy_head_loss"][-1],
                 loss_hist["value_head_loss"][-1]]
@@ -43,6 +56,7 @@ def train_network(network_storage, replay_storage, training_step, game):
         GraphHandler.plot_data("Value Loss", "Training Loss", training_step+1+i, loss[2])
 
     if not training_step % Config.SAVE_CHECKPOINT:
+        # Create a new neural network with the newly trained model.
         network = NeuralNetwork(game, network.model)
         network_storage.save_network(training_step, network)
         if "-s" in argv:
@@ -55,6 +69,18 @@ def train_network(network_storage, replay_storage, training_step, game):
     return False
 
 def show_performance_data(ai, index, step, data):
+    """
+    Show data from an evaluation against a specific AI.
+
+    Parameters:
+        ai    - The AI that was evaluated against.
+        index - Index of the performance type. Used when
+                plotting/printing the results.
+        step  - The training step where the evaluation ended.
+        data  - The evaluation data. Is a list of length 3, with
+                data for how well our program performs in total,
+                as player 1, and as player 2.
+    """
     total = data[0]
     as_white = data[1] if data[1] is not None else 0.0
     as_black = data[2] if data[2] is not None else 0.0
@@ -96,12 +122,10 @@ def handle_performance_data(step, perform_data, game_name):
 
 def game_over(new_games):
     """
-    Handle cases for when a game is completed on a process.
-    These include:
-        - Train the network if a big enough batch size is ready.
-        - Start evaluating performance of MCTS against alternate AI's.
-        - Check if training is finished.
-    @returns True or false, indicating whether training is complete.
+    Check whether we should train the network, after a game is finished.
+
+    Returns:
+        A boolean value indicating whether the network should train.
     """
     if new_games >= Config.GAMES_PER_TRAINING:
         return True
@@ -111,6 +135,14 @@ def evaluate_games(eval_queue, network_storage):
     """
     Evaluate a queue of games using the specified
     generations of neural networks.
+
+    Parameters:
+        eval_queue      - Data structured as dictionaries, which
+                          contain dictionaries, which contain lists.
+                          The top dictionary maps from network generations
+                          to another dictionary, which maps from pipe objects,
+                          of a specific process, to data that needs network evaluation.
+        network_storage - NetworkStorage instance storing the different networks.
     """
     results = {}
     # Iterate through each network, and associated data, in the queue.
@@ -141,12 +173,6 @@ def evaluate_games(eval_queue, network_storage):
     for conn, data in results.items():
         conn.send(data)
 
-def should_evaluate(eval_queue):
-    items = 0
-    for data in eval_queue.values():
-        items += len(data)
-    return items == Config.GAME_THREADS
-
 def load_all_perform_data(game_name):
     perf_rand = load_perform_data("random", None, game_name)
     if perf_rand:
@@ -167,8 +193,9 @@ def load_all_perform_data(game_name):
 
 def eval_checkpoint(training_step):
     """
-    This method defines how often to evaluate
-    performance against alternate AI's.
+    This method defines how often to evaluate performance against 
+    alternate AIs.
+    How often this is done changes as the training steps increases.
     """
     checkpoints = Config.EVAL_CHECKPOINT
     if type(checkpoints) is int:
@@ -192,6 +219,11 @@ def parse_load_step(args):
     return step
 
 def load_macro_networks(game, network_storage, game_name, step):
+    """
+    Load all 'macro networks', which are networks from previous
+    generations, at every 100th training step. The amount loaded
+    depend on the MAX_MACRO_STORAGE parameter.
+    """
     steps = []
     while step >= 100 and len(steps) < Config.MAX_MACRO_STORAGE:
         macro_model, macro_step = network_storage.load_macro_network_from_file(step, game_name)
@@ -204,6 +236,11 @@ def load_macro_networks(game, network_storage, game_name, step):
     print("Loaded all macro networks.")
 
 def initialize_network(game, network_storage, test_mode):
+    """
+    Initialize the neural network after starting the program.
+    If loading is enabled, this network is loaded from file.
+    Loss history and evaluation history is also loaded.
+    """
     training_step = 0
     # Construct the initial network.
     #if the -l option is selected, load a network from files
@@ -237,6 +274,7 @@ def initialize_network(game, network_storage, test_mode):
         network = NeuralNetwork(game, model=model)
         network_storage.save_network(training_step, network)
     else:
+        # Create new neural network from scratch.
         network = NeuralNetwork(game)
         network_storage.save_network(0, network)
         FancyLogger.set_network_status("Waiting for data...")
@@ -250,8 +288,18 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
         - the result of a terminated game.
         - the result of performance evaluation games.
         - logging events.
+
+    Parameters:
+        game_conns  - 'Pipe' objects containing connections to
+                     self-playing processes.
+        game        - The game to be played and trained on.
+        network_storage - NetworkStorage instance storing the different networks.
+        replay_storage  - ReplayStorage instance with methods for sampling batches
+                          of training data, generated during self-play.
+        test_mode       - Whether the program is used in test mode, or training mode.
     """
     game_name = type(game).__name__
+    # Setup initial variables.
     start_training_status()
     set_total_steps(Config.TRAINING_STEPS)
     training_step = initialize_network(game, network_storage, test_mode)
@@ -259,8 +307,6 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
     update_training_step(training_step)
     update_num_games(replay_storage.get_replay_count(game_name))
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
-
-    #train_network(network_storage, replay_storage, training_step, game)
 
     # Notify processes that network is ready.
     for conn in game_conns:
@@ -276,8 +322,11 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
     try:
         while True:
             for conn in wait(game_conns):
+            # For all connections to self-play processes.
                 status, data = conn.recv()
                 if status == "evaluate":
+                    # Process has data that needs evaluation from the network.
+                    # Add it to the evaluation queue.
                     new_eval_data += 1
                     for n_id, eval_data in data:
                         if eval_queue.get(n_id) is not None:
@@ -288,10 +337,12 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                         else:
                             eval_queue[n_id] = {conn: [eval_data]}
                     if new_eval_data == Config.GAME_THREADS:
+                        # Enough data is received, send data to evaluation.
                         evaluate_games(eval_queue, network_storage)
                         eval_queue = {}
                         new_eval_data = 0
                 elif status == "game_over":
+                    # Game is over, add it to game storage.
                     for game in data:
                         update_num_games()
                         replay_storage.save_game(game, training_step)
@@ -350,6 +401,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                     elif status == "perform_mcts":
                         index = 2
                     elif status == "perform_macro":
+                        # Evaluation data is against macro networks.
+                        # Remove oldest macro network.
                         network_storage.remove_oldest_macros()
                         index = 3
 
@@ -421,6 +474,10 @@ def load_time_spent(game_name):
         return 0
 
 def load_perform_data(ai, step, game_name):
+    """
+    Load all performance data for a specific game,
+    and a specific step, if specified.
+    """
     try:
         data = None
         path = "../resources/" + game_name + "/misc/perform_eval_"

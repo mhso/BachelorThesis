@@ -31,7 +31,7 @@ class Config():
     LATRUNCULI_MAX_MOVES = 200
 
     # Number of training steps for the neural network.
-    TRAINING_STEPS = 500
+    TRAINING_STEPS = 1000
 
     # Number of games to play in self-play (for each thread),
     # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
@@ -43,12 +43,12 @@ class Config():
     GAME_THREADS = 3
 
     # Total number of actors split evenly between each thread/process.
-    ACTORS = 30
+    ACTORS = 60
 
     # How many games to generate per training run.
     # Default is to run training every time all processes
     # has completed a game.
-    GAMES_PER_TRAINING = 8
+    GAMES_PER_TRAINING = 5
 
     # How often to evaluate model against base AI's
     # during training, default is every 5th training iteration.
@@ -57,7 +57,7 @@ class Config():
     # How many games to play against each base AI
     # while evaluating model performance.
     # Should be a multiple of EVAL_PROCESSES (below).
-    EVAL_GAMES = 16
+    EVAL_GAMES = 30
 
     # How many processes that should run evaluation games.
     EVAL_PROCESSES = 1
@@ -76,7 +76,7 @@ class Config():
     SAVE_CHECKPOINT_MACRO = 100
 
     # Amount of games stored, at one time, in replay storage.
-    MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.
+    MAX_GAME_STORAGE = 1000 # Is 1 million in AlphaZero, scale accordingly.
 
     # Amount to increase game buffer with, for each training epoch.
     MAX_GAME_GROWTH = 0
@@ -88,13 +88,13 @@ class Config():
     MAX_MACRO_STORAGE = 5
 
     # Batch size for neural network input.
-    BATCH_SIZE = 256
+    BATCH_SIZE = 512
 
     # Number of times to train per training step.
-    ITERATIONS_PER_TRAINING = 5
+    ITERATIONS_PER_TRAINING = 1
 
     # Number of times to train on one batch.
-    EPOCHS_PER_BATCH = 3
+    EPOCHS_PER_BATCH = 1
 
     # Fraction of training data to validate on.
     VALIDATION_SPLIT = 0.2
@@ -109,10 +109,10 @@ class Config():
     WEIGHT_DECAY = 1e-4
 
     # Amount of filters to use in convolutional layers.
-    CONV_FILTERS = 128
+    CONV_FILTERS = 256
 
     # Number of residual layers.
-    RES_LAYERS = 11
+    RES_LAYERS = 19
 
     # Use bias.
     USE_BIAS = False
@@ -121,7 +121,7 @@ class Config():
     # z = actual outcome of game (1 = white won, 0 = draw, -1 = black won).
     # q = MCTS predicted value of simulations.
     # avg = Average of the above two.
-    TARGET_VAL = "z"
+    TARGET_VAL = "avg"
 
     # If using TARGET_VAL = 'mixed', this specifies the epoch at which
     # 'q' val is prioritized fully and 'z' value is no longer used.
@@ -137,7 +137,7 @@ class Config():
     # |           MCTS OPTIONS            |
     # |***********************************|
     # Number of iterations per action taken.
-    MCTS_ITERATIONS = 800
+    MCTS_ITERATIONS = 200
 
     # Base exploration constant. This basically defines how much the visit
     # count for a node in MCTS should count towards it's UCB score. Lowering

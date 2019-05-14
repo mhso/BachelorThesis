@@ -57,7 +57,6 @@ class MCTS(GameAI):
     of the four stages of the algorithm: Selection, Expansion,
     Simulation and Backpropagation.
     """
-    state_map = dict()
     cfg = None
     chosen_node = None
 

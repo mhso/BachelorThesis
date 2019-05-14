@@ -174,7 +174,6 @@ if __name__ == "__main__":
     gui = None
     if "-g" in options or PLAYER_1 == "human" or PLAYER_2 == "human":
         gui = Gui(GAME)
-        GAME.register_observer(gui)
         if PLAYER_1 == "human":
             P_WHITE.gui = gui
         if PLAYER_2 == "human":

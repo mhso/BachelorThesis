@@ -50,7 +50,6 @@ class Gui():
     pmar = None
 
     def __init__(self, game):
-        game.register_observer(self)
         self.mouseclick_move_list = []
         self.game = game
         self.state = game.start_state()

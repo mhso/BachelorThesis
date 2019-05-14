@@ -207,7 +207,16 @@ def set_game_specific_values(cfg, game):
 
     noise = Config.NOISE_BASE
     sample_moves = 30
-    if game_name == "Latrunculi":
+    if game.size < 4 or game.size > 8:
+        # We do not specifically support board sizes
+        # less than 4 or larger than 8.
+        if game.size < 4:
+            noise = 2
+            sample_moves = 2
+        elif game.size > 8:
+            noise = 0.25
+            sample_moves = 7
+    elif game_name == "Latrunculi":
         # Noise values for board sizes 4-8.
         # Values are based on an average action space of
         # 8, 14, 22, 30, and 40.
@@ -216,21 +225,21 @@ def set_game_specific_values(cfg, game):
         # Values are based on the average game length of
         # 300, 1200, 1600, 2400, and 5000.
         sampling_options = [30, 120, 160, 240, 500]
-        noise = noise_options[8-game.size]
-        sample_moves = sampling_options[8-game.size]
+        noise = noise_options[game.size-4]
+        sample_moves = sampling_options[game.size-4]
     elif game_name == "Othello":
         # Avg actions: 4, 6, 9, 11, and 14.
         noise_options = [2.5, 1.66, 1, 0.9, 0.7]
         # Avg game length: 10, 20, 30, 45, and 60.
         sampling_options = [2, 3, 5, 5, 7]
-        noise = noise_options[8-game.size]
-        sample_moves = sampling_options[8-game.size]
+        noise = noise_options[game.size-4]
+        sample_moves = sampling_options[game.size-4]
     elif game_name == "Connect_Four":
         # Avg game length: 40, 22, 18, 15, and 10.
         sampling_options = [3, 3, 3, 2, 2]
         # Avg actions are always equal to board size.
         noise = 10/game.size
-        sample_moves = sampling_options[8-game.size]
+        sample_moves = sampling_options[game.size-4]
     noise = cfg.NOISE_BASE if cfg is not None and cfg.NOISE_BASE != 0.3 else noise
     if cfg:
         cfg.NOISE_BASE = noise

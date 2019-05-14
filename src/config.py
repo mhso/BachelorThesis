@@ -15,10 +15,10 @@ class Config():
     DEFAULT_AI = "MCTS"
 
     # Default Game to play.
-    DEFAULT_GAME = "Latrunculi"
+    DEFAULT_GAME = "Othello"
 
     # Default board size.
-    DEFAULT_BOARD_SIZE = 4
+    DEFAULT_BOARD_SIZE = 8
 
     # |***********************************|
     # |    TRAINING/GAME LOOP OPTIONS     |

@@ -14,6 +14,7 @@ from model.state import State, Action
 import threading
 from time import sleep
 from view.log import log
+from PIL import Image, ImageTk
 
 # from FakeTestClasses import *
 
@@ -39,6 +40,9 @@ class Gui():
     board_no_of_cols = -1
 
     status_field_height = 5
+
+    pieces_gfx = []
+    marked_gfx = None
 
     pblt = None
     pbl = None
@@ -80,7 +84,7 @@ class Gui():
         self.root.bind("<Button 1>", self.getorigin)
         self.root.bind("<Destroy>", lambda e: self.close())
         self.root.title("Basic Square Boardgame Visualizator")
-        self.root.iconbitmap('./view/gfx/favicon.ico')
+        self.root.iconbitmap('../resources/gfx/favicon.ico')
         self.root.configure(background='lightgray')
         w = self.board_hlen + self.left_space + 20
         h = self.board_vlen + self.top_space + 20
@@ -101,14 +105,28 @@ class Gui():
 
     def load_graphics(self):
         # load the .gif image file
-        self.pblt = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
-        self.pbl = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
-        self.pblc = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
-        self.pwh = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
-        self.pwht = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
-        self.pwhc = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
-        self.pbla = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
-        self.pmar = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
+        self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece.png')
+
+        pbla = tk.PhotoImage(file='../resources/gfx/pcs_blank.png')
+        self.pmar = tk.PhotoImage(file='../resources/gfx/pcs_mark.png')
+
+        self.pieces_gfx = [pbla]
+        if type(self.game).__name__ == "Chess":
+            img = Image.open('../resources/gfx/ChessPiecesArray.png')
+            for i in range(6):
+                x, y = 60 * i, 60
+                image = img.crop((x, y, x + 60, y + 60)).resize((55, 55))
+                self.pieces_gfx.append(ImageTk.PhotoImage(image))
+            for i in range(5, -1, -1):
+                x, y = 60 * i, 0
+                image = img.crop((x, y, x + 60, y + 60)).resize((55, 55))
+                self.pieces_gfx.append(ImageTk.PhotoImage(image))
+        else:
+            pbl = tk.PhotoImage(file='../resources/gfx/pcs_bl.png')
+            pwh = tk.PhotoImage(file='../resources/gfx/pcs_wh.png')
+            pblt = tk.PhotoImage(file='../resources/gfx/pcs_bl_t.png')
+            pwht = tk.PhotoImage(file='../resources/gfx/pcs_wh_t.png')
+            self.pieces_gfx.extend([pwh, pwht, pblt, pbl])
 
     # Return coordinat for mouse click
     def getorigin(self, eventorigin):
@@ -227,14 +245,8 @@ class Gui():
 
     # Returns image variable
     def select_piece_type(self, value):
-        switcher = {
-        -2: self.pblt,
-        -1: self.pbl,
-        0: self.pbla,
-        1: self.pwh,
-        2: self.pwht,
-        }
-        return switcher.get(value,"Invalid value option for select_piece_type")
+        print(value)
+        return self.pieces_gfx[value]
 
     # Draw board and place pieces
     def draw_board_grid(self, board):
@@ -280,6 +292,7 @@ class Gui():
 
                 # Mark if clicked by mouse
                 if len(self.mouseclick_move_list) > 0 and self.mouseclick_move_list[0] == (y, x):
+                    self.field(px, py, self.canvas, self.marked_gfx)
                     if val < 0:
                         self.field(px, py, self.canvas, self.pblc) # Mark black piece
                     else:

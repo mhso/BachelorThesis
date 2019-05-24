@@ -414,9 +414,9 @@ class Latrunculi(Game):
 
         # Structure data as a 4x4x4 stack.
         if state.player:
-            return np.array([pos_pieces, pos_captured, neg_pieces, neg_captured])
+            return np.array([pos_pieces, pos_captured, neg_pieces, neg_captured], dtype="float32")
         else:
-            return np.array([neg_pieces, neg_captured, pos_pieces, pos_captured])
+            return np.array([neg_pieces, neg_captured, pos_pieces, pos_captured], dtype="float32")
 
     def map_actions(self, actions, logits):
         """
@@ -455,19 +455,16 @@ class Latrunculi(Game):
         board positions. This returns policies in the dimensions
         outputted by the neural network.
         """
-        policy_moves = np.zeros((self.size, self.size, 4))
-        policy_remove = np.zeros((self.size, self.size, 1))
+        policies = np.zeros((self.size, self.size, self.size+1), dtype="float32")
         for a, p in visits.items():
             if a is None:
                 continue
             y1, x1 = a.source
+            moves = policies[y1, x1]
             y2, x2 = a.dest
             if a.dest == a.source:
-                policy_remove[y1, x1] = p
+                moves[-1] = p
             else:
-                index = 0 if y1>y2 else 1
-                if x1 != x2:
-                    index = 2 if x1>x2 else 3
+                moves[y2 * self.size + x2] = p
 
-                policy_moves[y1, x1, index] = p
-        return policy_moves
+        return policies

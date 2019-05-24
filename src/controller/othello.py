@@ -64,7 +64,6 @@ def utility(board, pieces, player):
     return 1 if diff > 0 else -1 if diff else 0
 
 class Othello(Game):
-
     def __init__(self, size, rand_seed=None):
         Game.__init__(self, size)
         self.num_actions = self.size * self.size

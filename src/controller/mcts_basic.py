@@ -44,18 +44,17 @@ class MCTS_Basic(GameAI):
     EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
     ITERATIONS = 100 # Number of times to run MCTS, per action taken in game.
 
-    def __init__(self, game, playouts=Config.MCTS_ITERATIONS):
+    def __init__(self, game, playouts=None):
         super().__init__(game)
         if playouts is not None:
-            self.ITERATIONS = playouts
-            self.MAX_MOVES = 5000
-        elif self.game.size > 3:
-            playout_options = [800, 200, 35, 20, 10, 5, 5]
-            max_moves = [400, 1200, 1600, 2400, 5000, 5000, 5000]
-            self.ITERATIONS = playout_options[self.game.size-4]
-            self.MAX_MOVES = max_moves[self.game.size-4]
+            self.ITERATIONS = Config.MCTS_BASIC_ITERATIONS
+            self.MAX_MOVES = 1000
 
         log("MCTS is using {} playouts and {} max moves.".format(self.ITERATIONS, self.MAX_MOVES))
+
+    def set_config(self, config):
+        GameAI.set_config(self, config)
+        self.ITERATIONS = config.MCTS_BASIC_ITERATIONS
 
     def select(self, node, sim_acc):
         """

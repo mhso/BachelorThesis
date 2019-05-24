@@ -489,19 +489,14 @@ def init_self_play(game, p1, p2, connection, gui=None, config=None):
     if not cfg:
         cfg = Config()
 
-    if is_mcts(p1):
-        p1.connection = connection
-        p1.set_config(cfg)
-    if is_mcts(p2):
-        p2.connection = connection
-        p2.set_config(cfg)
-
     # Wait for initial construction/compilation of network.
     if connection:
         connection.recv()
     games, player_1_agents, player_2_agents = copy_games_and_players(game, p1, p2, cfg.ACTORS // 3)
-    for i in range(1, len(games)):
-        player_1_agents[i].set_config(cfg)
-        player_2_agents[i].set_config(cfg)
+    for i in range(0, len(games)):
+        if is_mcts(p1):
+            player_1_agents[i].set_config(cfg)
+        if is_mcts(p2):
+            player_2_agents[i].set_config(cfg)
 
     play_loop(games, player_1_agents, player_2_agents, 0, gui, cfg, connection)

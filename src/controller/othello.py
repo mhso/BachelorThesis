@@ -149,4 +149,4 @@ class Othello(Game):
                 continue
             y, x = a.dest
             policies[y * self.size + x] = p
-        return (policies,)
+        return policies

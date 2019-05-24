@@ -136,8 +136,11 @@ class Config():
     # |***********************************|
     # |           MCTS OPTIONS            |
     # |***********************************|
-    # Number of iterations per action taken.
-    MCTS_ITERATIONS = 800
+    # Number of simulations per action taken.
+    MCTS_ITERATIONS = 200
+
+    # Number of simulations for MCTS basic.
+    MCTS_BASIC_ITERATIONS = 200
 
     # Base exploration constant. This basically defines how much the visit
     # count for a node in MCTS should count towards it's UCB score. Lowering
@@ -232,6 +235,7 @@ def set_game_specific_values(cfg, game):
         noise = 10/game.size
         sample_moves = sampling_options[8-game.size]
     noise = cfg.NOISE_BASE if cfg is not None and cfg.NOISE_BASE != 0.3 else noise
+    sample_moves = cfg.NUM_SAMPLING_MOVES if cfg is not None and cfg.NUM_SAMPLING_MOVES != 0.3 else noise
     if cfg:
         cfg.NOISE_BASE = noise
         cfg.NUM_SAMPLING_MOVES = sample_moves

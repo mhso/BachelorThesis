@@ -58,7 +58,6 @@ class MCTS(GameAI):
     Simulation and Backpropagation.
     """
     state_map = dict()
-    cfg = None
     chosen_node = None
 
     def __init__(self, game, playouts=None):
@@ -71,7 +70,7 @@ class MCTS(GameAI):
         log("MCTS is using {} playouts.".format(self.ITERATIONS))
 
     def set_config(self, config):
-        self.cfg = config
+        GameAI.set_config(self, config)
         self.ITERATIONS = config.MCTS_ITERATIONS
 
     def ucb_score(self, node, parent_visits):

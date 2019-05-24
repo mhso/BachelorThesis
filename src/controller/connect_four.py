@@ -99,4 +99,4 @@ class Connect_Four(Game):
         for a, p in visits.items():
             y, x = a.dest
             policies[y * self.size + x] = p
-        return (policies,)
+        return policies

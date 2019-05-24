@@ -34,68 +34,64 @@ def initialize(game, p1, p2, **kwargs):
     config = kwargs.get("config", None)
     game_name = type(game).__name__
 
-    if gui is not None or plot_data or self_play.is_mcts(p1) or self_play.is_mcts(p2):
-        # Set whether program is running in 'test' mode, or actively training.
-        test_mode = not self_play.is_mcts(p1) or not self_play.is_mcts(p2) or gui is not None
-        # If GUI is used, if a non-human is playing, or if
-        # several games are being played in parallel,
-        # create seperate thread(s) to run the AI game logic in.
-        if Config.GAME_THREADS > 1:
-            # Don't use plot/GUI if several games are played.
-            gui = None
-        pipes = []
-        games, p1s, p2s = self_play.copy_games_and_players(game, p1, p2, Config.GAME_THREADS)
-        for i in range(Config.GAME_THREADS):
-            child = None
-            if self_play.is_mcts(p1) or self_play.is_mcts(p2):
-                parent, child = Pipe()
-                pipes.append(parent)
+    # Set whether program is running in 'test' mode, or actively training.
+    test_mode = not self_play.is_mcts(p1) or not self_play.is_mcts(p2) or gui is not None
+    # If GUI is used, if a non-human is playing, or if
+    # several games are being played in parallel,
+    # create seperate thread(s) to run the AI game logic in.
+    if Config.GAME_THREADS > 1:
+        # Don't use plot/GUI if several games are played.
+        gui = None
+    pipes = []
+    games, p1s, p2s = self_play.copy_games_and_players(game, p1, p2, Config.GAME_THREADS)
+    for i in range(Config.GAME_THREADS):
+        child = None
+        if self_play.is_mcts(p1) or self_play.is_mcts(p2):
+            parent, child = Pipe()
+            pipes.append(parent)
 
-            if gui is None:
-                game_thread = Process(target=self_play.init_self_play,
-                                      name=f"Process {(i+1):02d}",
-                                      args=(games[i], p1s[i], p2s[i], child, gui, config))
-            else:
-                game_thread = Thread(target=self_play.init_self_play,
-                                     args=(games[i], p1s[i], p2s[i], child, gui, config))
-            game_thread.start() # Start game logic thread.
+        if gui is None:
+            game_thread = Process(target=self_play.init_self_play,
+                                    name=f"Process {(i+1):02d}",
+                                    args=(games[i], p1s[i], p2s[i], child, gui, config))
+        else:
+            game_thread = Thread(target=self_play.init_self_play,
+                                    args=(games[i], p1s[i], p2s[i], child, gui, config))
+        game_thread.start() # Start game logic thread.
 
-        #if "-l" option is selected load old replays from file
-        #else if "-ld" option is selected load old replays sql database
-        if "-l" in argv or "-lg" in argv and not test_mode:
-            step = parse_load_step(argv)
-            replay_storage.load_replay(step, game_name)
-        elif "-dl" in argv:
-            replay_storage.load_games_from_sql()
-        if "-s" in argv:
-            location = f"../resources/{game_name}/"
-            if not os.path.exists(location):
-                os.makedirs((location))
-                try:
-                    cfg_file = open("../resources/config.txt", "r").readlines()
-                    open(location+"config.txt", "w").writelines(cfg_file)
-                except IOError:
-                    print("Error when copying cfg file.")
+    #if "-l" option is selected load old replays from file
+    #else if "-ld" option is selected load old replays sql database
+    if "-l" in argv or "-lg" in argv and not test_mode:
+        step = parse_load_step(argv)
+        replay_storage.load_replay(step, game_name)
+    elif "-dl" in argv:
+        replay_storage.load_games_from_sql()
+    if "-s" in argv:
+        location = f"../resources/{game_name}/"
+        if not os.path.exists(location):
+            os.makedirs((location))
+            try:
+                cfg_file = open("../resources/config.txt", "r").readlines()
+                open(location+"config.txt", "w").writelines(cfg_file)
+            except IOError:
+                print("Error when copying cfg file.")
 
-        if pipes != []:
-            
-            # Start monitor thread.
-            monitor = Thread(target=monitor_games,
-                             args=(pipes, game, network_storage,
-                                   replay_storage, test_mode))
-            monitor.start()
+    if pipes != []:
+        # Start monitor thread.
+        monitor = Thread(target=monitor_games,
+                            args=(pipes, game, network_storage,
+                                replay_storage, test_mode))
+        monitor.start()
 
-        if gui is not None:
-            gui.run() # Start GUI on main thread.
-        elif plot_data:
-            graph_1 = GraphHandler.new_graph("Policy Loss", game_name, gui, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_2 = GraphHandler.new_graph("Value Loss", game_name, graph_1, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_3 = GraphHandler.new_graph("Average Loss", game_name, graph_2, "Training Iteration", "Loss") # Start graph window in main thread.
-            graph_4 = GraphHandler.new_graph("Training Evaluation", game_name, graph_3, "Training Iteration", "Winrate") # Start graph window in main thread.
-            if gui is None:
-                graph_4.run()
-    else:
-        self_play.play_loop(game, p1, p2, 0)
+    if gui is not None:
+        gui.run() # Start GUI on main thread.
+    elif plot_data:
+        graph_1 = GraphHandler.new_graph("Policy Loss", game_name, gui, "Training Iteration", "Loss") # Start graph window in main thread.
+        graph_2 = GraphHandler.new_graph("Value Loss", game_name, graph_1, "Training Iteration", "Loss") # Start graph window in main thread.
+        graph_3 = GraphHandler.new_graph("Average Loss", game_name, graph_2, "Training Iteration", "Loss") # Start graph window in main thread.
+        graph_4 = GraphHandler.new_graph("Training Evaluation", game_name, graph_3, "Training Iteration", "Winrate") # Start graph window in main thread.
+        if gui is None:
+            graph_4.run()
 
 def invalid_args(args, options, wildcard):
     return False

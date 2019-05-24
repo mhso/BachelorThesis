@@ -136,7 +136,7 @@ def evaluate_games(eval_queue, network_storage):
                 old_values = concatenate((old_values, values[amount[i]:amount[i+1], 0]))
 
                 results[conn] = (old_policies, old_values)
-    
+
     # Finally, send the relevant evaluation data to all processes.
     for conn, data in results.items():
         conn.send(data)

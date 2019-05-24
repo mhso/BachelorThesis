@@ -9,6 +9,7 @@ __pycache__/
 # VS Code
 .vscode/
 resources/*/
+!resources/gfx
 resources/config.txt
 resources/*.png
 resources/flops_summary*

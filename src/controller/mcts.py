@@ -1,7 +1,7 @@
 """
-------------------------------------
-mcts: Monte Carlo Tree Search.
-------------------------------------
+-----------------------------------------------------------------------------
+mcts - modified: Modified Monte Carlo Tree Search, using network evaluations.
+-----------------------------------------------------------------------------
 """
 import numpy as np
 from config import Config
@@ -35,6 +35,9 @@ class Node():
             self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
 
 def normalize_value(value):
+    """
+    Normalizes the given value, and returns it
+    """
     return (value * 0.5) + 0.5
 
 def softmax_sample(child_nodes, visit_counts, tempature=2.5):
@@ -57,7 +60,7 @@ class MCTS(GameAI):
     of the four stages of the algorithm: Selection, Expansion,
     Simulation and Backpropagation.
     """
-    state_map = dict()
+    cfg = None
     chosen_node = None
 
     def __init__(self, game, playouts=None):
@@ -73,7 +76,7 @@ class MCTS(GameAI):
         GameAI.set_config(self, config)
         self.ITERATIONS = config.MCTS_ITERATIONS
 
-    def ucb_score(self, node, parent_visits):
+    def puct_score(self, node, parent_visits):
         """
         PUCT (Polynomial Upper Confident for Trees) formula.
         Q(s, a) + C(s) * P(s, a) * sqrt(N(s)) / (1 + N(s, a)),
@@ -84,6 +87,9 @@ class MCTS(GameAI):
                      We keep it as a constant for simplicity.
             - P(s, a) = prior probability of selecting action in node.
             - N(s, a) = visits of current node.
+
+        returns:
+            - PUCT value of node 
         """
         #e_base = self.cfg.EXPLORE_BASE
         #e_init = self.cfg.EXPLORE_INIT
@@ -104,7 +110,7 @@ class MCTS(GameAI):
         if node.children == {}: # Node is a leaf.
             return node
         parent_sqrt = np.sqrt(node.visits)
-        best_node = max(node.children.values(), key=lambda n: self.ucb_score(n, parent_sqrt))
+        best_node = max(node.children.values(), key=lambda n: self.puct_score(n, parent_sqrt))
 
         return self.select(best_node)
 

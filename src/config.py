@@ -15,10 +15,10 @@ class Config():
     DEFAULT_AI = "MCTS"
 
     # Default Game to play.
-    DEFAULT_GAME = "Latrunculi"
+    DEFAULT_GAME = "Othello"
 
     # Default board size.
-    DEFAULT_BOARD_SIZE = 4
+    DEFAULT_BOARD_SIZE = 8
 
     # |***********************************|
     # |    TRAINING/GAME LOOP OPTIONS     |
@@ -31,7 +31,7 @@ class Config():
     LATRUNCULI_MAX_MOVES = 200
 
     # Number of training steps for the neural network.
-    TRAINING_STEPS = 500
+    TRAINING_STEPS = 1000
 
     # Number of games to play in self-play (for each thread),
     # so total games run will equal GAME_THREADS * GAME_ITERATIONS.
@@ -43,12 +43,12 @@ class Config():
     GAME_THREADS = 3
 
     # Total number of actors split evenly between each thread/process.
-    ACTORS = 30
+    ACTORS = 60
 
     # How many games to generate per training run.
     # Default is to run training every time all processes
     # has completed a game.
-    GAMES_PER_TRAINING = 8
+    GAMES_PER_TRAINING = 5
 
     # How often to evaluate model against base AI's
     # during training, default is every 5th training iteration.
@@ -57,7 +57,7 @@ class Config():
     # How many games to play against each base AI
     # while evaluating model performance.
     # Should be a multiple of EVAL_PROCESSES (below).
-    EVAL_GAMES = 16
+    EVAL_GAMES = 30
 
     # How many processes that should run evaluation games.
     EVAL_PROCESSES = 1
@@ -76,7 +76,7 @@ class Config():
     SAVE_CHECKPOINT_MACRO = 100
 
     # Amount of games stored, at one time, in replay storage.
-    MAX_GAME_STORAGE = 500 # Is 1 million in AlphaZero, scale accordingly.
+    MAX_GAME_STORAGE = 1000 # Is 1 million in AlphaZero, scale accordingly.
 
     # Amount to increase game buffer with, for each training epoch.
     MAX_GAME_GROWTH = 0
@@ -88,13 +88,13 @@ class Config():
     MAX_MACRO_STORAGE = 5
 
     # Batch size for neural network input.
-    BATCH_SIZE = 256
+    BATCH_SIZE = 512
 
     # Number of times to train per training step.
-    ITERATIONS_PER_TRAINING = 5
+    ITERATIONS_PER_TRAINING = 1
 
     # Number of times to train on one batch.
-    EPOCHS_PER_BATCH = 3
+    EPOCHS_PER_BATCH = 1
 
     # Fraction of training data to validate on.
     VALIDATION_SPLIT = 0.2
@@ -109,10 +109,10 @@ class Config():
     WEIGHT_DECAY = 1e-4
 
     # Amount of filters to use in convolutional layers.
-    CONV_FILTERS = 128
+    CONV_FILTERS = 256
 
     # Number of residual layers.
-    RES_LAYERS = 11
+    RES_LAYERS = 19
 
     # Use bias.
     USE_BIAS = False
@@ -121,7 +121,7 @@ class Config():
     # z = actual outcome of game (1 = white won, 0 = draw, -1 = black won).
     # q = MCTS predicted value of simulations.
     # avg = Average of the above two.
-    TARGET_VAL = "z"
+    TARGET_VAL = "avg"
 
     # If using TARGET_VAL = 'mixed', this specifies the epoch at which
     # 'q' val is prioritized fully and 'z' value is no longer used.
@@ -210,7 +210,16 @@ def set_game_specific_values(cfg, game):
 
     noise = Config.NOISE_BASE
     sample_moves = 30
-    if game_name == "Latrunculi":
+    if game.size < 4 or game.size > 8:
+        # We do not specifically support board sizes
+        # less than 4 or larger than 8.
+        if game.size < 4:
+            noise = 2
+            sample_moves = 2
+        elif game.size > 8:
+            noise = 0.25
+            sample_moves = 7
+    elif game_name == "Latrunculi":
         # Noise values for board sizes 4-8.
         # Values are based on an average action space of
         # 8, 14, 22, 30, and 40.
@@ -219,21 +228,21 @@ def set_game_specific_values(cfg, game):
         # Values are based on the average game length of
         # 300, 1200, 1600, 2400, and 5000.
         sampling_options = [30, 120, 160, 240, 500]
-        noise = noise_options[8-game.size]
-        sample_moves = sampling_options[8-game.size]
+        noise = noise_options[game.size-4]
+        sample_moves = sampling_options[game.size-4]
     elif game_name == "Othello":
         # Avg actions: 4, 6, 9, 11, and 14.
         noise_options = [2.5, 1.66, 1, 0.9, 0.7]
         # Avg game length: 10, 20, 30, 45, and 60.
         sampling_options = [2, 3, 5, 5, 7]
-        noise = noise_options[8-game.size]
-        sample_moves = sampling_options[8-game.size]
+        noise = noise_options[game.size-4]
+        sample_moves = sampling_options[game.size-4]
     elif game_name == "Connect_Four":
         # Avg game length: 40, 22, 18, 15, and 10.
         sampling_options = [3, 3, 3, 2, 2]
         # Avg actions are always equal to board size.
         noise = 10/game.size
-        sample_moves = sampling_options[8-game.size]
+        sample_moves = sampling_options[game.size-4]
     noise = cfg.NOISE_BASE if cfg is not None and cfg.NOISE_BASE != 0.3 else noise
     sample_moves = cfg.NUM_SAMPLING_MOVES if cfg is not None and cfg.NUM_SAMPLING_MOVES != 0.3 else noise
     if cfg:

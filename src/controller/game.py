@@ -16,7 +16,7 @@ class Game(ABC):
         self.visit_counts = []
         self.num_actions = 0 # Overriden in subclasses.
         self.__observers = []
-        self.q_value_history = q_value_history or [] #TODO: might need to be given a parameter, same as history...
+        self.q_value_history = q_value_history or []
         self.terminal_value = 0
         self.val_type = val_type or "z"
 
@@ -87,6 +87,9 @@ class Game(ABC):
         pass
 
     def clone(self):
+        """
+        Clones the game and returns it
+        """
         game_clone = self.__class__(self.size)
         game_clone.history = [s for s in self.history]
         game_clone.visit_counts = [v for v in self.visit_counts]
@@ -99,6 +102,7 @@ class Game(ABC):
         """
         Return terminal value of given state at index, as well as
         probability distribution for actions at that state.
+        The value depends on the arguments given.
         """
         player = self.history[state_index].player
         term_val = self.terminal_value
@@ -149,16 +153,10 @@ class Game(ABC):
         else:
             self.q_value_history.append(node.q_value)
 
-    def store_random_statistics(self, rand_stats):
-        self.visit_counts.append(rand_stats)
-
     def reset(self):
+        """
+        Resets the game data
+        """
         self.history = [self.start_state()]
         self.visit_counts = []
         self.q_value_history = []
-
-    def register_observer(self, observer):
-        """
-        Registere observers
-        """
-        self.__observers.append(observer)

@@ -33,50 +33,10 @@ def evaluate_board_jit(board, player, depth):
     return raw_diff + capture_diff + bonus
 
 @jit(nopython=True)
-def evaluate_board_jit_test(board, player, depth, test_version):
-    # COMMON VARS
-    player_piece = 1 if player else -1
-    other_piece = -1 if player else 1
-    player_captured = 2 if player else -2
-    other_captured = -2 if player else 2
-    
-    player_pieces = (board == player_piece).sum()
-    other_pieces = (board == other_piece).sum()
-    captured_enemy = (board == other_captured).sum()
-    captured_player = (board == player_captured).sum()
-    bonus = 4*(depth+1) if other_pieces <= 1 else 0 # Add a bonus for winning fast
-    
-    if test_version == "0": # STANDARD
-        return evaluate_board_jit(board, player, depth)
-    elif test_version == "1":
-        capture_weight = 10
-        kill_weight = 2
-        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
-    elif test_version == "2":
-        capture_weight = 10
-        kill_weight = 50
-        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
-    elif test_version == "3":
-        capture_weight = 50
-        kill_weight = 10
-        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
-    elif test_version == "4":
-        capture_weight = 15
-        kill_weight = 100
-        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
-    elif test_version == "5":
-        capture_weight = 100
-        kill_weight = 15
-        return eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus)
-
-@jit(nopython=True)
-def eval_test_version_type1(player_pieces, other_pieces, captured_enemy, kill_weight, captured_player, capture_weight, bonus):
-    raw_diff = ((player_pieces - other_pieces) - captured_enemy) * kill_weight
-    capture_diff = (captured_enemy - captured_player) * capture_weight
-    return raw_diff + capture_diff + bonus
-
-@jit(nopython=True)
 def minimax_jit(maxing_player, next_depth, worth, alpha, beta):
+    """
+    jit version of the minimax logic.
+    """
     worth = max(next_depth, worth) if maxing_player else min(next_depth, worth)
     if maxing_player:
         alpha = max(alpha, worth)
@@ -108,12 +68,9 @@ class Minimax(GameAI):
         Minimax implementations for other games (Connect Four,
         Othello) need only derive from this class and overwrite
         this method.
+        Some of the logic has been moved to other methods, so they can be jit compiled.
         """
-        if len(argv) > 2 and "-eval" == argv[len(argv)-3]:
-            test_version = argv[len(argv)-2]
-            return evaluate_board_jit_test(state.board, state.player, depth, test_version)
-        else:
-            return evaluate_board_jit(state.board, state.player, depth)
+        return evaluate_board_jit(state.board, state.player, depth)
 
     def cutoff(self, depth):
         return not depth
@@ -121,9 +78,8 @@ class Minimax(GameAI):
     def minimax(self, state, depth, maxing_player, alpha, beta):
         """
         Minimax algorithm with alpha-beta pruning.
+        Some of the logic has been moved to other methods, so they can be jit compiled.
         """
-        # Look up the current state in our transposition table.
-        # If it exists, return the associated value.
         state_hash = state.stringify()
         val = self.tpt.get(state_hash, None)
         if val is not None:

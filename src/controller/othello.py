@@ -5,6 +5,9 @@ from model.state import State, Action
 
 @jit(nopython=True)
 def capture_in_dir(board, player, x, y, i, j, size):
+    """
+    captures pieces in a certain direction
+    """
     captures = 1
     other_player = -player
     xc = x+i
@@ -31,6 +34,9 @@ def action_at(board, y, x, size, player, other):
 
 @jit(nopython=True)
 def result(arr, y, x, size, player):
+    """
+    logic for calculating result, using jit compilation
+    """
     captures = 0
     for i in range(-1, 2):
         for j in range(-1, 2):
@@ -42,6 +48,9 @@ def result(arr, y, x, size, player):
 
 @jit(nopython=True)
 def utility(board, pieces, player):
+    """
+    logic for calculating utility value of a board, using jit compilation
+    """
     player_num = 1 if player else -1
     other_num = -player_num
     pieces_player, pieces_opp = 0, 0

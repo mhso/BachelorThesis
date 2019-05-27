@@ -105,13 +105,12 @@ class Gui():
 
     def load_graphics(self):
         # load the .gif image file
-        self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece.png')
-
         pbla = tk.PhotoImage(file='../resources/gfx/pcs_blank.png')
         self.pmar = tk.PhotoImage(file='../resources/gfx/pcs_mark.png')
 
         self.pieces_gfx = [pbla]
         if type(self.game).__name__ == "Chess":
+            self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece_border.png')
             img = Image.open('../resources/gfx/ChessPiecesArray.png')
             for i in range(6):
                 x, y = 60 * i, 60
@@ -122,6 +121,7 @@ class Gui():
                 image = img.crop((x, y, x + 60, y + 60)).resize((55, 55))
                 self.pieces_gfx.append(ImageTk.PhotoImage(image))
         else:
+            self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece_cross.png')
             pbl = tk.PhotoImage(file='../resources/gfx/pcs_bl.png')
             pwh = tk.PhotoImage(file='../resources/gfx/pcs_wh.png')
             pblt = tk.PhotoImage(file='../resources/gfx/pcs_bl_t.png')
@@ -245,7 +245,6 @@ class Gui():
 
     # Returns image variable
     def select_piece_type(self, value):
-        print(value)
         return self.pieces_gfx[value]
 
     # Draw board and place pieces
@@ -291,22 +290,17 @@ class Gui():
                     self.field(px, py, self.canvas, self.select_piece_type(val))
 
                 # Mark if clicked by mouse
-                if len(self.mouseclick_move_list) > 0 and self.mouseclick_move_list[0] == (y, x):
+                if self.mouseclick_move_list != [] and self.mouseclick_move_list[0] == (y, x):
                     self.field(px, py, self.canvas, self.marked_gfx)
-                    if val < 0:
-                        self.field(px, py, self.canvas, self.pblc) # Mark black piece
-                    else:
-                        self.field(px, py, self.canvas, self.pwhc) # Mark white piece
 
                 # Mark legal moves
-                if len(self.mouseclick_move_list) > 0 and val == 0  and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
+                if self.mouseclick_move_list != [] and val == 0 and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
                     self.field(px, py, self.canvas, self.pmar)
 
                 px = px + self.board_field_size
 
             py  = py + self.board_field_size
             px2 = px2 + self.board_field_size
-
 
     # Check wheather (white) piece is owned by currentPlayer one
     def is_currentPlayer_piece(self, player, value):

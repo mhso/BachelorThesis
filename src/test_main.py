@@ -7,6 +7,7 @@ from testing import test_minimax
 from testing import test_mcts
 from testing import test_misc
 from testing import test_network
+from testing import test_chess
 
 GREEN = "\033[1;32;40m"
 YELLOW = "\033[0;33;40m"
@@ -19,7 +20,8 @@ MODULES = {"latrunculi": test_latrunculi,
            "minimax": test_minimax,
            "mcts": test_mcts,
            "network": test_network,
-           "misc": test_misc}
+           "misc": test_misc,
+           "chess": test_chess}
 
 if len(argv) == 1:
     for mod in MODULES:

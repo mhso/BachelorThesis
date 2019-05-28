@@ -22,8 +22,8 @@ class State:
         Debug method for returning number of white
         and black pieces on the board.
         """
-        white_pieces = (self.board == 1).sum()
-        black_pieces = (self.board == -1).sum()
+        white_pieces = (self.board > 0).sum()
+        black_pieces = (self.board < 0).sum()
         return white_pieces, black_pieces
 
     def str_player(self):

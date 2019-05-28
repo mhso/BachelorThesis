@@ -1,7 +1,10 @@
-from PIL import Image
+from sys import argv
 
-p = Image.open("../resources/gfx/pcs_wh.png")
-s = Image.open("../resources/gfx/selected_piece.png")
+x = int(argv[1])
+y = int(argv[2])
+size = 8
 
-blended = Image.alpha_composite(p, s)
-blended.save("../resources/gfx/diswork.png")
+diag_x = size - (y - x) - 1 if y > x else size - (x - y) - 1
+diag_y = size - (x-y) - 1 if x > y else size - (y-x) - 1
+
+print((diag_x, diag_y))

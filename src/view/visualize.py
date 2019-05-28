@@ -43,13 +43,13 @@ class Gui():
 
     pieces_gfx = []
     marked_gfx = None
+    threat_gfx = None
 
     pblt = None
     pbl = None
     pblc = None
     pwh = None
     pwht = None
-    pwhc = None
     pbla = None
     pmar = None
 
@@ -111,6 +111,7 @@ class Gui():
         self.pieces_gfx = [pbla]
         if type(self.game).__name__ == "Chess":
             self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece_border.png')
+            self.threat_gfx = tk.PhotoImage(file='../resources/gfx/threatened_piece_border.png')
             img = Image.open('../resources/gfx/ChessPiecesArray.png')
             for i in range(6):
                 x, y = 60 * i, 60
@@ -169,13 +170,13 @@ class Gui():
     # Confirms if a move i legal
     def is_legal_move(self, source_coords, dest_coords):
         for action in self.game.actions(self.state):
-            if action.source == source_coords and action.dest == dest_coords:
+            if action is not None and action.source == source_coords and action.dest == dest_coords:
                 return True
         return False
 
     def has_legal_move(self, source_coords):
         for action in self.game.actions(self.state):
-            if action.source == source_coords:
+            if action is not None and action.source == source_coords:
                 return True
         return False
 
@@ -294,8 +295,11 @@ class Gui():
                     self.field(px, py, self.canvas, self.marked_gfx)
 
                 # Mark legal moves
-                if self.mouseclick_move_list != [] and val == 0 and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
-                    self.field(px, py, self.canvas, self.pmar)
+                if self.mouseclick_move_list != [] and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
+                    if val == 0:
+                        self.field(px, py, self.canvas, self.pmar)
+                    else:
+                        self.field(px, py, self.canvas, self.threat_gfx)                        
 
                 px = px + self.board_field_size
 

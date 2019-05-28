@@ -192,6 +192,7 @@ def play_games(games, w_players, b_players, config, network_steps=None, gui=None
             if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
                 finished_games_indexes.append(i)
                 util = game.utility(state, True)
+                print(util)
                 game.terminal_value = util
                 winner = "White" if util == 1 else "Black" if util == -1 else "Draw"
                 log(f"Game over! Winner: {winner}")

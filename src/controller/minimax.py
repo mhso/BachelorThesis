@@ -1,11 +1,11 @@
 """
 minimax: Implements Minimax with Alpha-Beta pruning for playing a game.
 """
-from controller.game_ai import GameAI
-from view.log import log
-from sys import argv
 from time import time
 from numba import jit
+from numpy.random import uniform
+from view.log import log
+from controller.game_ai import GameAI
 
 @jit(nopython=True)
 def evaluate_board_jit(board, player, depth):
@@ -59,6 +59,8 @@ class Minimax(GameAI):
             self.MAX_DEPTH = 13-self.game.size
         elif game_name == "Othello":
             self.MAX_DEPTH = 15-self.game.size
+        elif game_name == "Chess":
+            self.MAX_DEPTH = 12-self.game.size
         log(f"Minimax is using a max search depth of {self.MAX_DEPTH}")
 
     def evaluate_board(self, state, depth):
@@ -86,8 +88,6 @@ class Minimax(GameAI):
             return val
 
         if self.cutoff(depth) or self.game.terminal_test(state):
-            if not maxing_player and (self.player != state.player):
-                state.player = not state.player
             return self.evaluate_board(state, depth)
 
         actions = self.game.actions(state)

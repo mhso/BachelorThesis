@@ -5,6 +5,7 @@ May be run in a seperate process.
 ----------------------------------------------------------------
 """
 from time import time, sleep
+from sys import argv
 from multiprocessing import current_process
 from config import Config
 from view.log import log
@@ -192,7 +193,6 @@ def play_games(games, w_players, b_players, config, network_steps=None, gui=None
             if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
                 finished_games_indexes.append(i)
                 util = game.utility(state, True)
-                print(util)
                 game.terminal_value = util
                 winner = "White" if util == 1 else "Black" if util == -1 else "Draw"
                 log(f"Game over! Winner: {winner}")
@@ -220,6 +220,8 @@ def play_games(games, w_players, b_players, config, network_steps=None, gui=None
             elif network_steps is not None:
                 status += " - Eval vs Macro Networks"
             connection.send(("log", [status, getpid()]))
+        elif "-t" in argv:
+            log(f"Turn took {turn_took} s")
 
 def align_with_spacing(number, total_length):
     """
@@ -284,6 +286,8 @@ def minimax_for_game(game):
         return "Minimax_CF"
     if game_name == "Othello":
         return "Minimax_Othello"
+    if game_name == "Chess":
+        return "Minimax_Chess"
     return "unknown"
 
 def evaluate_model(game, player, step, config, connection):

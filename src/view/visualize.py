@@ -131,6 +131,8 @@ class Gui():
 
     # Return coordinat for mouse click
     def getorigin(self, eventorigin):
+        if self.listener is None:
+            return
         x = eventorigin.x
         y = eventorigin.y
 
@@ -144,7 +146,9 @@ class Gui():
                 self.make_move(self.state, Action(None, coords))
                 self.mouseclick_move_list.clear()
         else:
-            if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
+            if (self.mouseclick_move_list == [] and
+                    self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5))
+                    and self.is_legal_move(coords, coords)):
                 self.make_move(self.state, Action(coords, coords))
             elif len(self.mouseclick_move_list) == 1:
                 if self.mouseclick_move_list[0] == coords:

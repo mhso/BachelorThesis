@@ -184,13 +184,9 @@ def actions_rook(pos, board, player, size):
 @jit(nopython=True)
 def actions_pawn(pos, board, player, size):
     actions = []
-    if pos is None:
-        return actions
     y, x = pos
-    if (y, x) == (-1, -1):
-        return actions
     # Check for moves.
-    if (player < 0 and y == 1) or (player > 0 and y == size - 2 and
+    if (((player < 0 and y == 1) or (player > 0 and y == size - 2)) and
             not players_piece(board[y - (player * 2), x], player) and
             not players_piece(board[y - player, x], player)):
         # Handle case where pawn can move two squares (at initial position).
@@ -309,13 +305,13 @@ def utility_with_remy(pieces, board, player, size):
     king_y, king_x = find_piece(pieces, board, 2*player)
     checking = pieces_checking(opp_actions, king_y, king_x)
     if len(actions_player) == 0:
-        return -1 if len(checking) > 1 else 42
+        return -1 if len(checking) > 0 else 42
 
     # See whether given player is checking the opponent,
     # and whether the opponent can prevent checkmate.
     king_y, king_x = find_piece(pieces, board, -2*player)
     checking = pieces_checking(actions_player, king_y, king_x)
-    return 1 if len(checking) > 1 and len(opp_actions) == 0 else 0 # I am so sorry.
+    return 1 if len(checking) > 0 and len(opp_actions) == 0 else 0 # I am so sorry.
 
 @jit(nopython=True)
 def utility_fast(pieces, board, player, size):
@@ -332,15 +328,16 @@ class Chess(Game):
 
     def test_setup(self):
         board = np.zeros((self.size, self.size), dtype="b")
-        board[4, 2] = -Chess.PIDS["R"]
+        board[7, 7] = -Chess.PIDS["KI"]
+
         board[4, 6] = Chess.PIDS["KI"]
-        board[1, 1] = Chess.PIDS["P"]
-        board[2, 4] = Chess.PIDS["Q"]
-        return board, [(3, 3), (1, 4)]
+        board[7, 5] = Chess.PIDS["B"]
+        board[5, 6] = Chess.PIDS["Q"]
+        pieces = [(7, 7), (4, 6), (7, 5), (5, 6)]
+        return board, pieces
 
     def start_state(self):
         super.__doc__
-        """
         board = np.zeros((self.size, self.size), dtype="b")
         board[0, :] = [-self.PIDS["R"], -self.PIDS["KN"], -self.PIDS["B"], -self.PIDS["Q"],
                        -self.PIDS["KI"], -self.PIDS["B"], -self.PIDS["KN"], -self.PIDS["R"]]
@@ -350,14 +347,7 @@ class Chess(Game):
         board[-2, :] = [self.PIDS["P"] for _ in range(self.size)]
         pieces = [(y, x) for y in range(0, self.size, self.size-1) for x in range(self.size)]
         pieces.extend([(y, x) for y in range(1, self.size-1, self.size-3) for x in range(self.size)])
-        """
-        board = np.zeros((self.size, self.size), dtype="b")
-        board[7, 7] = -Chess.PIDS["KI"]
 
-        board[4, 6] = Chess.PIDS["KI"]
-        board[7, 5] = Chess.PIDS["B"]
-        board[5, 6] = Chess.PIDS["Q"]
-        pieces = [(7, 7), (4, 6), (7, 5), (5, 6)]
         #board, pieces = self.test_setup()
 
         return State(board, True, pieces)

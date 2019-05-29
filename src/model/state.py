@@ -7,6 +7,9 @@ class State:
         self.board = board
         self.player = player
         self.pieces = pieces
+        self.repetitions = [pieces]
+        self.repetition_count = 0
+        self.no_progress_count = 0
 
     def change_piece(self, y, x, new_y, new_x):
         if new_y is None:

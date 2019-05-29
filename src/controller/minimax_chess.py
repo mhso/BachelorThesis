@@ -5,9 +5,6 @@ class Minimax_Chess(Minimax):
     def cutoff(self, depth):
         return super().cutoff(depth)# or time() - self.time_started > 10
 
-    def has_connection(self, conv, num_connected):
-        return(conv == num_connected).sum() > 0
-
     def piece_value(self, piece):
         if piece == 1: # Queen.
             return 90

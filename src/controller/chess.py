@@ -369,15 +369,34 @@ class Chess(Game):
         copy_board = np.copy(state.board)
         copy_pieces = [pos for pos in state.pieces]
         new_state = State(copy_board, not state.player, copy_pieces)
+        new_state.repetitions = state.repetitions
+        new_state.repetition_count = state.repetition_count
+        new_state.no_progress_count = state.no_progress_count
         y_s, x_s = action.source
         y_d, x_d = action.dest
         copy_board[y_d, x_d] = copy_board[y_s, x_s]
         copy_board[y_s, x_s] = 0
         new_state.change_piece(y_s, x_s, y_d, x_d)
+        new_state.repetitions.append(copy_pieces)
+        if len(new_state.repetitions) == 6:
+            new_state.repetitions.pop(0)
+
+        # See if progress has been made (ie. a piece was captured).
+        p_w_before, p_b_before = state.count_pieces()
+        p_w_now, p_b_now = new_state.count_pieces()
+        piece_diff = (p_w_before + p_b_before) - (p_w_now + p_b_now)
+        new_state.no_progress_count = new_state.no_progress_count + 1 if piece_diff == 0 else 0
+        # Calculate if new state is repetition.
+        if len(new_state.repetitions) == 5 and new_state.repetitions[-1] == new_state.repetitions[0]:
+            new_state.repetition_count += 1
+        else:
+            new_state.repetition_count = 0
         return new_state
 
     def terminal_test(self, state):
         super.__doc__
+        if state.repetition_count >= 13 or state.no_progress_count >= 30:
+            return True
         player = 1 if self.player(state) else -1
         return terminal_test_fast(state.pieces, state.board, player, self.size)
 

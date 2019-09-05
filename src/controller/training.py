@@ -244,18 +244,21 @@ def initialize_network(game, network_storage, test_mode):
     training_step = 0
     # Construct the initial network.
     #if the -l option is selected, load a network from files
+    load_network = "-l" in argv or "-dl" in argv or "-ln" in argv
     GAME_NAME = type(game).__name__
-    if "-l" in argv or "-ln" in argv:
+    if load_network:
         step = parse_load_step(argv)
         model = network_storage.load_network_from_file(step, GAME_NAME)
+        if model is None:
+            load_network = False
         # Load macro network(s).
-        if not test_mode: # Don't load macro networks, if we are not actively training.
+        elif not test_mode: # Don't load macro networks, if we are not actively training.
             load_macro_networks(game, network_storage, GAME_NAME, network_storage.curr_step)
 
     elif "-dl" in argv:
         model = network_storage.load_newest_network_from_sql()
 
-    if "-l" in argv or "-dl" in argv or "-ln" in argv:
+    if load_network:
         training_step = network_storage.curr_step + Config.ITERATIONS_PER_TRAINING
         # Load previously saved network loss + performance data.
         losses = [[], [], []]
@@ -305,8 +308,10 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
     training_step = initialize_network(game, network_storage, test_mode)
     start_timing(game_name)
     update_training_step(training_step)
-    update_num_games(replay_storage.get_replay_count(game_name))
+    update_num_games(replay_storage.get_replay_count(game_name), game_name)
     FancyLogger.set_game_and_size(type(game).__name__, game.size)
+
+    #train_network(network_storage, replay_storage, 0, game)
 
     # Notify processes that network is ready.
     for conn in game_conns:
@@ -344,7 +349,8 @@ def monitor_games(game_conns, game, network_storage, replay_storage, test_mode=F
                 elif status == "game_over":
                     # Game is over, add it to game storage.
                     for game in data:
-                        update_num_games()
+                        winner = game.terminal_value
+                        update_num_games((winner == 1, winner == -1, winner == 0), game_name)
                         replay_storage.save_game(game, training_step)
                         if "-s" in argv:
                             replay_storage.save_replay(game, training_step, game_name)
@@ -449,7 +455,7 @@ def save_run_report(time_spent, game_name):
         f"Board size: {FancyLogger.board_size}\n",
         f"Training steps: {FancyLogger.train_step}\n",
         FancyLogger.network_status+"\n",
-        f"Games generated: {FancyLogger.total_games}"
+        f"Games generated: {FancyLogger.total_games()}"
     ]
 
     try:
@@ -457,6 +463,20 @@ def save_run_report(time_spent, game_name):
             file.writelines(report)
     except IOError:
         print("Saving run report failed.")
+
+def update_replay_details(data, game_name):
+    location = "../resources/" + game_name + "/misc/"
+    path = location + "replay_details.bin"
+    try:
+        details = pickle.load(open(path, "rb"))
+        w, b, d = details
+        tupl = (int(w) + data[0], int(b) + data[1], int(d) + data[2])
+        pickle.dump(tupl, open(path, "wb"))
+    except (IOError, FileNotFoundError):
+        if not os.path.exists((location)):
+            os.makedirs((location))
+        w, b, d = data
+        pickle.dump((int(w), int(b), int(d)), open(path, "wb"))
 
 def save_time_spent(time_spent, game_name):
     location = "../resources/" + game_name + "/misc/"
@@ -524,15 +544,19 @@ def update_loss(loss):
     if Config.STATUS_DB:
         SqlUtil.set_status(SqlUtil.connection, "loss=%s", float(loss[0]))
 
-def update_num_games(games=None):
-    if games is not None:
-        FancyLogger.total_games = games
-        if Config.STATUS_DB:
-            SqlUtil.set_status(SqlUtil.connection, "games=%s", games)
-    else:
-        FancyLogger.increment_total_games()
+def update_num_games(game_winners, game_name):
+    w, b, d = game_winners
+    if isinstance(w, bool):
+        FancyLogger.increment_total_games(w, b, d)
+        update_replay_details(game_winners, game_name)
         if Config.STATUS_DB:
             SqlUtil.set_status(SqlUtil.connection, "games=games+1")
+    else:
+        FancyLogger.total_games_w = w
+        FancyLogger.total_games_b = b
+        FancyLogger.total_games_d = d
+        if Config.STATUS_DB:
+            SqlUtil.set_status(SqlUtil.connection, "games=%s", w+b+d)
 
 def update_perf_values(values):
     FancyLogger.set_performance_values(values)

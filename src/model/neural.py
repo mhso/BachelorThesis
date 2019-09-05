@@ -116,6 +116,8 @@ class NeuralNetwork:
         input_depth = 1
         if game_type == "Latrunculi":
             input_depth = 4
+        elif game_type == "Chess":
+            input_depth = 16
         else:
             input_depth = 2
         self.input_stacks = input_depth
@@ -124,18 +126,21 @@ class NeuralNetwork:
     def policy_head(self, game, prev):
         policy = self.conv_layer(prev, 2, 1)
         game_type = type(game).__name__
-        if game_type == "Latrunculi":
+        if game_type in ("Latrunculi", "Chess"):
             # N X N tensor representing places to "grab" a piece.
             # For each spot, a vector is present, representing
             # spots to place that "grabbed" piece, plus an extra entry,
             # indicating to remove that piece (if it is captured).
             reshape_factor = game.size / self.input_stacks
-            conv_size = ((game.size*game.size)+1)*reshape_factor
+            conv_size = game.size*game.size
+            if game_type == "Latrunculi":
+                conv_size += 1
+            conv_size *= reshape_factor
             policy = Conv2D(int(conv_size),
                              kernel_regularizer=l2(Config.REGULARIZER_CONST),
                              kernel_size=(3, 3), strides=1, padding="same",
-                             use_bias=Config.USE_BIAS, name="policy_head")(policy)
-            policy = Reshape((8, 8, -1))(policy)
+                             use_bias=Config.USE_BIAS)(policy)
+            policy = Reshape((8, 8, -1), name="policy_head")(policy)
         else:
             # Vector of probabilities for all squares.
             policy = Flatten()(policy)

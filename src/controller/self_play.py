@@ -190,7 +190,7 @@ def play_games(games, w_players, b_players, config, network_steps=None, gui=None
             log(state)
 
             counters[i] = counters[i] + 1
-            if game.terminal_test(state) or counters[i] > config.LATRUNCULI_MAX_MOVES:
+            if game.terminal_test(state) or counters[i] > config.MAX_MOVES:
                 finished_games_indexes.append(i)
                 util = game.utility(state, True)
                 game.terminal_value = util

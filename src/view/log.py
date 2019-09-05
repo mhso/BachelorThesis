@@ -28,7 +28,9 @@ class FancyLogger:
     train_step = 0
     train_ratio = 0
     performance_values = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
-    total_games = 0
+    total_games_w = 0
+    total_games_b = 0
+    total_games_d = 0
     time_started = 0
     eval_checkpoint = 0
 
@@ -66,9 +68,18 @@ class FancyLogger:
         FancyLogger.pp()
 
     @staticmethod
-    def increment_total_games():
-        FancyLogger.total_games += 1
+    def increment_total_games(w, b, d):
+        if w:
+            FancyLogger.total_games_w += 1
+        elif b:
+            FancyLogger.total_games_b += 1
+        else:
+            FancyLogger.total_games_d += 1
         FancyLogger.pp()
+
+    @staticmethod
+    def total_games():
+        return FancyLogger.total_games_w + FancyLogger.total_games_b + FancyLogger.total_games_d
 
     @staticmethod
     def pp():
@@ -110,7 +121,12 @@ class FancyLogger:
 
             print("----------")
             print("Number of actors: {}.".format(Config.ACTORS))
-            print(f"Total games generated: {FancyLogger.total_games}.")
+            total_games = FancyLogger.total_games_w + FancyLogger.total_games_b + FancyLogger.total_games_d
+            games_str = f"Total games generated: {total_games}."
+            games_str += f" White wins: {FancyLogger.total_games_w}."
+            games_str += f" Black wins: {FancyLogger.total_games_b}."
+            games_str += f" Draws: {FancyLogger.total_games_d}."
+            print(games_str)
             max_buffer = Config.MAX_GAME_STORAGE + (FancyLogger.train_step * Config.MAX_GAME_GROWTH)
             print(f"Max buffer size: {max_buffer}.")
             time_spent = time() - FancyLogger.time_started

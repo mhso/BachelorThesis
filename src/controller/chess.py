@@ -44,6 +44,19 @@ def actions_king(pos, board, player, size):
         for j in range(x-1, x+2):
             if (in_bounds(i, j, size) and not players_piece(board[i, j], player)):
                 actions.append((y, x, i, j))
+    # Check if castling is possible.
+    if player > 0:
+        if (y, x) == (7, 4):
+            if board[7, 0] == 3 and board[7, 1] == 0 and board[7, 2] == 0 and board[7, 3] == 0:
+                actions.append((y, x, 7, 2))
+            if board[7, 7] == 3 and board[7, 5] == 0 and board[7, 6] == 0:
+                actions.append((y, x, 7, 6))
+    else:
+        if (y, x) == (0, 4):
+            if board[0, 0] == -3 and board[0, 1] == 0 and board[0, 2] == 0 and board[0, 3] == 0:
+                actions.append((y, x, 0, 2))
+            if board[0, 7] == -3 and board[0, 5] == 0 and board[0, 6] == 0:
+                actions.append((y, x, 0, 6))
     return actions
 
 @jit(nopython=True)
@@ -245,29 +258,15 @@ def simulate_move(pieces, board, source, dest):
     return copy_b, copy_p
 
 @jit(nopython=True)
-def filter_actions(pieces, board, player, size, actions, actions_opp):
-    king_y, king_x = find_piece(pieces, board, player * 2)
-    checking_pieces = pieces_checking(actions_opp, king_y, king_x)
-
+def filter_actions(pieces, board, player, size, actions):
     illegal_actions = []
-    if len(checking_pieces) > 0:
-        # If we were checked, see if any actions do not resolve this.
-        # If so, remove them from the legal actions.
-        for i, (y1, x1, y2, x2) in enumerate(actions):
-            copy_b, copy_p = simulate_move(pieces, board, (y1, x1), (y2, x2))
-            king_y, king_x = find_piece(copy_p, copy_b, player * 2)
-            new_actions = calculate_actions(copy_p, copy_b, -player, size)
-            if len(pieces_checking(new_actions, king_y, king_x)) > 0:
-                illegal_actions.append(i)
-    else:
-        # If we were NOT checked, but any of the actions will lead to
-        # a check, remove these from the legal actions.
-        for i, (y1, x1, y2, x2) in enumerate(actions):
-            copy_b, copy_p = simulate_move(pieces, board, (y1, x1), (y2, x2))
-            king_y, king_x = find_piece(copy_p, copy_b, player * 2)
-            new_actions = calculate_actions(copy_p, copy_b, -player, size)
-            if len(pieces_checking(new_actions, king_y, king_x)) > 0:
-                illegal_actions.append(i)
+    # Remove actions that would lead to a check.
+    for i, (y1, x1, y2, x2) in enumerate(actions):
+        copy_b, copy_p = simulate_move(pieces, board, (y1, x1), (y2, x2))
+        king_y, king_x = find_piece(copy_p, copy_b, player * 2)
+        new_actions = calculate_actions(copy_p, copy_b, -player, size)
+        if len(pieces_checking(new_actions, king_y, king_x)) > 0:
+            illegal_actions.append(i)
     removed = 0
     for index in illegal_actions:
         actions.pop(index-removed)
@@ -289,8 +288,7 @@ def calculate_actions(pieces, board, player, size):
 @jit(nopython=True)
 def actions_fast(pieces, board, player, size):
     actions = calculate_actions(pieces, board, player, size)
-    opp_actions = calculate_actions(pieces, board, -player, size)
-    filtered = filter_actions(pieces, board, player, size, actions, opp_actions)
+    filtered = filter_actions(pieces, board, player, size, actions)
     return filtered
 
 @jit(nopython=True)
@@ -305,13 +303,13 @@ def utility_with_remy(pieces, board, player, size):
     king_y, king_x = find_piece(pieces, board, 2*player)
     checking = pieces_checking(opp_actions, king_y, king_x)
     if len(actions_player) == 0:
-        return -1 if len(checking) > 0 else 42
+        return -1 if len(checking) > 0 else 42 # I am so sorry.
 
     # See whether given player is checking the opponent,
     # and whether the opponent can prevent checkmate.
     king_y, king_x = find_piece(pieces, board, -2*player)
     checking = pieces_checking(actions_player, king_y, king_x)
-    return 1 if len(checking) > 0 and len(opp_actions) == 0 else 0 # I am so sorry.
+    return 1 if len(checking) > 0 and len(opp_actions) == 0 else 0
 
 @jit(nopython=True)
 def utility_fast(pieces, board, player, size):
@@ -328,12 +326,16 @@ class Chess(Game):
 
     def test_setup(self):
         board = np.zeros((self.size, self.size), dtype="b")
-        board[7, 7] = -Chess.PIDS["KI"]
-
-        board[4, 6] = Chess.PIDS["KI"]
+        board[7, 4] = Chess.PIDS["KI"]
+        board[0, 4] = -Chess.PIDS["KI"]
+        board[7, 0] = Chess.PIDS["R"]
+        board[7, 7] = Chess.PIDS["R"]
+        board[0, 7] = -Chess.PIDS["R"]
+        board[0, 0] = -Chess.PIDS["R"]
         board[7, 5] = Chess.PIDS["B"]
-        board[5, 6] = Chess.PIDS["Q"]
-        pieces = [(7, 7), (4, 6), (7, 5), (5, 6)]
+        board[1, 1] = Chess.PIDS["P"]
+        board[6, 2] = -Chess.PIDS["P"]
+        pieces = [(7, 4), (0, 4), (7, 0), (7, 7), (0, 7), (0, 0), (7, 5), (1, 1), (6, 2)]
         return board, pieces
 
     def start_state(self):
@@ -347,7 +349,6 @@ class Chess(Game):
         board[-2, :] = [self.PIDS["P"] for _ in range(self.size)]
         pieces = [(y, x) for y in range(0, self.size, self.size-1) for x in range(self.size)]
         pieces.extend([(y, x) for y in range(1, self.size-1, self.size-3) for x in range(self.size)])
-
         #board, pieces = self.test_setup()
 
         return State(board, True, pieces)
@@ -364,8 +365,42 @@ class Chess(Game):
             return [None]
         return [Action((y1, x1), (y2, x2)) for y1, x1, y2, x2 in actions]
 
+    def handle_pawn_promotion(self, board, dest):
+        y_s, x_s = dest
+        if board[y_s, x_s] == self.PIDS["P"]:
+            if y_s == 0:
+                board[y_s, x_s] = self.PIDS["Q"]
+        elif board[y_s, x_s] == -self.PIDS["P"]:
+            if y_s == 7:
+                board[y_s, x_s] = -self.PIDS["Q"]
+
+    def handle_castling(self, board, source, dest):
+        y_s, x_s = source
+        y_d, x_d = dest
+        castle_src, castle_dest = None, None
+        if board[y_s, x_s] == self.PIDS["KI"] and (y_s, x_s) == (7, 4):
+            if (y_d, x_d) == (7, 2):
+                castle_src = (7, 0)
+                castle_dest = (7, 3)
+            elif (y_d, x_d) == (7, 6):
+                castle_src = (7, 7)
+                castle_dest = (7, 5)
+        elif board[y_s, x_s] == -self.PIDS["KI"] and (y_s, x_s) == (0, 4):
+            if (y_d, x_d) == (0, 2):
+                castle_src = (0, 0)
+                castle_dest = (0, 3)
+            elif (y_d, x_d) == (0, 6):
+                castle_src = (0, 7)
+                castle_dest = (0, 5)
+        if castle_src is not None:
+            c_ys, c_xs = castle_src
+            c_yd, c_xd = castle_dest
+            return c_ys, c_xs, c_yd, c_xd
+        return None
+
     def result(self, state, action):
         super.__doc__
+        # Move pieces and create new state.
         copy_board = np.copy(state.board)
         copy_pieces = [pos for pos in state.pieces]
         new_state = State(copy_board, not state.player, copy_pieces)
@@ -380,6 +415,17 @@ class Chess(Game):
         new_state.repetitions.append(copy_pieces)
         if len(new_state.repetitions) == 6:
             new_state.repetitions.pop(0)
+
+        # See if the move is equal to castling.
+        castle_coords = self.handle_castling(state.board, action.source, action.dest)
+        if castle_coords is not None:
+            c_ys, c_xs, c_yd, c_xd = castle_coords
+            new_state.change_piece(c_ys, c_xs, c_yd, c_xd)
+            copy_board[c_yd, c_xd] = copy_board[c_ys, c_xs]
+            copy_board[c_ys, c_xs] = 0
+
+        # See if a pawn should be promoted.
+        self.handle_pawn_promotion(copy_board, action.dest)
 
         # See if progress has been made (ie. a piece was captured).
         p_w_before, p_b_before = state.count_pieces()
@@ -407,12 +453,63 @@ class Chess(Game):
 
     def structure_data(self, state):
         super.__doc__
-        return []
+        pos_pieces = []
+        neg_pieces = []
+        for i in range(1, 7):
+            pos = np.where(state.board == i, state.board, np.zeros((self.size, self.size), dtype="b"))
+            pos[pos == i] = 1
+            pos_pieces.append(pos)
+            neg = np.where(state.board == -i, state.board, np.zeros((self.size, self.size), dtype="b"))
+            neg[neg == -i] = 1
+            neg_pieces.append(neg)
+        
+        piece_list = []
+        if state.player:
+            pos_pieces.extend(neg_pieces)
+            piece_list = pos_pieces
+        else:
+            neg_pieces.extend(pos_pieces)
+            piece_list = neg_pieces
+
+        for _ in range(4):
+            # Padding
+            piece_list.append(np.zeros((self.size, self.size), dtype="b"))
+        return np.array(piece_list, dtype="float32")
 
     def map_actions(self, actions, logits):
         super.__doc__
-        return {}
+        action_map = dict()
+        policy_sum = 0
+        if actions == [None]:
+            action_map[None] = 1
+            return action_map
+        for action in actions:
+            y1, x1 = action.source
+            moves = logits[y1, x1]
+            y2, x2 = action.dest
+            dest = y2 * self.size + x2
+            logit = 0
+            # Action equals a piece being moved.
+            logit = moves[y2 * self.size + x2]
+            logit = np.exp(logit)
+            action_map[action] = logit
+            policy_sum += logit
+
+        for action, policy in action_map.items():
+            action_map[action] = policy/policy_sum if policy_sum else 0
+
+        return action_map
 
     def map_visits(self, visits):
         super.__doc__
-        return []
+        policies = np.zeros((self.size, self.size, self.size*self.size), dtype="float32")
+        for a, p in visits.items():
+            if a is None:
+                continue
+            y1, x1 = a.source
+            moves = policies[y1, x1]
+            y2, x2 = a.dest
+            # Action equals a piece being moved.
+            moves[y2 * self.size + x2] = p
+
+        return policies

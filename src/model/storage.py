@@ -44,17 +44,15 @@ class ReplayStorage:
         # Draw random state index values from all chosen games.
         state_indices = [(g, np.random.randint(0, len(g.history))) for g in batch]
         images = []
-        expected_outputs = [[], [], []] if type(self.buffer[0]).__name__ == "Latrunculi" else [[], []]
+        expected_outputs = [[], []]
         # Create input/expected output data for neural network training.
         for game, index in state_indices:
             images.append(game.structure_data(game.history[index]))
             target_value, policies = game.make_target(index, training_step)
             target_policies = game.map_visits(policies)
 
-            for i in range(len(target_policies)):
-                expected_outputs[i].append(target_policies[i])
             expected_outputs[0].append(target_policies)
-            expected_outputs[-1].append(target_value)
+            expected_outputs[1].append(target_value)
 
         expected_outputs = [np.array(arr, dtype="float32") for arr in expected_outputs]
         return np.array(images, dtype="float32"), expected_outputs
@@ -135,11 +133,15 @@ class ReplayStorage:
         Method for counting the amount of saved games on disk.
         """
         try:
-            amount = sum([len(folder) for folder in
-                          os.listdir(f"../resources/{game_type}/replays/")])
-            return amount
+            replay_details = pickle.load(open(f"../resources/{game_type}/misc/replay_details.bin"), "rb")
+            return replay_details
         except (FileNotFoundError, IOError):
-            return 0
+            try:
+                amount = sum([len(folder) for folder in
+                          os.listdir(f"../resources/{game_type}/replays/")])
+                return (0, 0, amount)
+            except (FileNotFoundError, IOError):
+                return (0, 0, 0)
 
     def save_game_to_sql(self, game):
         filename = "game"
@@ -267,15 +269,17 @@ class NetworkStorage:
         try:
             set_nn_config()
             if step is None:
-                #gets the most recently created network's path, and finds its step count, based on file name, and sets current_step to this int. 
+                # Gets the most recently created network's path, and finds its step count, based on file name, and sets current_step to this int.
                 list_of_files = glob(folder_name + game_type + data_type + "*")
+                if list_of_files == []:
+                    raise FileNotFoundError("No network to load")
                 latest_file = max(list_of_files, key=os.path.getmtime)
                 s = os.path.basename(latest_file)
                 step_string = s.replace(file_name, "")
                 current_step = int(step_string, base=10)
                 self.curr_step = current_step
             else:
-                #if a step is given, use this step
+                # If a step is given, use this step.
                 current_step = step
                 self.curr_step = current_step
             version_nn = str(current_step)
@@ -283,11 +287,12 @@ class NetworkStorage:
             network_model = load_model(folder_name + game_type + data_type + file_name + str(version_nn), None, True)
             print("Neural Network was loaded from file")
             return network_model
-        except IOError:
-            if not os.path.exists((folder_name + game_type + data_type + file_name + str(version_nn))):
-                print("network file was not found: " + folder_name + game_type + data_type + file_name + str(version_nn))
+        except (IOError, FileNotFoundError):
+            if not os.path.exists((folder_name + game_type + data_type + file_name)):
+                print("Network file was not found: " + folder_name + game_type + data_type + file_name)
             else:
-                print("file was found, but something else went wrong")
+                print("File was found, but something else went wrong")
+            return None
 
     def load_macro_network_from_file(self, step, game_type):
         """

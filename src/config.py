@@ -28,7 +28,7 @@ class Config():
 
     # Max number of moves in Latrunculi before a draw
     # is assigned.
-    LATRUNCULI_MAX_MOVES = 200
+    MAX_MOVES = 250
 
     # Number of training steps for the neural network.
     TRAINING_STEPS = 1000
@@ -243,6 +243,9 @@ def set_game_specific_values(cfg, game):
         # Avg actions are always equal to board size.
         noise = 10/game.size
         sample_moves = sampling_options[game.size-4]
+    elif game_name == "Chess":
+        sample_moves = 30
+        noise = 0.3
     noise = cfg.NOISE_BASE if cfg is not None and cfg.NOISE_BASE != 0.3 else noise
     sample_moves = cfg.NUM_SAMPLING_MOVES if cfg is not None and cfg.NUM_SAMPLING_MOVES != 0.3 else noise
     if cfg:

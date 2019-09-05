@@ -31,4 +31,4 @@ class Minimax_Chess(Minimax):
                 val += piece_val if piece > 0 else -piece_val
             else:
                 val += piece_val if piece < 0 else -piece_val
-        return val
+        return -val

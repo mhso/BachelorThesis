@@ -409,8 +409,10 @@ class Latrunculi(Game):
 
         pos_pieces = np.where(state.board == 1, state.board, np.zeros((self.size, self.size), dtype='b'))
         pos_captured = np.where(state.board == 2, state.board, np.zeros((self.size, self.size), dtype='b'))
+        pos_captured[pos_captured == 2] = 1
         neg_pieces = -np.where(state.board == -1, state.board, np.zeros((self.size, self.size), dtype='b'))
         neg_captured = -np.where(state.board == -2, state.board, np.zeros((self.size, self.size), dtype='b'))
+        neg_captured[neg_captured == -2] = 1
 
         # Structure data as a 4x4x4 stack.
         if state.player:
@@ -443,7 +445,6 @@ class Latrunculi(Game):
             logit = np.exp(logit)
             action_map[action] = logit
             policy_sum += logit
-
         for action, policy in action_map.items():
             action_map[action] = policy/policy_sum if policy_sum else 0
 
@@ -455,7 +456,7 @@ class Latrunculi(Game):
         board positions. This returns policies in the dimensions
         outputted by the neural network.
         """
-        policies = np.zeros((self.size, self.size, self.size+1), dtype="float32")
+        policies = np.zeros((self.size, self.size, (self.size*self.size)+1), dtype="float32")
         for a, p in visits.items():
             if a is None:
                 continue

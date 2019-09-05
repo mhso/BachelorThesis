@@ -70,7 +70,6 @@ class Minimax(GameAI):
         Minimax implementations for other games (Connect Four,
         Othello) need only derive from this class and overwrite
         this method.
-        Some of the logic has been moved to other methods, so they can be jit compiled.
         """
         return evaluate_board_jit(state.board, state.player, depth)
 
@@ -80,7 +79,6 @@ class Minimax(GameAI):
     def minimax(self, state, depth, maxing_player, alpha, beta):
         """
         Minimax algorithm with alpha-beta pruning.
-        Some of the logic has been moved to other methods, so they can be jit compiled.
         """
         state_hash = state.stringify()
         val = self.tpt.get(state_hash, None)
@@ -96,7 +94,11 @@ class Minimax(GameAI):
         for action in actions:
             result = self.game.result(state, action)
             next_depth = self.minimax(result, depth-1, not maxing_player, alpha, beta)
-            beta, alpha, worth = minimax_jit(maxing_player, next_depth, worth, alpha, beta)
+            worth = max(next_depth, worth) if maxing_player else min(next_depth, worth)
+            if maxing_player:
+                alpha = max(alpha, worth)
+            else:
+                beta = min(beta, worth)
 
             if beta <= alpha:
                 break
@@ -116,7 +118,7 @@ class Minimax(GameAI):
         # Traverse possible actions, using minimax to calculate best action to take.
         for action in actions:
             result = self.game.result(state, action)
-            value = self.minimax(result, self.MAX_DEPTH, False, -10000, 10000)
+            value = self.minimax(result, self.MAX_DEPTH, False, -float("inf"), float("inf"))
             if value > highest_value:
                 highest_value = value
                 best_action = action

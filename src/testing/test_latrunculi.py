@@ -301,7 +301,10 @@ def run_tests():
 
     # =================================
     # Test chump jain being broken, by potential capture.
-    new_state = game.result(state, Action((1, 2), (3, 2)))
+    state = game.start_state()
+    state.board[0, 0] = 2
+
+    print(game.structure_data(state))
 
 def run_iteration_timing_test(log_type=None):
     # TEST STUFF

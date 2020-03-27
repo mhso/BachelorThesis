@@ -1,201 +1,220 @@
 """
-----------------------------------------
-main: Run game iterations and do things.
-----------------------------------------
+----------------------------------------------
+main: Extract arguments and initialize things.
+----------------------------------------------
 """
-import pickle
-import threading
-from glob import glob
-from sys import argv
-from os import mkdir
-from os.path import exists
-from time import sleep
-from controller.latrunculi import Latrunculi
-from controller.minimax import Minimax
-from controller.mcts import MCTS
-from controller.human import Human
-from controller.random import Random
+if __name__ == "__main__":
+    # This atrocious if statement is needed since these imports would
+    # otherwise be run everytime we start a new process (no bueno).
+    import os
+    from threading import Thread
+    from multiprocessing import Process, Pipe
+    from sys import argv
+    from controller.latrunculi import Latrunculi
+    from controller import self_play
+    from controller.training import monitor_games, parse_load_step
+    from model.storage import ReplayStorage, NetworkStorage
+    from view.visualize import Gui
+    from view.graph import GraphHandler
+    from config import Config, set_game_specific_values
 
-from view.visualize import Gui
-
-def play_game(game, player_white, player_black, gui=None):
+def initialize(game, p1, p2, **kwargs):
     """
-    Play a game to the end, and return the reward for each player.
+    This method starts the play-loop,
+    createds any GUI/graphs,
+    spawns self-play actors/processes,
+    starts monitor thread for MCTS self-play,
+    and loads models/games from file, if these things are enabled.
     """
-    state = game.start_state()
+    # Extract arguments.
+    gui = kwargs.get("gui", None)
+    plot_data = kwargs.get("plot_data", False)
+    network_storage = kwargs.get("network_storage", None)
+    replay_storage = kwargs.get("replay_storage", None)
+    config = kwargs.get("config", None)
+    game_name = type(game).__name__
 
-    while not game.terminal_test(state):
-        print(state, flush=True)
-        if game.player(state):
-            state = player_white.execute_action(state)
+    # Set whether program is running in 'test' mode, or actively training.
+    test_mode = not self_play.is_mcts(p1) or not self_play.is_mcts(p2) or gui is not None
+    # If GUI is used, if a non-human is playing, or if
+    # several games are being played in parallel,
+    # create seperate thread(s) to run the AI game logic in.
+    if Config.GAME_THREADS > 1:
+        # Don't use plot/GUI if several games are played.
+        gui = None
+    pipes = []
+    games, p1s, p2s = self_play.copy_games_and_players(game, p1, p2, Config.GAME_THREADS)
+    for i in range(Config.GAME_THREADS):
+        child = None
+        if self_play.is_mcts(p1) or self_play.is_mcts(p2):
+            parent, child = Pipe()
+            pipes.append(parent)
+
+        if gui is None:
+            game_thread = Process(target=self_play.init_self_play,
+                                    name=f"Process {(i+1):02d}",
+                                    args=(games[i], p1s[i], p2s[i], child, gui, config))
         else:
-            state = player_black.execute_action(state)
+            game_thread = Thread(target=self_play.init_self_play,
+                                    args=(games[i], p1s[i], p2s[i], child, gui, config))
+        game_thread.start() # Start game logic thread.
 
-        if gui is not None:
-            if type(player_white) != type(Human) and not state.player:
-                sleep(0.5)
-            elif type(player_black) != type(Human) and state.player:
-                sleep(0.5)
-            gui.update(state)
+    #if "-l" option is selected load old replays from file
+    #else if "-ld" option is selected load old replays sql database
+    if "-l" in argv or "-lg" in argv and not test_mode:
+        step = parse_load_step(argv)
+        replay_storage.load_replay(step, game_name)
+    elif "-dl" in argv:
+        replay_storage.load_games_from_sql()
+    if "-s" in argv:
+        location = f"../resources/{game_name}/"
+        if not os.path.exists(location):
+            os.makedirs((location))
+            try:
+                cfg_file = open("../resources/config.txt", "r").readlines()
+                open(location+"config.txt", "w").writelines(cfg_file)
+            except IOError:
+                print("Error when copying cfg file.")
 
-    winner = "Black" if state.player else "White"
-    print("LADIES AND GENTLEMEN, WE GOT A WINNER: {}!!!".format(winner))
-    # Return reward/punishment for player1 and player2.
-    return game.utility(state, player1), game.utility(state, player2)
+    if pipes != []:
+        # Start monitor thread.
+        monitor = Thread(target=monitor_games,
+                            args=(pipes, game, network_storage,
+                                replay_storage, test_mode))
+        monitor.start()
 
-def leading_zeros(num):
-    result = str(num)
-    if num < 1000:
-        result = "0" + result
-    if num < 100:
-        result = "0" + result
-    if num < 10:
-        result = "0" + result
-    return result
+    if gui is not None:
+        gui.run() # Start GUI on main thread.
+    elif plot_data:
+        graph_1 = GraphHandler.new_graph("Policy Loss", game_name, gui, "Training Iteration", "Loss") # Start graph window in main thread.
+        graph_2 = GraphHandler.new_graph("Value Loss", game_name, graph_1, "Training Iteration", "Loss") # Start graph window in main thread.
+        graph_3 = GraphHandler.new_graph("Average Loss", game_name, graph_2, "Training Iteration", "Loss") # Start graph window in main thread.
+        graph_4 = GraphHandler.new_graph("Training Evaluation", game_name, graph_3, "Training Iteration", "Winrate") # Start graph window in main thread.
+        if gui is None:
+            graph_4.run()
 
-class SupportThread(threading.Thread):
-    def __init__(self, args):
-        threading.Thread.__init__(self)
-        self.args = args
+def invalid_args(args, options, wildcard):
+    return False
 
-    def run(self):
-        play_game(self.args[0], self.args[1], self.args[2], self.args[7])
-        train(self.args[0], self.args[1], self.args[2], self.args[3], self.args[4], self.args[5], self.args[6], self.args[7])
+if __name__ == "__main__":
+    # Load Config from file if present.
+    cfg = Config
+    if "-c" in argv:
+        cfg = Config.from_file("../resources/Config.txt")
 
-def train(game, p1, p2, type1, type2, iteration, save=False, gui=None):
-    """
-    Run a given number of game iterations with a given AI.
-    After each game iteration, if the model is MCTS,
-    we save the model for later use. If 'load' is true,
-    we load these MCTS models.
-    """
-    if iteration == 0:
-        return
-    try:
-        if gui is not None:
-            # If GUI is used, (and if a non-human is playing),
-            # create seperate thread to run the AI game logic in.
-            game_thread = SupportThread((game, p1, p2, type1, type2, iteration-1, save, gui))
-            game_thread.start() # Start game logic thread.
-            gui.run() # Start GUI on main thread.
+    # Load arguments for running the program.
+    # The args, in order, correspond to the variables below.
+    WILDCARD = "."
+    PLAYER_1 = WILDCARD
+    PLAYER_2 = WILDCARD
+    GAME_NAME = WILDCARD
+    BOARD_SIZE = Config.DEFAULT_BOARD_SIZE
+    RAND_SEED = "random"
+
+    OPTION_LIST = ["-s", "-l", "-lg", "-ln", "-v", "-t", "-c", "-g", "-p", "-ds", "-dl"]
+    options = []
+    args = []
+    # Seperate arguments from options.
+    for s in argv:
+        if s in OPTION_LIST:
+            options.append(s)
         else:
-            play_game(game, p1, p2)
-            train(game, p1, p2, type1, type2, iteration-1, save, gui)
-    except KeyboardInterrupt:
-        print("Exiting by interrupt...")
-        if gui is not None:
-            gui.close()
+            args.append(s)
+
+    ARGS_ERROR = invalid_args(argv, options, WILDCARD)
+    if ARGS_ERROR:
+        print(f"Error: conflicting arguments. {ARGS_ERROR}.")
         exit(0)
-    finally:
-        if save:
-            if type1 == "mcts" or type2 == "mcts":
-                state_map = None
-                if type1 == "mcts":
-                    state_map = p1.state_map
-                    if type2 == "mcts":
-                        state_map = state_map.update(p2.state_map)
-                else:
-                    state_map = p2.state_map
 
-                if not exists(MCTS_PATH):
-                    mkdir(MCTS_PATH)
-                save_models(state_map, MCTS_PATH+"mcts_{}".format(leading_zeros(len(models) + 1)))
+    argc = len(args)
+    if argc > 1:
+        if args[1] in ("-help", "-h"):
+            print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [<options>]".format(args[0]))
+            print("Write '{}' in place of any argument to use default value".format(WILDCARD))
+            print(f"Default values: '{Config.DEFAULT_AI}', '{Config.DEFAULT_AI}', "+
+                  f"'{Config.DEFAULT_GAME}', '{Config.DEFAULT_BOARD_SIZE}', 'random'")
+            print(f"Options: {OPTION_LIST}")
+            print("Fx. 'python {} Minimax MCTS Latrunculi . 42 -g'".format(args[0]))
+            exit(0)
+        PLAYER_1 = args[1] # Algorithm playing as player 1.
 
-def save_models(model, path):
-    print("Saving model to file: {}".format(path), flush=True)
-    pickle.dump(model, open(path, "wb"))
+        if argc == 2 or argc == 3:
+            GAME = Latrunculi(BOARD_SIZE)
+            if argc == 2: # If only one player is given, player 2 will be the same algorithm.
+                PLAYER_2 = PLAYER_1
+        if argc > 2:
+            PLAYER_2 = args[2] # Algorithm playing as player 2.
 
-def load_model(path):
-    print("Loading model from file: {}".format(path), flush=True)
-    return pickle.load(open(path, "rb"))
+            if argc > 3:
+                GAME_NAME = args[3] # Game to play.
+                if argc > 4:
+                    if args[4] != WILDCARD:
+                        BOARD_SIZE = int(args[4]) # Size of board.
 
-def get_game(game_name, size, rand_seed, wildcard):
-    lower = game_name.lower()
-    if lower in ("latrunculi", wildcard):
-        return Latrunculi(size, rand_seed), "Latrunculi"
-    return None, "unknown"
+                    if argc > 5 and args[5] != WILDCARD:
+                        if args[5] != "random":
+                            RAND_SEED = int(args[5])
+                        else:
+                            RAND_SEED = args[5] # Use numpy-determined random seed.
 
-def get_ai_algorithm(algorithm, game, wildcard, gui=None):
-    lower = algorithm.lower()
-    if lower in ("mcts", wildcard):
-        return MCTS(game), "MCTS"
-    elif lower == "minimax":
-        return Minimax(game), "Minimax"
-    elif lower == "human":
-        return Human(game), "Human"
-    elif lower == "random":
-        return Random(game), "Random"
-    return None, "unknown"
+    GAME = self_play.get_game(GAME_NAME, BOARD_SIZE, RAND_SEED, WILDCARD)
+    set_game_specific_values(cfg, GAME)
+    P_WHITE = self_play.get_ai_algorithm(PLAYER_1, GAME, WILDCARD)
+    P_BLACK = self_play.get_ai_algorithm(PLAYER_2, GAME, WILDCARD)
 
-# Load arguments for running the program.
-# The args, in order, correspond to the variables below.
-player1 = "."
-player2 = "."
-game_name = "."
-board_size = 8
-rand_seed = None
+    print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(
+        type(GAME).__name__, BOARD_SIZE, BOARD_SIZE, type(P_WHITE).__name__, type(P_BLACK).__name__), flush=True)
+    PLAYER_1 = PLAYER_1.lower()
+    PLAYER_2 = PLAYER_2.lower()
 
-wildcard = "."
-option_list = ["-s", "-l", "-d", "-g"]
-options = []
-args = []
-# Seperate arguments from options.
-for s in argv:
-    if s in option_list:
-        options.append(s)
-    else:
-        args.append(s)
+    gui = None
+    if "-g" in options or PLAYER_1 == "human" or PLAYER_2 == "human":
+        gui = Gui(GAME)
+        if PLAYER_1 == "human":
+            P_WHITE.gui = gui
+        if PLAYER_2 == "human":
+            P_BLACK.gui = gui
 
-argc = len(args)
-if argc > 1:
-    if args[1] in ("-help", "-h"):
-        print("Usage: {} [player1] [player2] [game] [board_size] [rand_seed] [options...]".format(args[0]))
-        print("Write '{}' in place of any argument to use default value".format(wildcard))
-        print("Options: -d (debug), -s (save models), -l (load models), -g (use GUI)")
-        print("Fx. 'python {} minimax . latrunculi 8 42 -g'".format(args[0]))
-        exit(0)
-    player1 = args[1] # Algorithm playing as player 1.
+    NETWORK_STORAGE = None
+    REPLAY_STORAGE = None
+    if self_play.is_mcts(P_WHITE) or self_play.is_mcts(P_BLACK):
+        NETWORK_STORAGE = NetworkStorage()
+        REPLAY_STORAGE = ReplayStorage()
 
-    if argc == 2 or argc == 3:
-        game = Latrunculi(board_size)
-        if argc == 2: # If only one player is given, player 2 will be the same algorithm.
-            player2 = player1
-    if argc > 2:
-        player2 = args[2] # Algorithm playing as player 2.
+        if gui:
+            # If GUI is active, only run with 1 process
+            # and no performance evaluation.
+            Config.GAME_THREADS = 1
+            cfg.GAME_THREADS = 1
+            Config.ACTORS = 1
+            cfg.ACTORS = 1
+            Config.EVAL_CHECKPOINT = {}
+            cfg.EVAL_CHECKPOINT = {}
+            cfg.NUM_SAMPLING_MOVES = 0
+            Config.NUM_SAMPLING_MOVES = 0
+            cfg.NOISE_BASE = 0
+            Config.NOISE_BASE = 0
+        if not self_play.is_mcts(P_WHITE) or not self_play.is_mcts(P_BLACK):
+            cfg.NOISE_BASE = 0
+            Config.NOISE_BASE = 0
+            cfg.NUM_SAMPLING_MOVES = 0
+            Config.NUM_SAMPLING_MOVES = 0
+        """
+        if "-dl" in options:
+            REPLAY_STORAGE.load_game_from_sql()
+            sys.exit("test")
+        """
+    elif Config.GAME_THREADS > 1:
+        # If we are not playing with MCTS,
+        # disable multi-threading.
+        Config.ACTORS = 1
+        cfg.ACTORS = 1
+        Config.GAME_THREADS = 1
+        cfg.GAME_THREADS = 1
 
-        if argc > 3:
-            game_name = args[3] # Game to play.
-            if argc > 4:
-                if args[4] != wildcard:
-                    board_size = int(args[4]) # Size of board.
-
-                if argc > 5 and args[5] != wildcard:
-                    rand_seed = int(args[5])
-
-game, game_name = get_game(game_name, board_size, rand_seed, wildcard)
-p_white, player1 = get_ai_algorithm(player1, game, wildcard)
-p_black, player2 = get_ai_algorithm(player2, game, wildcard)
-
-print("Playing '{}' with board size {}x{} with '{}' vs. '{}'".format(game_name, board_size, board_size, player1, player2))
-player1 = player1.lower()
-player2 = player2.lower()
-
-if "-l" in options:
-    MCTS_PATH = "../resources/"
-    models = glob(MCTS_PATH+"/mcts*")
-    if models != []:
-        if player1 == "mcts":
-            p_white.state_map = load_model(models[-1])
-        if player2 == "mcts":
-            p_black.state_map = load_model(models[-1])
-
-gui = None
-if "-g" in options or player1 == "human" or player2 == "human":
-    gui = Gui(game)
-    game.register_observer(gui)
-    if player1 == "human":
-        p_white.gui = gui
-    if player2 == "human":
-        p_black.gui = gui
-
-train(game, p_white, p_black, player1, player2, 1, "-s" in options, gui)
+    initialize(GAME, P_WHITE, P_BLACK,
+               gui=gui,
+               plot_data="-p" in options,
+               network_storage=NETWORK_STORAGE,
+               replay_storage=REPLAY_STORAGE,
+               config=cfg)

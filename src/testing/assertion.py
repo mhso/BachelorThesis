@@ -26,9 +26,10 @@ def assert_equal(expected, result, name):
         print_failed(name, "expected {}, but got {}".format(expected, result))
 
 def assert_all_equal(expected_l, result_l, name):
-    if array_equal(expected_l, result_l):
-        print_passed(name)
-    else:
-        str_list_exp = ", ".join([str(v) for v in expected_l])
-        str_list_res = ", ".join([str(v) for v in result_l])
-        print_failed(name, "expected [{}], but got [{}]".format(str_list_exp, str_list_res))
+    for elem in expected_l:
+        if not elem in result_l:
+            str_list_exp = ", ".join([str(v) for v in expected_l])
+            str_list_res = ", ".join([str(v) for v in result_l])
+            print_failed(name, "expected [{}], but got [{}]".format(str_list_exp, str_list_res))
+            return
+    print_passed(name)

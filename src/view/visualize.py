@@ -14,12 +14,12 @@ from model.state import State, Action
 import threading
 from time import sleep
 from view.log import log
+from PIL import Image, ImageTk
 
 # from FakeTestClasses import *
 
 class Gui():
     game        = None
-    state       = None
     root        = None
     canvas      = None
     listener    = None
@@ -41,17 +41,19 @@ class Gui():
 
     status_field_height = 5
 
+    pieces_gfx = []
+    marked_gfx = None
+    threat_gfx = None
+
     pblt = None
     pbl = None
     pblc = None
     pwh = None
     pwht = None
-    pwhc = None
     pbla = None
     pmar = None
 
     def __init__(self, game):
-        game.register_observer(self)
         self.mouseclick_move_list = []
         self.game = game
         self.state = game.start_state()
@@ -81,8 +83,8 @@ class Gui():
         self.root = tk.Tk()
         self.root.bind("<Button 1>", self.getorigin)
         self.root.bind("<Destroy>", lambda e: self.close())
-        self.root.title("Latrunculi - The Game")
-        self.root.iconbitmap('./view/gfx/favicon.ico')
+        self.root.title("Basic Square Boardgame Visualizator")
+        self.root.iconbitmap('../resources/gfx/favicon.ico')
         self.root.configure(background='lightgray')
         w = self.board_hlen + self.left_space + 20
         h = self.board_vlen + self.top_space + 20
@@ -103,28 +105,51 @@ class Gui():
 
     def load_graphics(self):
         # load the .gif image file
-        self.pblt = tk.PhotoImage(file='./view/gfx/pcs_bl_t.png')
-        self.pbl = tk.PhotoImage(file='./view/gfx/pcs_bl.png')
-        self.pblc = tk.PhotoImage(file='./view/gfx/pcs_bl_c.png')
-        self.pwh = tk.PhotoImage(file='./view/gfx/pcs_wh.png')
-        self.pwht = tk.PhotoImage(file='./view/gfx/pcs_wh_t.png')
-        self.pwhc = tk.PhotoImage(file='./view/gfx/pcs_wh_c.png')
-        self.pbla = tk.PhotoImage(file='./view/gfx/pcs_blank.png')
-        self.pmar = tk.PhotoImage(file='./view/gfx/pcs_mark.png')
+        pbla = tk.PhotoImage(file='../resources/gfx/pcs_blank.png')
+        self.pmar = tk.PhotoImage(file='../resources/gfx/pcs_mark.png')
+
+        self.pieces_gfx = [pbla]
+        if type(self.game).__name__ == "Chess":
+            self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece_border.png')
+            self.threat_gfx = tk.PhotoImage(file='../resources/gfx/threatened_piece_border.png')
+            img = Image.open('../resources/gfx/ChessPiecesArray.png')
+            for i in range(6):
+                x, y = 60 * i, 60
+                image = img.crop((x, y, x + 60, y + 60)).resize((55, 55))
+                self.pieces_gfx.append(ImageTk.PhotoImage(image))
+            for i in range(5, -1, -1):
+                x, y = 60 * i, 0
+                image = img.crop((x, y, x + 60, y + 60)).resize((55, 55))
+                self.pieces_gfx.append(ImageTk.PhotoImage(image))
+        else:
+            self.marked_gfx = tk.PhotoImage(file='../resources/gfx/selected_piece_cross.png')
+            pbl = tk.PhotoImage(file='../resources/gfx/pcs_bl.png')
+            pwh = tk.PhotoImage(file='../resources/gfx/pcs_wh.png')
+            pblt = tk.PhotoImage(file='../resources/gfx/pcs_bl_t.png')
+            pwht = tk.PhotoImage(file='../resources/gfx/pcs_wh_t.png')
+            self.pieces_gfx.extend([pwh, pwht, pblt, pbl])
 
     # Return coordinat for mouse click
     def getorigin(self, eventorigin):
+        if self.listener is None:
+            return
         x = eventorigin.x
         y = eventorigin.y
 
         coords = self.field_clicked(x, y, self.state.board, self.left_space, self.top_space, self.board_field_size)
-
+        # print("Coords: {}".format(coords))
         if self.is_currentPlayer_piece(self.state.player, self.state.board[coords]) and self.mouseclick_move_list == [] and self.has_legal_move(coords):
             self.mouseclick_move_list.append(coords)
             self.draw_status_text("Selected source coords: ({})".format(coords))
+        elif self.game.action_type == "single":
+            if self.is_legal_move(None, coords):
+                self.make_move(self.state, Action(None, coords))
+                self.mouseclick_move_list.clear()
         else:
-            if self.mouseclick_move_list == [] and self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5)):
-                self.make_move(self.state, coords, coords)
+            if (self.mouseclick_move_list == [] and
+                    self.is_currentPlayer_piece(self.state.player, int(self.state.board[coords[0], coords[1]] * -0.5))
+                    and self.is_legal_move(coords, coords)):
+                self.make_move(self.state, Action(coords, coords))
             elif len(self.mouseclick_move_list) == 1:
                 if self.mouseclick_move_list[0] == coords:
                     self.mouseclick_move_list.pop()
@@ -136,7 +161,7 @@ class Gui():
                         self.draw_status_text("Selected destination coords: ({})".format(coords))
                         self.mouseclick_move_list.append(coords)
 
-                        self.make_move(self.state, self.mouseclick_move_list[0], self.mouseclick_move_list[1])
+                        self.make_move(self.state, Action(self.mouseclick_move_list[0], self.mouseclick_move_list[1]))
                         self.mouseclick_move_list.clear()
 
             elif len(self.mouseclick_move_list) > 2:
@@ -149,13 +174,13 @@ class Gui():
     # Confirms if a move i legal
     def is_legal_move(self, source_coords, dest_coords):
         for action in self.game.actions(self.state):
-            if action.source == source_coords and action.dest == dest_coords:
+            if action is not None and action.source == source_coords and action.dest == dest_coords:
                 return True
         return False
 
     def has_legal_move(self, source_coords):
         for action in self.game.actions(self.state):
-            if action.source == source_coords:
+            if action is not None and action.source == source_coords:
                 return True
         return False
 
@@ -163,7 +188,7 @@ class Gui():
         print("hello!")
 
     def menubar_help_about_popup(self):
-        showinfo("About", "This great game of Latrunculi is made as addition to our bachelor project at IT-University of Copenhagen, please enjoy.\n\n ITU 2019 Denmark\n\n Alexander M. Hansen <alhm@itu.dk>\n Mikkel H. Sørensen <mhso@itu.dk>\n Frank Andersen <fand@itu.dk>\n ")
+        showinfo("About", "This project is made as part of our bachelor project at IT-University of Copenhagen, please enjoy.\n\n ITU 2019 Denmark\n\n Alexander M. Hansen <alhm@itu.dk>\n Mikkel H. Sørensen <mhso@itu.dk>\n Frank Andersen <fand@itu.dk>\n ")
 
     # Menubar
     def widget_menubar(self, root):
@@ -172,16 +197,16 @@ class Gui():
         hello = self.hello
         # create a pulldown menu, and add it to the menu bar
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open replay", command=hello)
-        filemenu.add_command(label="Save replay", command=hello)
+        filemenu.add_command(label="Open replay", command=hello, state="disabled")
+        filemenu.add_command(label="Save replay", command=hello, state="disabled")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
 
         # create more pulldown menus
         optionmenu = tk.Menu(menubar, tearoff=0)
-        optionmenu.add_command(label="Human vs. AI", command=hello)
-        optionmenu.add_command(label="AI vs. AI", command=hello)
+        optionmenu.add_command(label="Human vs. AI", command=hello, state="disabled")
+        optionmenu.add_command(label="AI vs. AI", command=hello, state="disabled")
         menubar.add_cascade(label="Options", menu=optionmenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)
@@ -221,21 +246,11 @@ class Gui():
         self.text_field.insert(tk.END, text)
 
     def player_color(self, player):
-        if player:
-            return "White"
-        else:
-            return "Black"
+        return "White" if player else "Black"
 
     # Returns image variable
     def select_piece_type(self, value):
-        switcher = {
-        -2: self.pblt,
-        -1: self.pbl,
-        0: self.pbla,
-        1: self.pwh,
-        2: self.pwht,
-        }
-        return switcher.get(value,"Invalid value option for select_piece_type")
+        return self.pieces_gfx[value]
 
     # Draw board and place pieces
     def draw_board_grid(self, board):
@@ -280,21 +295,20 @@ class Gui():
                     self.field(px, py, self.canvas, self.select_piece_type(val))
 
                 # Mark if clicked by mouse
-                if len(self.mouseclick_move_list) > 0 and self.mouseclick_move_list[0] == (y, x):
-                    if val < 0:
-                        self.field(px, py, self.canvas, self.pblc) # Mark black piece
-                    else:
-                        self.field(px, py, self.canvas, self.pwhc) # Mark white piece
+                if self.mouseclick_move_list != [] and self.mouseclick_move_list[0] == (y, x):
+                    self.field(px, py, self.canvas, self.marked_gfx)
 
                 # Mark legal moves
-                if len(self.mouseclick_move_list) > 0 and val == 0  and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
-                    self.field(px, py, self.canvas, self.pmar)
+                if self.mouseclick_move_list != [] and self.is_legal_move(self.mouseclick_move_list[0], (y, x)):
+                    if val == 0:
+                        self.field(px, py, self.canvas, self.pmar)
+                    else:
+                        self.field(px, py, self.canvas, self.threat_gfx)                        
 
                 px = px + self.board_field_size
 
             py  = py + self.board_field_size
             px2 = px2 + self.board_field_size
-
 
     # Check wheather (white) piece is owned by currentPlayer one
     def is_currentPlayer_piece(self, player, value):
@@ -328,24 +342,34 @@ class Gui():
 
         self.canvas_remove_tags(['board_field', 'status_text'])
         self.draw_board(state.board)
-        # self.draw_status_text(self.canvas, "Nice move")
-        log("Updated")
 
-    def make_move(self, state, source, dest):
+        new_actions = self.game.actions(self.state)
+        if new_actions == [None] and not self.game.terminal_test(self.state):
+            self.show_move(self.state, None) # Simulate 'pass' move.
+
+    def show_move(self, state, action):
+        player_color = self.player_color(state.player)
+        if action:
+            source, dest = action.source, action.dest
+            log("{} moved from {} to {}".format(player_color, source, dest))
+            self.draw_status_text("{} moved from {} to {}".format(player_color, source, dest))
+        else:
+            log("{} has no moves, pass made.".format(player_color))
+            self.draw_status_text("{} passed".format(player_color))
+
+        result = self.game.result(state, action)
+        self.update(result)
+
+    def make_move(self, state, action):
         """
         Move a piece from source to dest on the board.
         Get the new state, and notify any listener about
         the new state.
         """
-        log("{} moved from {} to {}".format(self.player_color(state.player), source, dest))
-        self.draw_status_text("{} moved from {} to {}".format(self.player_color(state.player), source, dest))        
-
-        result = self.game.result(state, Action(source, dest))
-        self.state = result
-        self.update(result)
+        self.show_move(state, action)
 
         if self.listener is not None:
-            self.listener.action_made(result)
+            self.listener.action_made(self.state)
             self.listener = None
 
     def add_action_listener(self, listener):

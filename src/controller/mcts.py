@@ -1,30 +1,58 @@
 """
-------------------------------------
-mcts: Monte Carlo Tree Search.
-------------------------------------
+-----------------------------------------------------------------------------
+mcts - modified: Modified Monte Carlo Tree Search, using network evaluations.
+-----------------------------------------------------------------------------
 """
-from math import inf
-from time import time
+import numpy as np
+from config import Config
 from controller.game_ai import GameAI
 from view.log import log
-import numpy as np
 
 class Node():
-    state = None
-    children = None
-    parent = None
-    visits = 0
-    wins = 0
-
-    def __init__(self, state, children, parent=None):
+    def __init__(self, state, action, prior_prob=0, parent=None):
         self.state = state
-        self.children = children
+        self.action = action
         self.parent = parent
+        self.prior_prob = prior_prob
+        self.children = {}
+        self.visits = 0
+        self.value = 0
+        self.q_value = 0
+
+    def pretty_desc(self):
+        return "<Node: a: {}, n: {}, v: {}, q: {}, p: {}>".format(
+            self.action, self.visits, self.value, "%.3f" % self.q_value, "%.3f" % self.prior_prob)
 
     def __str__(self):
-        children = ", ".join([str(c) for c in self.children])
-        return ("[Node: turn={}, visits={}, wins={},\nchildren=\n    [{}]]").format(
-            self.state.player, self.visits, self.wins, children.replace("\n", "\n    "))
+        return self.pretty_desc()
+
+    def __repr__(self):
+        return self.pretty_desc()
+
+    def crazy_print(self):
+        children = ", ".join([str(c) for c in self.children.values()])
+        return ("[Node: turn={}, visits={}, value={},\nchildren=\n    [{}]]").format(
+            self.state.player, self.visits, self.value, children.replace("\n", "\n    "))
+
+def normalize_value(value):
+    """
+    Normalizes the given value, and returns it
+    """
+    return (value * 0.5) + 0.5
+
+def softmax_sample(child_nodes, visit_counts, tempature=2.5):
+    """
+    Perform softmax sampling on a set of nodes
+    based on a probability distribution of their
+    visit counts.
+    """
+    sum_visits = sum(visit_counts)
+    prob_visits = [(v/sum_visits) * tempature for v in visit_counts]
+    exps = np.exp(prob_visits)
+    log(f"Probabilities of softmax: {exps/sum(exps)}")
+
+    return np.random.choice(child_nodes,
+                            p=exps/sum(exps))
 
 class MCTS(GameAI):
     """
@@ -32,134 +60,155 @@ class MCTS(GameAI):
     of the four stages of the algorithm: Selection, Expansion,
     Simulation and Backpropagation.
     """
-    state_map = dict()
+    cfg = None
+    chosen_node = None
 
-    EXPLORE_PARAM = 2 # Used when choosing which node to explore or exploit.
-    ITERATIONS = 5 # Number of times to run MCTS, per action taken in game.
+    def __init__(self, game, playouts=None):
+        super().__init__(game)
+        if playouts:
+            self.ITERATIONS = playouts
+        else:
+            self.ITERATIONS = Config.MCTS_ITERATIONS
 
-    def select(self, node, sim_acc):
+        log("MCTS is using {} playouts.".format(self.ITERATIONS))
+
+    def set_config(self, config):
+        GameAI.set_config(self, config)
+        self.ITERATIONS = config.MCTS_ITERATIONS
+
+    def puct_score(self, node, parent_visits):
+        """
+        PUCT (Polynomial Upper Confident for Trees) formula.
+        Q(s, a) + C(s) * P(s, a) * sqrt(N(s)) / (1 + N(s, a)),
+        where
+            - Q(s, a) = q-value of node. Visits/value.
+            - N(s) = parent visit count of current node.
+            - C(s) = exploration rate. Scales according to simulations in AZ.
+                     We keep it as a constant for simplicity.
+            - P(s, a) = prior probability of selecting action in node.
+            - N(s, a) = visits of current node.
+
+        returns:
+            - PUCT value of node 
+        """
+        #e_base = self.cfg.EXPLORE_BASE
+        #e_init = self.cfg.EXPLORE_INIT
+        #explore_val = np.log((1 + child.visits + e_base) / e_base) + e_init
+        explore_val = 1.27
+        val = node.q_value + (
+            explore_val * node.prior_prob
+            * parent_visits / (1+node.visits)
+        )
+        return val
+
+    def select(self, node):
         """
         Select a node to run simulations from.
-        Nodes are chosen according to how they maximize
-        the UCB1 formula = w(i) + c * sqrt (ln N(i) / n(i))).
-        Where
-            - w(i) = wins of current node.
-            - n(i) = times current node was visited.
-            - c = exploration constant, 2 usually.
-            - N(i) = accummulated visits of all parents of current node.
-        This assures a balance between exploring new nodes,
-        and exploiting nodes that are known to result in good outcomes.
+        Nodes are recursively chosen according to how they maximize
+        the PUCT formula, until a leaf is reached, that leaf is then returned.
         """
-        if node.children == []: # Node is a leaf.
+        if node.children == {}: # Node is a leaf.
             return node
+        parent_sqrt = np.sqrt(node.visits)
+        best_node = max(node.children.values(), key=lambda n: self.puct_score(n, parent_sqrt))
 
-        sim_acc += node.visits
-        best_node = node.children[0] # Choose first node if all are equal.
-        best_value = 0
-        for child in node.children:
-            if child.visits == 0:
-                # Node has not been visited. It is chosen immediately.
-                best_node = child
-                break
-            else:
-                # UCB1 formula (split up, for readability).
-                exploit = child.wins + self.EXPLORE_PARAM
-                val = exploit * np.sqrt(np.log(sim_acc) / child.visits)
-                if val > best_value:
-                    best_value = val
-                    best_node = child
+        return self.select(best_node)
 
-        return self.select(best_node, sim_acc)
-
-    def expand(self, node, actions):
+    def expand(self, node, actions, policies):
         """
         Expand the tree with new nodes, corresponding to
         taking any possible actions from the current node.
         """
-        children = [Node(self.game.result(node.state, action), [], node) for action in actions]
-        node.children = children
+        logit_map = self.game.map_actions(actions, policies)
+        for a, p in logit_map.items():
+            node.children[a] = Node(self.game.result(node.state, a), a, p, node)
 
-    def simulate(self, state, actions):
+    def back_propagate(self, node, player, value):
         """
-        Simulate a random action from the given state and the given
-        possible actions. Return the result of the random action.
-        """
-        chosen_action = actions[int(np.random.uniform(0, len(actions)))] # Chose random action.
-        return self.game.result(state, chosen_action)
-
-    def back_propogate(self, node, value):
-        """
-        After a full simulation, propogate result up the tree.
+        After a full simulation, propagate result up the tree.
+        Invert value at every node, to align 'perspective' to
+        the current player of that node.
         """
         node.visits += 1
-        node.wins += value
+        node.value += value if node.state.player == player else -value
+        node.q_value = node.value / node.visits
+
         if node.parent is None:
             return
-        self.back_propogate(node.parent, value)
+        self.back_propagate(node.parent, player, value)
 
-    def rollout(self, og_state, node):
+    def set_evaluation_data(self, node, policy_logits, value):
         """
-        Make random simulations until a terminal state
-        is reached. Then the utility value of this state,
-        for the current player, is returned.
+        Use the neural network to obtain a prediction of the
+        outcome of the game, as well as probability distribution
+        of available actions from the current state.
         """
         state = node.state
-        counter = 0
+        actions = self.game.actions(state)
+        new_value = value
+        if self.game.terminal_test(state):
+            new_value = self.game.utility(state, state.player)
+        else:
+            # Expand node.
+            self.expand(node, actions, policy_logits)
 
-        while not self.game.terminal_test(state):
-            actions = self.game.actions(state)
-            state = self.simulate(state, actions)
-            counter += 1
+        return new_value
 
-        log("Iterations spent on rollout: {}".format(counter))
-        return self.game.utility(state, og_state.player)
+    def choose_action(self, node):
+        """
+        When MCTS is finished with it's iterations,
+        a final action to take is chosen. If the current
+        length of the game is less than a certain threshold,
+        softmax sampling is used to select an action, based on
+        a probabiliy of visits to that node during MCTS simulation.
+        Otherwise, the node with most visits is chosen.
+        """
+        child_nodes = [n for n in node.children.values()]
+        if child_nodes == []:
+            return Node(self.game.result(node.state, None), None)
+        visit_counts = [n.visits for n in child_nodes]
+        if len(self.game.history) < self.cfg.NUM_SAMPLING_MOVES:
+            # Perform softmax sampling of available actions,
+            # based on visit counts.
+            return softmax_sample(child_nodes, visit_counts)
+        # Return node with highest visit count.
+        return max(child_nodes, key=lambda n: n.visits)
 
-    def execute_action(self, state):
+    def add_exploration_noise(self, node):
+        """
+        Add Dirichlet noise to prior value of node,
+        to encourage exploration of new nodes.
+        """
+        actions = node.children.keys()
+        noise = np.random.gamma(self.cfg.NOISE_BASE, 1, len(actions))
+        frac = self.cfg.NOISE_FRACTION
+        for a, n in zip(actions, noise):
+            node.children[a].prior_prob *= (1 - frac) + n * frac
+
+    def create_root_node(self, state):
+        """
+        Creates a root node...
+        """
+        root_node = Node(state, None)
+        self.chosen_node = root_node
+        return root_node
+
+    def prepare_action(self, root_node):
+        """
+        Adds Exploration noise.
+        """
+        if self.cfg.NOISE_BASE != 0:
+            self.add_exploration_noise(root_node)
+
+    def execute_action(self, node):
         super.__doc__
-        
-        time_total_b = time()
-        log("MCTS is calculating the best move...")
+        best_node = self.choose_action(node)
+        self.chosen_node = best_node
 
-        # Get state ID and look the corresponding node up in the state map.
-        state_id = state.stringify()
-        original_node = None
-        try:
-            # Node exists, we have run MCTS on this state before.
-            original_node = self.state_map[state_id]
-            log("State has been visited before")
-        except KeyError:
-            # Node does not exist, we create a new one, and add it to our state map.
-            log("State has NOT been visited before")
-            actions = self.game.actions(state)
-            original_node = Node(state, [])
-            self.expand(original_node, actions)
-            self.state_map[state_id] = original_node
+        log(f"Root: {node}")
+        for n in node.children.values():
+            log(n.pretty_desc())
 
-        # Perform iterations of selection, simulation, expansion, and back propogation.
-        # After the iterations are done, the child of the original node with the highest
-        # number of wins are chosen as the best action.
-        for _ in range(self.ITERATIONS):
-            node = self.select(original_node, 0)
-            if node.visits > 0:
-                # Expand tree from available actions. Select first expanded node as
-                # new current and simulate an action from this nodes possible actions.
-                actions = self.game.actions(node.state)
-                self.expand(node, actions)
-                node = node.children[0] # Select first child of expanded Node.
-                node.state.player = not node.state.player
-
-            # Perform rollout, simulate till end of game and return outcome.
-            value = self.rollout(node.state, node)
-            self.back_propogate(node, value)
-
-            node = original_node
-
-        best_node = max(original_node.children, key=lambda n: n.wins)
-        log("Total action duration: {} s".format(time() - time_total_b))
+        log("MCTS action: {}, q value: {}.".format(best_node.action, best_node.q_value))
+        self.game.store_search_statistics(node)
         return best_node.state
-
-    def __str__(self):
-        states_explored = ""
-        for v in self.state_map:
-            states_explored += str(self.state_map[v]) + ",\n"
-        return "[MCTS:\n{}]".format(states_explored)

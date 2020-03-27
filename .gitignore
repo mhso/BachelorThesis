@@ -13,6 +13,9 @@ resources/*/
 resources/config.txt
 resources/*.png
 resources/flops_summary*
+src/util/SqlUtil.py
+src/eval_test.bat
+src/eval_test_setup.bat
 
 # Distribution / packaging
 .Python

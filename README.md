@@ -11,3 +11,6 @@ have such an implementation train, and perform well, on consumer-grade hardware.
 - Three types of AI agents: MCTS with Neural Network, Minimax, and MCTS without Neural Network
 - Support for a human player to play against any of these using a visualized board with GUI
 - Trained networks outperform all knowledge-based implementations (Minimax/Barebones MCTS) after ~1-2 days of training
+
+### Katafanga playing Othello
+[![Katafanga Demo](https://img.youtube.com/vi/BNDp_DNfXV8/maxresdefault.jpg)](https://www.youtube.com/watch?v=BNDp_DNfXV8)

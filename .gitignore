@@ -8,9 +8,10 @@ __pycache__/
 
 # VS Code
 .vscode/
-resources/*/
+resources/*
 !resources/gfx
 resources/config.txt
+resources/pseudocode.py
 resources/*.png
 resources/flops_summary*
 src/util/SqlUtil.py
